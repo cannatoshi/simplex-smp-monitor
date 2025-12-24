@@ -1,0 +1,19 @@
+# Grafana Datasource Provisioning
+# Auto-configures InfluxDB connection on startup
+
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    jsonData:
+      version: Flux
+      organization: simplex
+      defaultBucket: metrics
+      tlsSkipVerify: true
+    secureJsonData:
+      token: simplex-test-suite-token-change-in-production
+    isDefault: true
+    editable: true

@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}New Test - SimpleX Test Suite{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">
+        <span x-show="lang === 'en'">Configure New Stress Test</span>
+        <span x-show="lang === 'de'" x-cloak>Neuen Stresstest konfigurieren</span>
+    </h1>
+    
+    <form method="post" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+        {% csrf_token %}
+        
+        <div class="space-y-5">
+            <div>
+                <label class="block text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">
+                    <span x-show="lang === 'en'">Test Name</span>
+                    <span x-show="lang === 'de'" x-cloak>Test Name</span>
+                </label>
+                <input type="text" name="name" 
+                       placeholder="e.g. Latency Test SMP Servers"
+                       class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white placeholder-slate-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none transition-colors">
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">
+                        <span x-show="lang === 'en'">Clients</span>
+                        <span x-show="lang === 'de'" x-cloak>Clients</span>
+                    </label>
+                    <input type="number" name="num_clients" value="2" min="1" max="10"
+                           class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none transition-colors">
+                </div>
+                
+                <div>
+                    <label class="block text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">
+                        <span x-show="lang === 'en'">Duration (sec)</span>
+                        <span x-show="lang === 'de'" x-cloak>Dauer (Sek)</span>
+                    </label>
+                    <input type="number" name="duration_seconds" value="60" min="10" max="3600"
+                           class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none transition-colors">
+                </div>
+                
+                <div>
+                    <label class="block text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">
+                        <span x-show="lang === 'en'">Interval (sec)</span>
+                        <span x-show="lang === 'de'" x-cloak>Intervall (Sek)</span>
+                    </label>
+                    <input type="number" name="message_interval_seconds" value="5" min="1" max="60"
+                           class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none transition-colors">
+                </div>
+            </div>
+            
+            {% if servers %}
+            <div>
+                <label class="block text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">
+                    <span x-show="lang === 'en'">Select Servers</span>
+                    <span x-show="lang === 'de'" x-cloak>Server auswählen</span>
+                </label>
+                <div class="space-y-2 max-h-48 overflow-y-auto bg-slate-50 dark:bg-slate-800 rounded-lg p-3 border border-slate-300 dark:border-slate-700">
+                    {% for server in servers %}
+                    <label class="flex items-center space-x-3 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer transition-colors">
+                        <input type="checkbox" name="servers" value="{{ server.pk }}" checked
+                               class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500">
+                        <span class="text-slate-900 dark:text-white font-medium">{{ server.name }}</span>
+                        <span class="text-slate-500 text-xs">({{ server.server_type|upper }})</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <p class="text-amber-700 dark:text-amber-400 text-sm">
+                    <span x-show="lang === 'en'">⚠️ No active servers configured.</span>
+                    <span x-show="lang === 'de'" x-cloak>⚠️ Keine aktiven Server konfiguriert.</span>
+                    <a href="{% url 'servers:create' %}" class="underline font-medium">
+                        <span x-show="lang === 'en'">Add server</span>
+                        <span x-show="lang === 'de'" x-cloak>Server hinzufügen</span>
+                    </a>
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="mt-6 flex space-x-3">
+            <button type="submit"
+                    class="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg transition-colors font-medium inline-flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span x-show="lang === 'en'">Create Test</span>
+                <span x-show="lang === 'de'" x-cloak>Test erstellen</span>
+            </button>
+            <a href="{% url 'stresstests:list' %}"
+               class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-5 py-2.5 rounded-lg transition-colors font-medium">
+                <span x-show="lang === 'en'">Cancel</span>
+                <span x-show="lang === 'de'" x-cloak>Abbrechen</span>
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

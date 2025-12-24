@@ -1,0 +1,56 @@
+{% if events %}
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    <table class="w-full">
+        <thead class="bg-slate-50 dark:bg-slate-800/50">
+            <tr>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-24">Level</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-28">
+                    <span x-show="lang === 'en'">Time</span>
+                    <span x-show="lang === 'de'" x-cloak>Zeit</span>
+                </th>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-32">
+                    <span x-show="lang === 'en'">Source</span>
+                    <span x-show="lang === 'de'" x-cloak>Quelle</span>
+                </th>
+                <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    <span x-show="lang === 'en'">Message</span>
+                    <span x-show="lang === 'de'" x-cloak>Nachricht</span>
+                </th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-sm">
+            {% for event in events %}
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <td class="px-5 py-3">
+                    <span class="px-2 py-0.5 rounded text-xs font-medium
+                        {% if event.level == 'ERROR' %}bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400
+                        {% elif event.level == 'WARNING' %}bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400
+                        {% elif event.level == 'DEBUG' %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400
+                        {% elif event.level == 'CRITICAL' %}bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-300
+                        {% else %}bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400{% endif %}">
+                        {{ event.level }}
+                    </span>
+                </td>
+                <td class="px-5 py-3 text-slate-500 dark:text-slate-500">{{ event.created_at|date:"M d, H:i:s" }}</td>
+                <td class="px-5 py-3 text-slate-700 dark:text-slate-300">{{ event.source }}</td>
+                <td class="px-5 py-3 text-slate-600 dark:text-slate-400">{{ event.message|truncatechars:100 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-12 text-center">
+    <svg class="w-16 h-16 text-slate-300 dark:text-slate-700 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+        <span x-show="lang === 'en'">No Events</span>
+        <span x-show="lang === 'de'" x-cloak>Keine Ereignisse</span>
+    </h3>
+    <p class="text-slate-500 dark:text-slate-400">
+        <span x-show="lang === 'en'">No events have been recorded yet.</span>
+        <span x-show="lang === 'de'" x-cloak>Es wurden noch keine Ereignisse protokolliert.</span>
+    </p>
+</div>
+{% endif %}

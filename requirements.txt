@@ -1,0 +1,17 @@
+# Django
+Django>=5.0,<6.0
+daphne>=4.0
+channels>=4.0
+
+# Database
+influxdb-client>=1.40
+
+# HTTP/Async
+httpx>=0.26
+aiohttp>=3.9
+
+# SOCKS Proxy (for Tor)
+pysocks>=1.7
+
+# Utilities
+python-dotenv>=1.0

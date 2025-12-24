@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true', lang: localStorage.getItem('lang') || 'en' }" 
+      x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val)); $watch('lang', val => localStorage.setItem('lang', val))"
+      :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SimpleX SMP Monitor{% endblock %}</title>
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx-ext-ws@2.0.2/ws.js"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
+    
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 min-h-screen transition-colors duration-200"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{% url 'dashboard:index' %}" class="flex items-center space-x-3">
+                        <span class="text-2xl">🔍</span>
+                        <span class="text-xl font-semibold text-slate-900 dark:text-white">SimpleX SMP Monitor</span>
+                    </a>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center space-x-1">
+                    <a href="{% url 'dashboard:index' %}" 
+                       class="px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                              {% if request.resolver_match.url_name == 'index' %}
+                              bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300
+                              {% else %}
+                              text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800
+                              {% endif %}">
+                        <span x-show="lang === 'en'">Dashboard</span>
+                        <span x-show="lang === 'de'" x-cloak>Dashboard</span>
+                    </a>
+                    <a href="{% url 'servers:list' %}" 
+                       class="px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                              {% if 'servers' in request.path %}
+                              bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300
+                              {% else %}
+                              text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800
+                              {% endif %}">
+                        <span x-show="lang === 'en'">Servers</span>
+                        <span x-show="lang === 'de'" x-cloak>Server</span>
+                    </a>
+                    <a href="{% url 'stresstests:list' %}" 
+                       class="px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                              {% if 'tests' in request.path %}
+                              bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300
+                              {% else %}
+                              text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800
+                              {% endif %}">
+                        <span x-show="lang === 'en'">Tests</span>
+                        <span x-show="lang === 'de'" x-cloak>Tests</span>
+                    </a>
+                    <a href="{% url 'events:list' %}" 
+                       class="px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                              {% if 'events' in request.path %}
+                              bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300
+                              {% else %}
+                              text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800
+                              {% endif %}">
+                        <span x-show="lang === 'en'">Events</span>
+                        <span x-show="lang === 'de'" x-cloak>Ereignisse</span>
+                    </a>
+                </div>
+
+                <!-- Right side controls -->
+                <div class="flex items-center space-x-3">
+                    <!-- Language Toggle -->
+                    <button @click="lang = lang === 'en' ? 'de' : 'en'" 
+                            class="px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-700 
+                                   text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <span x-text="lang.toUpperCase()"></span>
+                    </button>
+                    
+                    <!-- Dark Mode Toggle -->
+                    <button @click="darkMode = !darkMode" 
+                            class="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                        <svg x-show="darkMode" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 py-6 mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+            <span class="text-slate-500 dark:text-slate-500 text-sm">© by cannatoshi</span>
+            <span class="text-slate-500 dark:text-slate-500 text-sm font-mono">i(N) cod(E) w(E) trus(T) › Alpha v0.1.5</span>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Servers - SimpleX SMP Monitor{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
+        <span x-show="lang === 'en'">Server Management</span>
+        <span x-show="lang === 'de'" x-cloak>Server Verwaltung</span>
+    </h1>
+    <a href="{% url 'servers:create' %}" 
+       class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm inline-flex items-center space-x-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        <span x-show="lang === 'en'">Add Server</span>
+        <span x-show="lang === 'de'" x-cloak>Server hinzufügen</span>
+    </a>
+</div>
+
+<div id="server-list">
+    {% include 'servers/_server_list.html' %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const serverList = document.getElementById('server-list');
+    let draggedItem = null;
+    
+    function initDragDrop() {
+        const cards = document.querySelectorAll('[data-server-id]');
+        
+        cards.forEach(card => {
+            card.addEventListener('dragstart', function(e) {
+                draggedItem = this;
+                this.classList.add('opacity-50');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            
+            card.addEventListener('dragend', function(e) {
+                this.classList.remove('opacity-50');
+                document.querySelectorAll('[data-server-id]').forEach(c => {
+                    c.classList.remove('border-primary-500', 'border-2');
+                });
+                draggedItem = null;
+            });
+            
+            card.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (this !== draggedItem) {
+                    this.classList.add('border-primary-500', 'border-2');
+                }
+            });
+            
+            card.addEventListener('dragleave', function(e) {
+                this.classList.remove('border-primary-500', 'border-2');
+            });
+            
+            card.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('border-primary-500', 'border-2');
+                
+                if (this !== draggedItem) {
+                    const grid = this.parentNode;
+                    const allCards = [...grid.querySelectorAll('[data-server-id]')];
+                    const draggedIdx = allCards.indexOf(draggedItem);
+                    const targetIdx = allCards.indexOf(this);
+                    
+                    if (draggedIdx < targetIdx) {
+                        this.parentNode.insertBefore(draggedItem, this.nextSibling);
+                    } else {
+                        this.parentNode.insertBefore(draggedItem, this);
+                    }
+                    
+                    // Save new order
+                    saveOrder();
+                }
+            });
+        });
+    }
+    
+    function saveOrder() {
+        const cards = document.querySelectorAll('[data-server-id]');
+        const order = [...cards].map((card, index) => ({
+            id: card.dataset.serverId,
+            order: index
+        }));
+        
+        fetch('{% url "servers:reorder" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ order: order })
+        });
+    }
+    
+    // Init on load and after HTMX swaps
+    initDragDrop();
+    document.body.addEventListener('htmx:afterSwap', initDragDrop);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ test.name }} - SimpleX Test Suite{% endblock %}
+
+{% block content %}
+<div hx-ext="ws" ws-connect="/ws/test/{{ test.pk }}/">
+    <!-- Header -->
+    <div class="flex justify-between items-start mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ test.name }}</h1>
+            <p class="text-slate-500 dark:text-slate-400 text-sm">
+                <span x-show="lang === 'en'">Created:</span>
+                <span x-show="lang === 'de'" x-cloak>Erstellt:</span>
+                {{ test.created_at|date:"M d, Y H:i" }}
+            </p>
+        </div>
+        <div id="test-status" class="flex items-center space-x-3">
+            {% include 'stresstests/_test_status.html' %}
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 text-center shadow-sm">
+            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">
+                <span x-show="lang === 'en'">Sent</span>
+                <span x-show="lang === 'de'" x-cloak>Gesendet</span>
+            </p>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white mt-1" id="messages-sent">{{ test.messages_sent }}</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 text-center shadow-sm">
+            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">
+                <span x-show="lang === 'en'">Received</span>
+                <span x-show="lang === 'de'" x-cloak>Empfangen</span>
+            </p>
+            <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1" id="messages-received">{{ test.messages_received }}</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 text-center shadow-sm">
+            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">
+                <span x-show="lang === 'en'">Delivery Rate</span>
+                <span x-show="lang === 'de'" x-cloak>Zustellrate</span>
+            </p>
+            <p class="text-2xl font-bold mt-1 {% if test.delivery_rate >= 90 %}text-emerald-600 dark:text-emerald-400{% elif test.delivery_rate >= 70 %}text-amber-600 dark:text-amber-400{% else %}text-red-600 dark:text-red-400{% endif %}" id="delivery-rate">
+                {{ test.delivery_rate }}%
+            </p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 text-center shadow-sm">
+            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">
+                <span x-show="lang === 'en'">Avg. Latency</span>
+                <span x-show="lang === 'de'" x-cloak>Ø Latenz</span>
+            </p>
+            <p class="text-2xl font-bold text-primary-600 dark:text-primary-400 mt-1" id="avg-latency">
+                {% if test.avg_latency_ms %}{{ test.avg_latency_ms|floatformat:0 }}ms{% else %}—{% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Config & Details -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Configuration -->
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                <span x-show="lang === 'en'">Configuration</span>
+                <span x-show="lang === 'de'" x-cloak>Konfiguration</span>
+            </h3>
+            <dl class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-slate-500 dark:text-slate-400">Clients</dt>
+                    <dd class="text-slate-900 dark:text-white font-medium">{{ test.num_clients }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-slate-500 dark:text-slate-400">
+                        <span x-show="lang === 'en'">Duration</span>
+                        <span x-show="lang === 'de'" x-cloak>Dauer</span>
+                    </dt>
+                    <dd class="text-slate-900 dark:text-white font-medium">{{ test.duration_seconds }}s</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-slate-500 dark:text-slate-400">
+                        <span x-show="lang === 'en'">Interval</span>
+                        <span x-show="lang === 'de'" x-cloak>Intervall</span>
+                    </dt>
+                    <dd class="text-slate-900 dark:text-white font-medium">{{ test.message_interval_seconds }}s</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Servers -->
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                <span x-show="lang === 'en'">Servers</span>
+                <span x-show="lang === 'de'" x-cloak>Server</span>
+            </h3>
+            {% if test.servers.all %}
+            <ul class="space-y-2">
+                {% for server in test.servers.all %}
+                <li class="flex items-center space-x-2 text-sm">
+                    <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                    <span class="text-slate-700 dark:text-slate-300">{{ server.name }}</span>
+                    <span class="text-slate-400 text-xs">({{ server.server_type|upper }})</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-slate-500 text-sm">
+                <span x-show="lang === 'en'">No servers selected</span>
+                <span x-show="lang === 'de'" x-cloak>Keine Server ausgewählt</span>
+            </p>
+            {% endif %}
+        </div>
+
+        <!-- Latency Details -->
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                <span x-show="lang === 'en'">Latency</span>
+                <span x-show="lang === 'de'" x-cloak>Latenz</span>
+            </h3>
+            <dl class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-slate-500 dark:text-slate-400">Minimum</dt>
+                    <dd class="text-emerald-600 dark:text-emerald-400 font-medium">{% if test.min_latency_ms %}{{ test.min_latency_ms|floatformat:0 }}ms{% else %}—{% endif %}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-slate-500 dark:text-slate-400">
+                        <span x-show="lang === 'en'">Average</span>
+                        <span x-show="lang === 'de'" x-cloak>Durchschnitt</span>
+                    </dt>
+                    <dd class="text-primary-600 dark:text-primary-400 font-medium">{% if test.avg_latency_ms %}{{ test.avg_latency_ms|floatformat:0 }}ms{% else %}—{% endif %}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-slate-500 dark:text-slate-400">Maximum</dt>
+                    <dd class="text-red-600 dark:text-red-400 font-medium">{% if test.max_latency_ms %}{{ test.max_latency_ms|floatformat:0 }}ms{% else %}—{% endif %}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Metrics Log -->
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="p-5 border-b border-slate-200 dark:border-slate-800">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+                <span x-show="lang === 'en'">Metrics Log</span>
+                <span x-show="lang === 'de'" x-cloak>Metriken Log</span>
+            </h3>
+        </div>
+        <div class="p-5 max-h-96 overflow-y-auto" id="metrics-log">
+            {% if metrics %}
+            <div class="space-y-1 font-mono text-xs">
+                {% for metric in metrics %}
+                <div class="flex space-x-4 py-1">
+                    <span class="text-slate-400">{{ metric.timestamp|date:"H:i:s" }}</span>
+                    <span class="{% if metric.metric_type == 'error' %}text-red-500{% elif metric.metric_type == 'latency' %}text-primary-500{% else %}text-emerald-500{% endif %} w-20">
+                        {{ metric.metric_type }}
+                    </span>
+                    <span class="text-slate-700 dark:text-slate-300">{{ metric.value }}</span>
+                    {% if metric.client_id %}<span class="text-slate-500">[{{ metric.client_id }}]</span>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-slate-500 text-center py-8">
+                <span x-show="lang === 'en'">No metrics recorded yet. Start the test to collect data.</span>
+                <span x-show="lang === 'de'" x-cloak>Noch keine Metriken erfasst. Starte den Test um Daten zu sammeln.</span>
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Back Link -->
+    <div class="mt-6">
+        <a href="{% url 'stresstests:list' %}"
+           class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm font-medium inline-flex items-center space-x-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span x-show="lang === 'en'">Back to Tests</span>
+            <span x-show="lang === 'de'" x-cloak>Zurück zu Tests</span>
+        </a>
+    </div>
+</div>
+{% endblock %}
