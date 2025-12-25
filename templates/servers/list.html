@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Servers - SimpleX SMP Monitor{% endblock %}
 {% block content %}
-<div class="flex justify-between items-center mb-6">
+<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
     <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
         <span x-show="lang === 'en'">Server Management</span>
         <span x-show="lang === 'de'" x-cloak>Server Verwaltung</span>
@@ -27,6 +27,55 @@
         </a>
     </div>
 </div>
+
+<!-- Category Filter Pills -->
+{% if categories %}
+<div class="mb-6">
+    <div class="flex flex-wrap items-center gap-2">
+        <span class="text-sm text-slate-500 dark:text-slate-400 mr-1">
+            <span x-show="lang === 'en'">Filter:</span>
+            <span x-show="lang === 'de'" x-cloak>Filter:</span>
+        </span>
+        
+        <!-- All Button -->
+        <a href="{% url 'servers:list' %}" 
+           class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors {% if not active_category %}bg-primary-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+            <span x-show="lang === 'en'">All</span>
+            <span x-show="lang === 'de'" x-cloak>Alle</span>
+            <span class="ml-1 opacity-70">({{ servers.count }})</span>
+        </a>
+        
+        <!-- Category Buttons -->
+        {% for category in categories %}
+        <a href="{% url 'servers:list' %}?category={{ category.pk }}" 
+           class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors inline-flex items-center space-x-1.5 {% if active_category.pk == category.pk %}ring-2 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950{% endif %}"
+           style="{% if active_category.pk == category.pk %}background-color: {{ category.color }}; color: white; ring-color: {{ category.color }};{% else %}background-color: {{ category.color }}20; color: {{ category.color }};{% endif %}">
+            <span class="w-2 h-2 rounded-full {% if active_category.pk == category.pk %}bg-white{% endif %}" {% if active_category.pk != category.pk %}style="background-color: {{ category.color }};"{% endif %}></span>
+            <span>{{ category.name }}</span>
+            <span class="opacity-70">({{ category.server_count }})</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Active Filter Info -->
+{% if active_category %}
+<div class="mb-4 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-lg px-4 py-3">
+    <div class="flex items-center space-x-2">
+        <span class="w-3 h-3 rounded-full" style="background-color: {{ active_category.color }};"></span>
+        <span class="text-slate-700 dark:text-slate-300">
+            <span x-show="lang === 'en'">Showing servers in</span>
+            <span x-show="lang === 'de'" x-cloak>Zeige Server in</span>
+            <strong>{{ active_category.name }}</strong>
+        </span>
+    </div>
+    <a href="{% url 'servers:list' %}" class="text-sm text-primary-600 dark:text-primary-400 hover:underline">
+        <span x-show="lang === 'en'">Clear filter</span>
+        <span x-show="lang === 'de'" x-cloak>Filter aufheben</span>
+    </a>
+</div>
+{% endif %}
 
 <div id="server-list">
     {% include 'servers/_server_list.html' %}
