@@ -1,6 +1,37 @@
 from django.db import models
 import re
 
+
+class Category(models.Model):
+    """Server Category for organizing servers"""
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, default='')
+    color = models.CharField(max_length=7, default='#0ea5e9')
+    icon = models.CharField(max_length=50, default='folder')
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['sort_order', 'name']
+        verbose_name_plural = 'Categories'
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def server_count(self):
+        return self.servers.count()
+
+    @property
+    def active_server_count(self):
+        return self.servers.filter(is_active=True).count()
+
+    @property
+    def online_server_count(self):
+        return self.servers.filter(last_status='online').count()
+
+
 class Server(models.Model):
     """SMP/XFTP Server Konfiguration"""
     SERVER_TYPES = [('smp', 'SMP'), ('xftp', 'XFTP')]
@@ -20,6 +51,7 @@ class Server(models.Model):
     sort_order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    categories = models.ManyToManyField(Category, related_name='servers', blank=True)
     
     class Meta:
         ordering = ['sort_order', 'name']
@@ -28,8 +60,6 @@ class Server(models.Model):
         return f"{self.name} ({self.server_type.upper()})"
     
     def _parse_address(self):
-        """Parse smp://fingerprint:password@host format"""
-        # Pattern: smp://FINGERPRINT:PASSWORD@HOST or smp://FINGERPRINT@HOST
         pattern = r'^(smp|xftp)://([^:@]+)(?::([^@]+))?@(.+)$'
         match = re.match(pattern, self.address.strip())
         if match:

@@ -1,9 +1,9 @@
-<div id="server-{{ server.pk }}" 
+<div id="server-{{ server.pk }}"
      class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm cursor-move"
      draggable="true"
      data-server-id="{{ server.pk }}"
      x-data="{ showPassword: false }">
-    
+
     <!-- Header -->
     <div class="flex items-start justify-between mb-4">
         <div class="flex items-center space-x-3">
@@ -12,9 +12,10 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/>
                 </svg>
             </div>
-            <div>
-                <h3 class="text-slate-900 dark:text-white font-semibold">{{ server.name }}</h3>
-                <div class="flex space-x-1 mt-1">
+            <div class="min-w-0 flex-1">
+                <h3 class="text-slate-900 dark:text-white font-semibold truncate">{{ server.name }}</h3>
+                <!-- Badges: Type, Onion, Categories (NO status here) -->
+                <div class="flex flex-wrap items-center gap-1 mt-1">
                     <span class="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                         {{ server.server_type|upper }}
                     </span>
@@ -23,13 +24,17 @@
                         🧅 ONION
                     </span>
                     {% endif %}
+                    {% for category in server.categories.all %}
+                    <a href="{% url 'servers:category_detail' category.pk %}" class="text-xs px-2 py-0.5 rounded-full hover:opacity-80 transition-opacity" style="background-color: {{ category.color }}20; color: {{ category.color }};">{{ category.name }}</a>
+                    {% endfor %}
                 </div>
             </div>
         </div>
         <button hx-post="{% url 'servers:toggle' server.pk %}"
                 hx-target="#server-{{ server.pk }}"
                 hx-swap="outerHTML"
-                class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
+                title="{% if server.is_active %}Active - Click to disable{% else %}Inactive - Click to enable{% endif %}">
             {% if server.is_active %}
             <span class="flex h-3 w-3 relative">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -40,21 +45,15 @@
             {% endif %}
         </button>
     </div>
-    
+
     <!-- Server Details -->
     <div class="space-y-3 mb-4">
-        <!-- Host/Onion Address -->
         <div>
-            <label class="text-xs text-slate-500 dark:text-slate-500 font-medium block mb-1">
-                <span x-show="lang === 'en'">Host</span>
-                <span x-show="lang === 'de'" x-cloak>Host</span>
-            </label>
+            <label class="text-xs text-slate-500 dark:text-slate-500 font-medium block mb-1">Host</label>
             <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2" title="{{ server.host }}">
                 <code class="text-xs text-slate-700 dark:text-slate-300 block truncate">{{ server.host }}</code>
             </div>
         </div>
-        
-        <!-- Fingerprint -->
         {% if server.fingerprint %}
         <div>
             <label class="text-xs text-slate-500 dark:text-slate-500 font-medium block mb-1">Fingerprint</label>
@@ -63,21 +62,15 @@
             </div>
         </div>
         {% endif %}
-        
-        <!-- Password -->
         {% if server.password %}
         <div>
-            <label class="text-xs text-slate-500 dark:text-slate-500 font-medium block mb-1">
-                <span x-show="lang === 'en'">Password</span>
-                <span x-show="lang === 'de'" x-cloak>Passwort</span>
-            </label>
+            <label class="text-xs text-slate-500 dark:text-slate-500 font-medium block mb-1">Password</label>
             <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2 flex items-center justify-between">
                 <code class="text-xs text-slate-700 dark:text-slate-300">
                     <span x-show="!showPassword">••••••••••••</span>
                     <span x-show="showPassword" x-cloak>{{ server.password }}</span>
                 </code>
-                <button @click="showPassword = !showPassword" 
-                        class="ml-2 p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                <button @click="showPassword = !showPassword" class="ml-2 p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                     <svg x-show="!showPassword" class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -90,8 +83,8 @@
         </div>
         {% endif %}
     </div>
-    
-    <!-- Footer -->
+
+    <!-- Footer: Status + Date + Actions -->
     <div class="flex items-center justify-between text-xs pt-3 border-t border-slate-200 dark:border-slate-800">
         <div class="flex items-center space-x-2">
             {% if server.last_check %}
@@ -122,31 +115,13 @@
                 {% endif %}
                 <span class="text-slate-500 dark:text-slate-500">{{ server.last_check|date:"M d, H:i" }}</span>
             {% else %}
-                <span class="text-slate-500 dark:text-slate-500">
-                    <span x-show="lang === 'en'">Not checked yet</span>
-                    <span x-show="lang === 'de'" x-cloak>Noch nicht geprüft</span>
-                </span>
+                <span class="text-slate-500 dark:text-slate-500">Not checked yet</span>
             {% endif %}
         </div>
         <div class="flex space-x-3">
-            <a href="{% url 'servers:detail' server.pk %}" 
-               class="text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 font-medium">
-                <span x-show="lang === 'en'">Details</span>
-                <span x-show="lang === 'de'" x-cloak>Details</span>
-            </a>
-            <a href="{% url 'servers:edit' server.pk %}" 
-               class="text-primary-600 dark:text-primary-400 hover:underline font-medium">
-                <span x-show="lang === 'en'">Edit</span>
-                <span x-show="lang === 'de'" x-cloak>Bearbeiten</span>
-            </a>
-            <button hx-post="{% url 'servers:delete' server.pk %}"
-                    hx-target="#server-{{ server.pk }}"
-                    hx-swap="outerHTML"
-                    hx-confirm="Delete server '{{ server.name }}'?"
-                    class="text-red-600 dark:text-red-400 hover:underline font-medium">
-                <span x-show="lang === 'en'">Delete</span>
-                <span x-show="lang === 'de'" x-cloak>Löschen</span>
-            </button>
+            <a href="{% url 'servers:detail' server.pk %}" class="text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 font-medium">Details</a>
+            <a href="{% url 'servers:edit' server.pk %}" class="text-primary-600 dark:text-primary-400 hover:underline font-medium">Edit</a>
+            <button hx-post="{% url 'servers:delete' server.pk %}" hx-target="#server-{{ server.pk }}" hx-swap="outerHTML" hx-confirm="Delete server '{{ server.name }}'?" class="text-red-600 dark:text-red-400 hover:underline font-medium">Delete</button>
         </div>
     </div>
 </div>

@@ -7,10 +7,15 @@ import json
 import socket
 import time
 import re
-from .models import Server
+from .models import Server, Category
 
 TOR_PROXY_HOST = '127.0.0.1'
 TOR_PROXY_PORT = 9050
+
+
+# =============================================================================
+# SERVER VIEWS
+# =============================================================================
 
 def server_list(request):
     servers = Server.objects.all()
@@ -18,16 +23,18 @@ def server_list(request):
         return render(request, 'servers/_server_list.html', {'servers': servers})
     return render(request, 'servers/list.html', {'servers': servers})
 
+
 def server_detail(request, pk):
     server = get_object_or_404(Server, pk=pk)
     return render(request, 'servers/detail.html', {'server': server})
 
+
 @require_http_methods(["GET", "POST"])
 def server_create(request):
+    categories = Category.objects.all()
+    
     if request.method == 'POST':
         max_order = Server.objects.aggregate(Max('sort_order'))['sort_order__max'] or 0
-        
-        # Check if test was successful
         test_status = request.POST.get('test_status', '')
         
         server = Server.objects.create(
@@ -39,27 +46,43 @@ def server_create(request):
             last_status=test_status if test_status else 'unknown',
             last_check=timezone.now() if test_status else None
         )
+        
+        # Handle categories
+        category_ids = request.POST.getlist('categories')
+        if category_ids:
+            server.categories.set(category_ids)
+        
         return redirect('servers:list')
-    return render(request, 'servers/form.html', {'server': None})
+    
+    return render(request, 'servers/form.html', {'server': None, 'categories': categories})
+
 
 @require_http_methods(["GET", "POST"])
 def server_edit(request, pk):
     server = get_object_or_404(Server, pk=pk)
+    categories = Category.objects.all()
+    
     if request.method == 'POST':
         server.name = request.POST.get('name')
         server.server_type = request.POST.get('server_type', 'smp')
         server.address = request.POST.get('address')
         server.is_active = request.POST.get('is_active') == 'on'
         
-        # Update test status if provided
         test_status = request.POST.get('test_status', '')
         if test_status:
             server.last_status = test_status
             server.last_check = timezone.now()
         
         server.save()
+        
+        # Handle categories
+        category_ids = request.POST.getlist('categories')
+        server.categories.set(category_ids)
+        
         return redirect('servers:list')
-    return render(request, 'servers/edit.html', {'server': server})
+    
+    return render(request, 'servers/form.html', {'server': server, 'categories': categories})
+
 
 @require_http_methods(["POST"])
 def server_toggle(request, pk):
@@ -70,6 +93,7 @@ def server_toggle(request, pk):
         return render(request, 'servers/_server_card.html', {'server': server})
     return redirect('servers:list')
 
+
 @require_http_methods(["POST"])
 def server_delete(request, pk):
     server = get_object_or_404(Server, pk=pk)
@@ -77,6 +101,7 @@ def server_delete(request, pk):
     if request.htmx:
         return HttpResponse('')
     return redirect('servers:list')
+
 
 @require_http_methods(["POST"])
 def server_reorder(request):
@@ -88,6 +113,7 @@ def server_reorder(request):
         return JsonResponse({'status': 'ok'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
 
 @require_http_methods(["POST"])
 def check_duplicate(request):
@@ -118,6 +144,7 @@ def check_duplicate(request):
     except Exception as e:
         return JsonResponse({'exists': False, 'error': str(e)})
 
+
 @require_http_methods(["POST"])
 def test_connection(request):
     try:
@@ -125,10 +152,7 @@ def test_connection(request):
         address = data.get('address', '').strip()
         
         if not address:
-            return JsonResponse({
-                'success': False,
-                'message': 'No address provided'
-            })
+            return JsonResponse({'success': False, 'message': 'No address provided'})
         
         pattern = r'^(smp|xftp)://[^@]+@([^:]+):?(\d+)?$'
         match = re.match(pattern, address)
@@ -187,15 +211,9 @@ def test_connection(request):
             })
             
     except json.JSONDecodeError:
-        return JsonResponse({
-            'success': False,
-            'message': 'Invalid JSON'
-        }, status=400)
+        return JsonResponse({'success': False, 'message': 'Invalid JSON'}, status=400)
     except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Error: {str(e)}'
-        }, status=500)
+        return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
 
 
 def test_direct(host, port, timeout=10):
@@ -238,3 +256,53 @@ def test_via_tor(host, port, timeout=30):
         return False, 'Connection timeout (Tor can be slow, try again)'
     except Exception as e:
         return False, str(e)
+
+
+# =============================================================================
+# CATEGORY VIEWS
+# =============================================================================
+
+def category_list(request):
+    categories = Category.objects.all()
+    return render(request, 'servers/categories/list.html', {'categories': categories})
+
+
+def category_detail(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    servers = category.servers.all()
+    return render(request, 'servers/categories/detail.html', {'category': category, 'servers': servers})
+
+
+@require_http_methods(["GET", "POST"])
+def category_create(request):
+    if request.method == 'POST':
+        max_order = Category.objects.aggregate(Max('sort_order'))['sort_order__max'] or 0
+        Category.objects.create(
+            name=request.POST.get('name'),
+            description=request.POST.get('description', ''),
+            color=request.POST.get('color', '#0ea5e9'),
+            sort_order=max_order + 1
+        )
+        return redirect('servers:category_list')
+    return render(request, 'servers/categories/form.html', {'category': None})
+
+
+@require_http_methods(["GET", "POST"])
+def category_edit(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    if request.method == 'POST':
+        category.name = request.POST.get('name')
+        category.description = request.POST.get('description', '')
+        category.color = request.POST.get('color', '#0ea5e9')
+        category.save()
+        return redirect('servers:category_list')
+    return render(request, 'servers/categories/form.html', {'category': category})
+
+
+@require_http_methods(["POST"])
+def category_delete(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    category.delete()
+    if request.htmx:
+        return HttpResponse('')
+    return redirect('servers:category_list')
