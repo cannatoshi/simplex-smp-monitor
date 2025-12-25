@@ -1,142 +1,475 @@
 {% extends 'base.html' %}
+
 {% block title %}{% if server %}Edit{% else %}Add{% endif %} Server - SimpleX SMP Monitor{% endblock %}
+
 {% block content %}
-<div class="max-w-2xl mx-auto" x-data="serverTest()">
+<div class="max-w-5xl mx-auto" x-data="serverForm()">
     <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">
-        {% if server %}
-        <span x-show="lang === 'en'">Edit Server</span>
-        <span x-show="lang === 'de'" x-cloak>Server bearbeiten</span>
-        {% else %}
-        <span x-show="lang === 'en'">Add Server</span>
-        <span x-show="lang === 'de'" x-cloak>Server hinzufügen</span>
-        {% endif %}
+        {% if server %}Edit Server{% else %}Add Server{% endif %}
     </h1>
-    <form method="post" @submit="return !isDuplicate" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+
+    <form method="post" @submit="return !isDuplicate">
         {% csrf_token %}
+        
+        <!-- Hidden fields for test results -->
         <input type="hidden" name="test_status" :value="testResult === 'success' ? 'online' : ''">
         <input type="hidden" name="test_latency" :value="testLatency || ''">
-        <div class="space-y-5">
-            <div>
-                <label class="block text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Name</label>
-                <input type="text" name="name" value="{{ server.name|default:'' }}" required placeholder="e.g. SMP Server 1" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white placeholder-slate-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
-            </div>
-            <div>
-                <label class="block text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Server Type</label>
-                <select name="server_type" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
-                    <option value="smp" {% if server.server_type == 'smp' %}selected{% endif %}>SMP (Messaging)</option>
-                    <option value="xftp" {% if server.server_type == 'xftp' %}selected{% endif %}>XFTP (File Transfer)</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Server Address</label>
-                <textarea name="address" rows="3" required x-model="address" @input.debounce.500ms="checkAddress()" placeholder="smp://fingerprint:password@address.onion" :class="isDuplicate ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-300 dark:border-slate-700'" class="w-full bg-slate-50 dark:bg-slate-800 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white font-mono text-sm placeholder-slate-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">{{ server.address|default:'' }}</textarea>
-                <div x-show="isDuplicate" x-cloak class="mt-2 flex items-start space-x-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                    <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+
+        <!-- Tabs Navigation -->
+        <div class="mb-6 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+            <nav class="flex space-x-1 min-w-max" aria-label="Tabs">
+                <button type="button" @click="activeTab = 'basic'"
+                        :class="activeTab === 'basic' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                        class="px-4 py-2.5 border-b-2 font-medium text-sm transition-colors rounded-t-lg flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/>
+                    </svg>
+                    <span>Basic</span>
+                </button>
+                <button type="button" @click="activeTab = 'monitoring'"
+                        :class="activeTab === 'monitoring' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                        class="px-4 py-2.5 border-b-2 font-medium text-sm transition-colors rounded-t-lg flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <span>Monitoring</span>
+                </button>
+                <button type="button" @click="activeTab = 'ssh'"
+                        :class="activeTab === 'ssh' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                        class="px-4 py-2.5 border-b-2 font-medium text-sm transition-colors rounded-t-lg flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span>SSH</span>
+                </button>
+                <button type="button" @click="activeTab = 'control'"
+                        :class="activeTab === 'control' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                        class="px-4 py-2.5 border-b-2 font-medium text-sm transition-colors rounded-t-lg flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>Control Port</span>
+                </button>
+                <button type="button" @click="activeTab = 'telegraf'"
+                        :class="activeTab === 'telegraf' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                        class="px-4 py-2.5 border-b-2 font-medium text-sm transition-colors rounded-t-lg flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                    </svg>
+                    <span>Telegraf</span>
+                </button>
+                {% if server %}
+                <button type="button" @click="activeTab = 'simplex'"
+                        :class="activeTab === 'simplex' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                        class="px-4 py-2.5 border-b-2 font-medium text-sm transition-colors rounded-t-lg flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                    </svg>
+                    <span>SimpleX Config</span>
+                </button>
+                <button type="button" @click="activeTab = 'stats'"
+                        :class="activeTab === 'stats' ? 'border-primary-500 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'"
+                        class="px-4 py-2.5 border-b-2 font-medium text-sm transition-colors rounded-t-lg flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Statistics</span>
+                </button>
+                {% endif %}
+            </nav>
+        </div>
+
+        <!-- TAB: Basic Info -->
+        <div x-show="activeTab === 'basic'" class="space-y-6">
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Server Details</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <p class="text-sm font-medium text-amber-800 dark:text-amber-300">Duplicate detected!</p>
-                        <p class="text-xs text-amber-600 dark:text-amber-400 mt-1" x-text="duplicateMessage"></p>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name *</label>
+                        <input type="text" name="name" required value="{{ server.name|default:'' }}"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Server Type</label>
+                        <select name="server_type" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                            <option value="smp" {% if server.server_type == 'smp' %}selected{% endif %}>SMP (Messaging)</option>
+                            <option value="xftp" {% if server.server_type == 'xftp' %}selected{% endif %}>XFTP (File Transfer)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Location</label>
+                        <input type="text" name="location" value="{{ server.location|default:'' }}" placeholder="Berlin, Rack 2"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Priority (1-10)</label>
+                        <input type="number" name="priority" value="{{ server.priority|default:5 }}" min="1" max="10"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
                     </div>
                 </div>
-                <div class="mt-2 flex items-center space-x-2" x-show="isOnion && !isDuplicate" x-cloak>
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">🧅 Onion Address detected</span>
-                    <span class="text-xs text-slate-500 dark:text-slate-400">Test will use Tor network</span>
+
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Server Address *</label>
+                    <textarea name="address" rows="2" required x-model="address" @input.debounce.500ms="checkAddress()"
+                              placeholder="smp://fingerprint:password@host.onion"
+                              :class="isDuplicate ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-300 dark:border-slate-700'"
+                              class="w-full bg-slate-50 dark:bg-slate-800 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white font-mono text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">{{ server.address|default:'' }}</textarea>
+                    
+                    <div x-show="isDuplicate" x-cloak class="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                        <p class="text-sm text-amber-800 dark:text-amber-300"><strong>Duplicate:</strong> <span x-text="duplicateMessage"></span></p>
+                    </div>
+                    <div class="mt-2 flex items-center space-x-2" x-show="isOnion && !isDuplicate" x-cloak>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">🧅 Onion Address</span>
+                        <span class="text-xs text-slate-500">Default timeout: 120s</span>
+                    </div>
                 </div>
-            </div>
-            {% if categories %}
-            <div>
-                <label class="block text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Categories</label>
-                <div class="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
-                    {% for category in categories %}
-                    <label class="flex items-center space-x-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded-lg transition-colors">
-                        <input type="checkbox" name="categories" value="{{ category.pk }}" {% if server and category in server.categories.all %}checked{% endif %} class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-3 h-3 rounded-full" style="background-color: {{ category.color }};"></div>
-                            <span class="text-slate-700 dark:text-slate-300 text-sm">{{ category.name }}</span>
-                            <span class="text-xs text-slate-500">({{ category.server_count }})</span>
+
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
+                    <textarea name="description" rows="2" placeholder="Notes about this server..."
+                              class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">{{ server.description|default:'' }}</textarea>
+                </div>
+
+                {% if categories %}
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Categories</label>
+                    <div class="flex flex-wrap gap-2">
+                        {% for category in categories %}
+                        <label class="inline-flex items-center space-x-2 cursor-pointer px-3 py-1.5 rounded-full border transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                               style="border-color: {{ category.color }}40;">
+                            <input type="checkbox" name="categories" value="{{ category.pk }}"
+                                   {% if server and category in server.categories.all %}checked{% endif %}
+                                   class="rounded text-primary-600 focus:ring-primary-500">
+                            <span class="w-2.5 h-2.5 rounded-full" style="background-color: {{ category.color }};"></span>
+                            <span class="text-sm text-slate-700 dark:text-slate-300">{{ category.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700 flex flex-wrap gap-6">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" name="is_active" {% if server.is_active or not server %}checked{% endif %}
+                               class="w-5 h-5 rounded text-primary-600 focus:ring-primary-500">
+                        <div>
+                            <span class="text-slate-700 dark:text-slate-300 font-medium">Active</span>
+                            <p class="text-xs text-slate-500">Include in monitoring</p>
                         </div>
                     </label>
-                    {% endfor %}
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" name="maintenance_mode" {% if server.maintenance_mode %}checked{% endif %}
+                               class="w-5 h-5 rounded text-amber-600 focus:ring-amber-500">
+                        <div>
+                            <span class="text-slate-700 dark:text-slate-300 font-medium">Maintenance</span>
+                            <p class="text-xs text-slate-500">Temporarily exclude</p>
+                        </div>
+                    </label>
                 </div>
-                <p class="text-slate-500 text-xs mt-1.5">Select one or more categories (optional)</p>
             </div>
-            {% else %}
-            <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                <p class="text-sm text-slate-500 dark:text-slate-400">No categories yet. <a href="{% url 'servers:category_create' %}" class="text-primary-600 dark:text-primary-400 hover:underline ml-1">Create one?</a></p>
-            </div>
-            {% endif %}
-            <div class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50 dark:bg-slate-800/50">
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300">Connection Test</h3>
-                    <button type="button" @click="testConnection()" :disabled="!address || testing || isDuplicate" class="inline-flex items-center space-x-2 bg-slate-700 dark:bg-slate-600 hover:bg-slate-800 dark:hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded-lg transition-colors text-sm font-medium">
+
+            <!-- Connection Test -->
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center space-x-2">
+                        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        <span>Connection Test</span>
+                    </h2>
+                    <button type="button" @click="testConnection()" :disabled="!address || testing || isDuplicate"
+                            class="inline-flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <svg x-show="!testing" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        <svg x-show="testing" x-cloak class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        <span x-show="!testing">Test Connection</span>
-                        <span x-show="testing" x-cloak>Testing...</span>
+                        <svg x-show="testing" x-cloak class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        <span x-text="testing ? 'Testing...' : 'Test Now'"></span>
                     </button>
                 </div>
                 <div x-show="testResult !== null" x-cloak>
-                    <div x-show="testResult === 'success'" class="flex items-start space-x-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
-                        <svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <div>
-                            <p class="text-sm font-medium text-emerald-800 dark:text-emerald-300">Connection successful!</p>
-                            <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-1"><span x-text="testMessage"></span><span x-show="testLatency"> · <span x-text="testLatency"></span>ms</span></p>
-                        </div>
+                    <div x-show="testResult === 'success'" class="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                        <p class="font-medium text-emerald-800 dark:text-emerald-300">✓ Connection successful! <span class="font-mono" x-show="testLatency">(<span x-text="testLatency"></span>ms)</span></p>
+                        <p class="text-sm text-emerald-600 dark:text-emerald-400 mt-1">✓ Test results will be saved when you submit the form</p>
                     </div>
-                    <div x-show="testResult === 'error'" class="flex items-start space-x-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                        <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        <div>
-                            <p class="text-sm font-medium text-red-800 dark:text-red-300">Connection failed</p>
-                            <p class="text-xs text-red-600 dark:text-red-400 mt-1" x-text="testMessage"></p>
-                        </div>
+                    <div x-show="testResult === 'error'" class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <p class="font-medium text-red-800 dark:text-red-300">✗ Connection failed</p>
+                        <p class="text-sm text-red-600 dark:text-red-400 mt-1" x-text="testMessage"></p>
                     </div>
-                    <div x-show="usedTor" class="mt-2 flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400"><span>🧅</span><span>Tested via Tor network</span></div>
                 </div>
-                <div x-show="testResult === null && !testing" class="text-xs text-slate-500 dark:text-slate-400">Click "Test Connection" to verify server connectivity.</div>
-            </div>
-            <div class="flex items-center space-x-3">
-                <input type="checkbox" name="is_active" id="is_active" {% if server.is_active or not server %}checked{% endif %} class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500">
-                <label for="is_active" class="text-slate-700 dark:text-slate-300 text-sm">Enable server</label>
             </div>
         </div>
-        <div class="mt-6 flex space-x-3">
-            <button type="submit" :disabled="isDuplicate" :class="isDuplicate ? 'bg-slate-400 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700'" class="text-white px-5 py-2.5 rounded-lg transition-colors font-medium">{% if server %}Save Changes{% else %}Add Server{% endif %}</button>
-            <a href="{% url 'servers:list' %}" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-5 py-2.5 rounded-lg transition-colors font-medium">Cancel</a>
+
+        <!-- TAB: Monitoring -->
+        <div x-show="activeTab === 'monitoring'" x-cloak class="space-y-6">
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Test Configuration</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Custom Timeout (sec)</label>
+                        <input type="number" name="custom_timeout" value="{{ server.custom_timeout|default:'' }}" placeholder="Leave empty for default" min="1" max="600"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                        <p class="text-xs text-slate-500 mt-1">Default: 30s clearnet, 120s onion</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">SLA Targets</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Expected Uptime (%)</label>
+                        <input type="number" name="expected_uptime" value="{{ server.expected_uptime|default:99 }}" min="0" max="100"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Latency (ms)</label>
+                        <input type="number" name="max_latency" value="{{ server.max_latency|default:5000 }}" min="100" max="60000"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: SSH Access -->
+        <div x-show="activeTab === 'ssh'" x-cloak class="space-y-6">
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">SSH Connection</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Configure SSH for remote server management.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SSH Host</label>
+                        <input type="text" name="ssh_host" value="{{ server.ssh_host|default:'' }}" placeholder="192.168.1.100"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SSH Port</label>
+                        <input type="number" name="ssh_port" value="{{ server.ssh_port|default:22 }}" min="1" max="65535"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SSH Username</label>
+                        <input type="text" name="ssh_user" value="{{ server.ssh_user|default:'' }}" placeholder="pi, root"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SSH Key Path</label>
+                        <input type="text" name="ssh_key_path" value="{{ server.ssh_key_path|default:'' }}" placeholder="~/.ssh/id_rsa"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Remote Paths</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Config Directory</label>
+                        <input type="text" name="simplex_config_path" value="{{ server.simplex_config_path|default:'/etc/opt/simplex' }}"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white font-mono text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data Directory</label>
+                        <input type="text" name="simplex_data_path" value="{{ server.simplex_data_path|default:'/var/opt/simplex' }}"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white font-mono text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Control Port -->
+        <div x-show="activeTab === 'control'" x-cloak class="space-y-6">
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">SimpleX Control Port</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Access real-time server statistics (default: 5224).</p>
+                <div class="mb-4">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" name="control_port_enabled" {% if server.control_port_enabled %}checked{% endif %}
+                               class="w-5 h-5 rounded text-primary-600 focus:ring-primary-500">
+                        <span class="text-slate-700 dark:text-slate-300 font-medium">Control Port Enabled</span>
+                    </label>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Control Port</label>
+                        <input type="number" name="control_port" value="{{ server.control_port|default:5224 }}" min="1" max="65535"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Admin Password</label>
+                        <input type="password" name="control_port_admin_password" value="{{ server.control_port_admin_password|default:'' }}"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">User Password</label>
+                        <input type="password" name="control_port_user_password" value="{{ server.control_port_user_password|default:'' }}"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Telegraf -->
+        <div x-show="activeTab === 'telegraf'" x-cloak class="space-y-6">
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">Telegraf Metrics</h2>
+                <div class="mb-4">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" name="telegraf_enabled" {% if server.telegraf_enabled %}checked{% endif %}
+                               class="w-5 h-5 rounded text-primary-600 focus:ring-primary-500">
+                        <span class="text-slate-700 dark:text-slate-300 font-medium">Enable Telegraf Metrics</span>
+                    </label>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Collection Interval (sec)</label>
+                        <input type="number" name="telegraf_interval" value="{{ server.telegraf_interval|default:10 }}" min="1" max="3600"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">InfluxDB Connection</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">InfluxDB URL</label>
+                        <input type="text" name="influxdb_url" value="{{ server.influxdb_url|default:'http://localhost:8086' }}"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">API Token</label>
+                        <input type="password" name="influxdb_token" value="{{ server.influxdb_token|default:'' }}"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Organization</label>
+                        <input type="text" name="influxdb_org" value="{{ server.influxdb_org|default:'simplex' }}"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Bucket</label>
+                        <input type="text" name="influxdb_bucket" value="{{ server.influxdb_bucket|default:'simplex-metrics' }}"
+                               class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: SimpleX Config (only edit) -->
+        {% if server %}
+        <div x-show="activeTab === 'simplex'" x-cloak class="space-y-6">
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">SimpleX Server Configuration</h2>
+                <p class="text-sm text-slate-500 mb-4">Read-only values from server (requires SSH access to sync)</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Version</label>
+                        <input type="text" value="{{ server.simplex_version|default:'-' }}" readonly
+                               class="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-600 dark:text-slate-400">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fingerprint</label>
+                        <input type="text" value="{{ server.fingerprint|default:'-' }}" readonly
+                               class="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-600 dark:text-slate-400 font-mono text-xs">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Statistics (only edit) -->
+        <div x-show="activeTab === 'stats'" x-cloak class="space-y-6">
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Test Statistics</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-center">
+                        <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ server.total_checks }}</p>
+                        <p class="text-sm text-slate-500">Total Checks</p>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-center">
+                        <p class="text-2xl font-bold text-emerald-600">{{ server.successful_checks }}</p>
+                        <p class="text-sm text-slate-500">Successful</p>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-center">
+                        <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ server.uptime_percent|default:'-' }}%</p>
+                        <p class="text-sm text-slate-500">Uptime</p>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 text-center">
+                        <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ server.avg_latency|default:'-' }}ms</p>
+                        <p class="text-sm text-slate-500">Avg Latency</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="mt-6 flex items-center justify-between">
+            <a href="{% url 'servers:list' %}" class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">← Back</a>
+            <div class="flex space-x-3">
+                <a href="{% url 'servers:list' %}" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-5 py-2.5 rounded-lg font-medium">Cancel</a>
+                <button type="submit" :disabled="isDuplicate" :class="isDuplicate ? 'bg-slate-400' : 'bg-primary-600 hover:bg-primary-700'" class="text-white px-5 py-2.5 rounded-lg font-medium">
+                    {% if server %}Save Changes{% else %}Add Server{% endif %}
+                </button>
+            </div>
         </div>
     </form>
 </div>
+
 <script>
-function serverTest() {
+function serverForm() {
     return {
+        activeTab: 'basic',
         address: '{{ server.address|default:""|escapejs }}',
         isOnion: '{{ server.address|default:""|escapejs }}'.includes('.onion'),
-        testing: false, testResult: null, testMessage: '', testLatency: null, usedTor: false, isDuplicate: false, duplicateMessage: '',
+        testing: false,
+        testResult: null,
+        testMessage: '',
+        testLatency: null,
+        isDuplicate: false,
+        duplicateMessage: '',
         serverId: {{ server.pk|default:"null" }},
+
         async checkAddress() {
             this.isOnion = this.address.includes('.onion');
             this.testResult = null;
-            if (this.address.length > 10) await this.checkDuplicate();
-            else this.isDuplicate = false;
+            if (this.address.length > 10) {
+                await this.checkDuplicate();
+            } else {
+                this.isDuplicate = false;
+            }
         },
+
         async checkDuplicate() {
             try {
-                const response = await fetch('{% url "servers:check_duplicate" %}', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'}, body: JSON.stringify({address: this.address, exclude_id: this.serverId})});
+                const response = await fetch('{% url "servers:check_duplicate" %}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ address: this.address, exclude_id: this.serverId })
+                });
                 const data = await response.json();
                 this.isDuplicate = data.exists;
                 this.duplicateMessage = data.message || '';
-            } catch (error) { this.isDuplicate = false; }
+            } catch (error) {
+                this.isDuplicate = false;
+            }
         },
+
         async testConnection() {
             if (!this.address || this.isDuplicate) return;
-            this.testing = true; this.testResult = null;
+            this.testing = true;
+            this.testResult = null;
             try {
-                const response = await fetch('{% url "servers:test_connection" %}', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'}, body: JSON.stringify({address: this.address})});
+                const response = await fetch('{% url "servers:test_connection" %}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ address: this.address })
+                });
                 const data = await response.json();
                 this.testResult = data.success ? 'success' : 'error';
                 this.testMessage = data.message;
                 this.testLatency = data.latency || null;
-                this.usedTor = data.used_tor || false;
-            } catch (error) { this.testResult = 'error'; this.testMessage = 'Request failed: ' + error.message; }
-            finally { this.testing = false; }
+            } catch (error) {
+                this.testResult = 'error';
+                this.testMessage = 'Request failed: ' + error.message;
+            } finally {
+                this.testing = false;
+            }
         }
     }
 }
