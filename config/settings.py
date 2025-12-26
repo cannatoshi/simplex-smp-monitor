@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'servers',
     'stresstests',
     'events',
+    'clients',
 ]
 
 MIDDLEWARE = [

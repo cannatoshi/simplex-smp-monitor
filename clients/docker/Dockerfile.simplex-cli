@@ -1,0 +1,70 @@
+# SimpleX CLI Client Docker Image
+# Für Multi-Client Testing mit WebSocket API
+#
+# Build: docker build -t simplex-cli:latest -f docker/Dockerfile.simplex-cli .
+# Run:   docker run -d -p 3031:3030 -v client-data:/data simplex-cli:latest
+
+FROM debian:bookworm-slim
+
+LABEL maintainer="cannatoshi"
+LABEL description="SimpleX Chat CLI for automated testing"
+LABEL org.opencontainers.image.source="https://github.com/cannatoshi/simplex-smp-monitor"
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    netcat-openbsd socat \
+    tor \
+    torsocks \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install simplex-chat CLI
+# Using the official install script
+RUN curl -sSL https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-22_04-x86_64 \
+    -o /usr/local/bin/simplex-chat \
+    && chmod +x /usr/local/bin/simplex-chat
+
+# Alternative for ARM64 (Raspberry Pi):
+# RUN curl -sSL https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-22_04-aarch64 \
+#     -o /usr/local/bin/simplex-chat \
+#     && chmod +x /usr/local/bin/simplex-chat
+
+# Create data directory
+RUN mkdir -p /data && chmod 755 /data
+
+# Create non-root user
+RUN useradd -r -s /bin/false simplex \
+    && chown -R simplex:simplex /data
+
+# Tor configuration for SOCKS5 proxy
+RUN echo "SocksPort 9050" >> /etc/tor/torrc \
+    && echo "SocksPolicy accept 127.0.0.1" >> /etc/tor/torrc
+
+# Copy entrypoint script
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Environment variables
+ENV SIMPLEX_PORT=3030
+ENV USE_TOR=false
+ENV SMP_SERVERS=""
+ENV PROFILE_NAME=""
+
+# Data volume
+VOLUME /data
+
+# Expose WebSocket port
+EXPOSE 3030
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+    CMD nc -z localhost ${SIMPLEX_PORT} || exit 1
+
+# Run as non-root
+# USER simplex
+
+ENTRYPOINT ["/entrypoint.sh"]

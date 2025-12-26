@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}CLI Clients{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white">SimpleX CLI Clients</h1>
+            <p class="text-gray-400 mt-1">Docker-basierte Test-Clients für Nachrichtenaustausch</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'clients:test_panel' %}" 
+               class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                Test Panel
+            </a>
+            <a href="{% url 'clients:create' %}" 
+               class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Neuer Client
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div class="text-gray-400 text-sm">Gesamt</div>
+            <div class="text-2xl font-bold text-white">{{ stats.total }}</div>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div class="text-gray-400 text-sm">Aktiv</div>
+            <div class="text-2xl font-bold text-green-400">{{ stats.running }}</div>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div class="text-gray-400 text-sm">Gestoppt</div>
+            <div class="text-2xl font-bold text-gray-400">{{ stats.stopped }}</div>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div class="text-gray-400 text-sm">Fehler</div>
+            <div class="text-2xl font-bold text-red-400">{{ stats.error }}</div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions (wenn Clients ausgewählt) -->
+    <form id="bulk-form" method="post" class="hidden" x-data="{ selectedClients: [] }">
+        {% csrf_token %}
+        <div class="bg-gray-800 rounded-lg p-4 border border-cyan-500 flex items-center justify-between">
+            <span class="text-white">
+                <span x-text="selectedClients.length"></span> Clients ausgewählt
+            </span>
+            <div class="flex gap-2">
+                <button type="submit" formaction="{% url 'clients:bulk_start' %}"
+                        class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition-colors text-sm">
+                    Alle starten
+                </button>
+                <button type="submit" formaction="{% url 'clients:bulk_stop' %}"
+                        class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded transition-colors text-sm">
+                    Alle stoppen
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Client Liste -->
+    {% if clients %}
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {% for client in clients %}
+        <div class="bg-gray-800 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors overflow-hidden">
+            <!-- Header -->
+            <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <!-- Status Indicator -->
+                    <div class="relative">
+                        {% if client.status == 'running' %}
+                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div class="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping opacity-75"></div>
+                        {% elif client.status == 'error' %}
+                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                        {% elif client.status == 'starting' or client.status == 'stopping' %}
+                        <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+                        {% else %}
+                        <div class="w-3 h-3 bg-gray-500 rounded-full"></div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-white">{{ client.name }}</h3>
+                        <p class="text-xs text-gray-500">{{ client.slug }}</p>
+                    </div>
+                </div>
+                <span class="px-2 py-1 text-xs rounded 
+                    {% if client.status == 'running' %}bg-green-500/20 text-green-400
+                    {% elif client.status == 'error' %}bg-red-500/20 text-red-400
+                    {% elif client.status == 'starting' or client.status == 'stopping' %}bg-yellow-500/20 text-yellow-400
+                    {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                    {{ client.get_status_display }}
+                </span>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-400">Port</span>
+                    <span class="text-white font-mono">{{ client.websocket_port }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-400">Verbindungen</span>
+                    <span class="text-white">{{ client.connection_count }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-400">Nachrichten</span>
+                    <span class="text-white">
+                        <span class="text-green-400">↑{{ client.messages_sent }}</span>
+                        <span class="text-gray-500 mx-1">/</span>
+                        <span class="text-cyan-400">↓{{ client.messages_received }}</span>
+                    </span>
+                </div>
+                {% if client.use_tor %}
+                <div class="flex items-center gap-2 text-sm">
+                    <svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                    </svg>
+                    <span class="text-purple-400">Tor</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Actions -->
+            <div class="p-4 border-t border-gray-700 flex justify-between">
+                <a href="{% url 'clients:detail' client.slug %}" 
+                   class="text-cyan-400 hover:text-cyan-300 text-sm flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Details
+                </a>
+                <div class="flex gap-2">
+                    {% if client.status == 'running' %}
+                    <form method="post" action="{% url 'clients:stop' client.slug %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-colors"
+                                title="Stoppen">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
+                            </svg>
+                        </button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'clients:start' client.slug %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="p-1.5 text-green-400 hover:bg-green-500/20 rounded transition-colors"
+                                title="Starten">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </button>
+                    </form>
+                    {% endif %}
+                    <a href="{% url 'clients:delete' client.slug %}" 
+                       class="p-1.5 text-gray-400 hover:bg-red-500/20 hover:text-red-400 rounded transition-colors"
+                       title="Löschen">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-gray-800 rounded-lg border border-gray-700 p-12 text-center">
+        <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        <h3 class="text-lg font-semibold text-white mb-2">Keine Clients vorhanden</h3>
+        <p class="text-gray-400 mb-6">Erstelle deinen ersten SimpleX CLI Client zum Testen.</p>
+        <a href="{% url 'clients:create' %}" 
+           class="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Ersten Client erstellen
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Port Info -->
+    {% if available_ports %}
+    <div class="text-sm text-gray-500">
+        Nächste freie Ports: 
+        {% for port in available_ports %}
+            <span class="font-mono text-gray-400">{{ port }}</span>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

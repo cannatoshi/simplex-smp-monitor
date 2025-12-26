@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Edit{% else %}New{% endif %} Client - SimpleX SMP Monitor{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-6">
+        <a href="{% url 'clients:list' %}" class="text-slate-500 hover:text-slate-700 text-sm inline-flex items-center space-x-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span>Back to Clients</span>
+        </a>
+    </div>
+
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">{{ title }}</h1>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Auto-Generation Info -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+            <div class="flex items-start space-x-3">
+                <svg class="w-6 h-6 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <div>
+                    <p class="font-medium text-blue-900 dark:text-blue-300">Automatic Generation</p>
+                    <p class="text-sm text-blue-700 dark:text-blue-400 mt-1">
+                        Name, Slug and Profile are generated automatically.<br>
+                        Example: "Client 001" / "client-001" / "alice"
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Docker Configuration -->
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Docker Configuration</h2>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">WebSocket Port *</label>
+                <select name="websocket_port" required
+                        class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    {% for value, label in form.fields.websocket_port.choices %}
+                    <option value="{{ value }}" {% if form.fields.websocket_port.initial == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                {% if form.websocket_port.errors %}
+                <p class="mt-1 text-sm text-red-500">{{ form.websocket_port.errors.0 }}</p>
+                {% endif %}
+                <p class="text-xs text-slate-500 mt-1">Port for WebSocket connection (3031-3080)</p>
+            </div>
+        </div>
+
+        <!-- SimpleX Configuration -->
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">SimpleX Configuration</h2>
+            
+            <div class="space-y-4">
+                <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" name="use_tor" {% if form.use_tor.value %}checked{% endif %}
+                           class="w-5 h-5 rounded bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500">
+                    <div>
+                        <span class="text-slate-700 dark:text-slate-300 font-medium">Use Tor</span>
+                        <p class="text-xs text-slate-500">Connect via SOCKS5 proxy (localhost:9050)</p>
+                    </div>
+                </label>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">SMP Servers</label>
+                    {% if form.smp_servers.field.queryset.exists %}
+                    <div class="space-y-2 max-h-48 overflow-y-auto bg-slate-50 dark:bg-slate-800 rounded-lg p-3 border border-slate-300 dark:border-slate-700">
+                        {% for checkbox in form.smp_servers %}
+                        <label class="flex items-center space-x-3 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg cursor-pointer transition-colors">
+                            {{ checkbox.tag }}
+                            <span class="text-sm text-slate-700 dark:text-slate-300">{{ checkbox.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-300 dark:border-slate-700">
+                        <p class="text-sm text-slate-500 italic">No SMP servers configured</p>
+                        <a href="{% url 'servers:create' %}" class="text-primary-600 hover:underline text-sm">Add server →</a>
+                    </div>
+                    {% endif %}
+                    <p class="text-xs text-slate-500 mt-1">Which SMP servers should this client use?</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Description -->
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Additional</h2>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
+                <textarea name="description" rows="3" placeholder="Optional notes about this client..."
+                          class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">{{ form.description.value|default:'' }}</textarea>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-between">
+            <a href="{% url 'clients:list' %}" class="text-slate-600 dark:text-slate-400 hover:text-slate-900">← Back</a>
+            <div class="flex space-x-3">
+                <a href="{% url 'clients:list' %}" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-5 py-2.5 rounded-lg font-medium">Cancel</a>
+                <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg font-medium">
+                    {{ submit_text }}
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,518 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <div>
+            <a href="{% url 'clients:list' %}" class="text-gray-400 hover:text-white text-sm flex items-center gap-1 mb-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Alle Clients
+            </a>
+            <div class="flex items-center gap-3">
+                <!-- Status Indicator -->
+                <div class="relative">
+                    {% if client.status == 'running' %}
+                    <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+                    <div class="absolute inset-0 w-4 h-4 bg-green-500 rounded-full animate-ping opacity-75"></div>
+                    {% elif client.status == 'error' %}
+                    <div class="w-4 h-4 bg-red-500 rounded-full"></div>
+                    {% elif client.status == 'starting' or client.status == 'stopping' %}
+                    <div class="w-4 h-4 bg-yellow-500 rounded-full animate-pulse"></div>
+                    {% else %}
+                    <div class="w-4 h-4 bg-gray-500 rounded-full"></div>
+                    {% endif %}
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">{{ client.name }}</h1>
+                    <p class="text-gray-400">{{ client.slug }} · Port {{ client.websocket_port }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex flex-wrap gap-2">
+            {% if client.status == 'running' %}
+            <form method="post" action="{% url 'clients:stop' client.slug %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
+                    </svg>
+                    Stoppen
+                </button>
+            </form>
+            <form method="post" action="{% url 'clients:restart' client.slug %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Neustart
+                </button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'clients:start' client.slug %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Starten
+                </button>
+            </form>
+            {% endif %}
+            
+            <a href="{% url 'clients:edit' client.slug %}" 
+               class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Bearbeiten
+            </a>
+            
+            <a href="{% url 'clients:delete' client.slug %}" 
+               class="px-4 py-2 bg-gray-700 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Löschen
+            </a>
+        </div>
+    </div>
+
+    {% if client.last_error %}
+    <div class="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400">
+        <strong>Fehler:</strong> {{ client.last_error }}
+    </div>
+    {% endif %}
+
+    <div class="grid gap-6 lg:grid-cols-3">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Info Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                    <div class="text-gray-400 text-sm">Status</div>
+                    <div class="text-lg font-semibold 
+                        {% if client.status == 'running' %}text-green-400
+                        {% elif client.status == 'error' %}text-red-400
+                        {% else %}text-gray-400{% endif %}">
+                        {{ client.get_status_display }}
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                    <div class="text-gray-400 text-sm">Gesendet</div>
+                    <div class="text-lg font-semibold text-green-400">{{ client.messages_sent }}</div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                    <div class="text-gray-400 text-sm">Empfangen</div>
+                    <div class="text-lg font-semibold text-cyan-400">{{ client.messages_received }}</div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                    <div class="text-gray-400 text-sm">Erfolgsrate</div>
+                    <div class="text-lg font-semibold text-white">{{ client.delivery_success_rate|floatformat:1 }}%</div>
+                </div>
+            </div>
+
+            <!-- Connections -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-white">Verbindungen</h2>
+                    {% if client.is_running and other_running_clients %}
+                    <button onclick="document.getElementById('connect-modal').classList.remove('hidden')"
+                            class="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Neue Verbindung
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="divide-y divide-gray-700">
+                    {% for conn in connections %}
+                    <div class="p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-2 h-2 rounded-full 
+                                {% if conn.status == 'connected' %}bg-green-500
+                                {% elif conn.status == 'pending' or conn.status == 'connecting' %}bg-yellow-500
+                                {% else %}bg-red-500{% endif %}">
+                            </div>
+                            <div>
+                                {% if conn.client_a == client %}
+                                <span class="text-white">→ {{ conn.client_b.name }}</span>
+                                {% else %}
+                                <span class="text-white">← {{ conn.client_a.name }}</span>
+                                {% endif %}
+                                <span class="text-gray-500 text-sm ml-2">({{ conn.get_status_display }})</span>
+                            </div>
+                        </div>
+                        <form method="post" action="{% url 'clients:connection_delete' conn.pk %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-gray-400 hover:text-red-400 p-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 text-center text-gray-500">
+                        <p>Keine Verbindungen</p>
+                        {% if client.is_running and other_running_clients %}
+                        <button onclick="document.getElementById('connect-modal').classList.remove('hidden')"
+                                class="mt-2 text-cyan-400 hover:underline text-sm">
+                            Erste Verbindung erstellen →
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Container Logs -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-white">Container Logs</h2>
+                    <button onclick="refreshLogs()" class="text-sm text-cyan-400 hover:text-cyan-300">
+                        Aktualisieren
+                    </button>
+                </div>
+                <div id="logs-container" class="p-4 font-mono text-sm text-gray-300 bg-gray-900 max-h-64 overflow-y-auto">
+                    <p class="text-gray-500">Logs werden geladen...</p>
+                </div>
+            </div>
+
+            <!-- Nachrichten Section mit Tabellen -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-white">Nachrichten</h2>
+                    <div class="flex gap-1 bg-gray-900 rounded-lg p-1">
+                        <button onclick="showTab('sent')" id="tab-sent" 
+                                class="tab-btn px-3 py-1 rounded text-sm bg-gray-700 text-white">
+                            ↑ Gesendet
+                        </button>
+                        <button onclick="showTab('received')" id="tab-received"
+                                class="tab-btn px-3 py-1 rounded text-sm text-gray-400 hover:text-white">
+                            ↓ Empfangen
+                        </button>
+                        <button onclick="showTab('all')" id="tab-all"
+                                class="tab-btn px-3 py-1 rounded text-sm text-gray-400 hover:text-white">
+                            Alle
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Gesendet Tab - Tabelle -->
+                <div id="panel-sent" class="tab-panel max-h-96 overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead class="text-xs text-gray-400 uppercase bg-gray-900/50 sticky top-0">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Zeit</th>
+                                <th class="px-3 py-2 text-left">Empfänger</th>
+                                <th class="px-3 py-2 text-left">Nachricht</th>
+                                <th class="px-3 py-2 text-center">Status</th>
+                                <th class="px-3 py-2 text-right">Latenz</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-700">
+                            {% for msg in recent_messages %}
+                                {% if msg.sender == client %}
+                                <tr class="hover:bg-gray-700/50">
+                                    <td class="px-3 py-2 text-gray-400 whitespace-nowrap">{{ msg.sent_at|time:"H:i" }}</td>
+                                    <td class="px-3 py-2 text-white">{{ msg.recipient.name }}</td>
+                                    <td class="px-3 py-2 text-gray-300 truncate max-w-xs">{{ msg.content|truncatechars:40 }}</td>
+                                    <td class="px-3 py-2 text-center">
+                                        {% if msg.delivery_status == 'delivered' %}
+                                        <span class="text-green-400 font-bold" title="Zugestellt">✓✓</span>
+                                        {% elif msg.delivery_status == 'sent' %}
+                                        <span class="text-yellow-400" title="Server empfangen">✓</span>
+                                        {% elif msg.delivery_status == 'failed' %}
+                                        <span class="text-red-400" title="Fehlgeschlagen">✗</span>
+                                        {% else %}
+                                        <span class="text-gray-400 animate-pulse">⏳</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-3 py-2 text-right text-gray-500 text-xs">
+                                        {% if msg.total_latency_ms %}{{ msg.total_latency_ms }}ms{% else %}-{% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-3 py-8 text-center text-gray-500">Keine gesendeten Nachrichten</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Empfangen Tab - Tabelle -->
+                <div id="panel-received" class="tab-panel max-h-96 overflow-y-auto hidden">
+                    <table class="w-full text-sm">
+                        <thead class="text-xs text-gray-400 uppercase bg-gray-900/50 sticky top-0">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Zeit</th>
+                                <th class="px-3 py-2 text-left">Absender</th>
+                                <th class="px-3 py-2 text-left">Nachricht</th>
+                                <th class="px-3 py-2 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-700">
+                            {% for msg in recent_messages %}
+                                {% if msg.recipient == client %}
+                                <tr class="hover:bg-gray-700/50">
+                                    <td class="px-3 py-2 text-gray-400 whitespace-nowrap">{{ msg.sent_at|time:"H:i" }}</td>
+                                    <td class="px-3 py-2 text-white">{{ msg.sender.name }}</td>
+                                    <td class="px-3 py-2 text-gray-300 truncate max-w-xs">{{ msg.content|truncatechars:40 }}</td>
+                                    <td class="px-3 py-2 text-center">
+                                        <span class="text-green-400 font-bold" title="Empfangen">✓✓</span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-3 py-8 text-center text-gray-500">Keine empfangenen Nachrichten</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Alle Tab - Tabelle -->
+                <div id="panel-all" class="tab-panel max-h-96 overflow-y-auto hidden">
+                    <table class="w-full text-sm">
+                        <thead class="text-xs text-gray-400 uppercase bg-gray-900/50 sticky top-0">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Zeit</th>
+                                <th class="px-3 py-2 text-center">↕</th>
+                                <th class="px-3 py-2 text-left">Kontakt</th>
+                                <th class="px-3 py-2 text-left">Nachricht</th>
+                                <th class="px-3 py-2 text-center">Status</th>
+                                <th class="px-3 py-2 text-right">Latenz</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-700">
+                            {% for msg in recent_messages %}
+                            <tr class="hover:bg-gray-700/50">
+                                <td class="px-3 py-2 text-gray-400 whitespace-nowrap">{{ msg.sent_at|time:"H:i" }}</td>
+                                <td class="px-3 py-2 text-center">
+                                    {% if msg.sender == client %}
+                                    <span class="text-green-400">↑</span>
+                                    {% else %}
+                                    <span class="text-cyan-400">↓</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-white">
+                                    {% if msg.sender == client %}{{ msg.recipient.name }}{% else %}{{ msg.sender.name }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-gray-300 truncate max-w-xs">{{ msg.content|truncatechars:40 }}</td>
+                                <td class="px-3 py-2 text-center">
+                                    {% if msg.delivery_status == 'delivered' %}
+                                    <span class="text-green-400 font-bold">✓✓</span>
+                                    {% elif msg.delivery_status == 'sent' %}
+                                    <span class="text-yellow-400">✓</span>
+                                    {% elif msg.delivery_status == 'failed' %}
+                                    <span class="text-red-400">✗</span>
+                                    {% else %}
+                                    <span class="text-gray-400 animate-pulse">⏳</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right text-gray-500 text-xs">
+                                    {% if msg.total_latency_ms %}{{ msg.total_latency_ms }}ms{% else %}-{% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-3 py-8 text-center text-gray-500">Keine Nachrichten</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Quick Send -->
+            {% if client.is_running and connections %}
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="p-4 border-b border-gray-700">
+                    <h2 class="text-lg font-semibold text-white">Nachricht senden</h2>
+                </div>
+                <form method="post" action="{% url 'clients:quick_send' client.slug %}" class="p-4 space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="sender" value="{{ client.id }}">
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Empfänger</label>
+                        <select name="contact_name" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            {% for conn in connections %}
+                                {% if conn.client_a == client %}
+                                <option value="{{ conn.contact_name_on_a }}">{{ conn.client_b.name }} ({{ conn.contact_name_on_a }})</option>
+                                {% else %}
+                                <option value="{{ conn.contact_name_on_b }}">{{ conn.client_a.name }} ({{ conn.contact_name_on_b }})</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Nachricht</label>
+                        <textarea name="message" rows="3" 
+                                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                                  placeholder="Test message..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="w-full px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors">
+                        Senden
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Client Info -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="p-4 border-b border-gray-700">
+                    <h2 class="text-lg font-semibold text-white">Details</h2>
+                </div>
+                <div class="p-4 space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Container ID</span>
+                        <span class="text-white font-mono text-xs">{{ client.container_id|truncatechars:12 }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Container Name</span>
+                        <span class="text-white">{{ client.container_name }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Data Volume</span>
+                        <span class="text-white text-xs">{{ client.data_volume }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Profilname</span>
+                        <span class="text-white">{{ client.profile_name }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Tor</span>
+                        <span class="{% if client.use_tor %}text-purple-400{% else %}text-gray-500{% endif %}">
+                            {{ client.use_tor|yesno:"Aktiv,Deaktiviert" }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">WebSocket</span>
+                        <span class="text-cyan-400 font-mono">{{ client.websocket_url }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Erstellt</span>
+                        <span class="text-white">{{ client.created_at|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    {% if client.last_active_at %}
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Zuletzt aktiv</span>
+                        <span class="text-white">{{ client.last_active_at|timesince }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- SMP Servers -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="p-4 border-b border-gray-700">
+                    <h2 class="text-lg font-semibold text-white">SMP Server</h2>
+                </div>
+                <div class="p-4">
+                    {% if client.smp_servers.exists %}
+                    <ul class="space-y-2 text-sm">
+                        {% for server in client.smp_servers.all %}
+                        <li class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span class="text-white">{{ server.name }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-gray-500 text-sm">Keine Server zugewiesen</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Connect Modal -->
+<div id="connect-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-md mx-4">
+        <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-white">Neue Verbindung</h3>
+            <button onclick="document.getElementById('connect-modal').classList.add('hidden')" 
+                    class="text-gray-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form method="post" action="{% url 'clients:connect' client.slug %}" class="p-4 space-y-4">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Verbinden mit</label>
+                <select name="target_slug" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                    {% for other in other_running_clients %}
+                    <option value="{{ other.slug }}">{{ other.name }} ({{ other.profile_name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="flex gap-2 justify-end">
+                <button type="button" 
+                        onclick="document.getElementById('connect-modal').classList.add('hidden')"
+                        class="px-4 py-2 text-gray-400 hover:text-white">
+                    Abbrechen
+                </button>
+                <button type="submit" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg">
+                    Verbinden
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.add("hidden"));
+    document.querySelectorAll(".tab-btn").forEach(t => {
+        t.classList.remove("bg-gray-700", "text-white");
+        t.classList.add("text-gray-400");
+    });
+    document.getElementById("panel-" + tabName).classList.remove("hidden");
+    const activeTab = document.getElementById("tab-" + tabName);
+    activeTab.classList.add("bg-gray-700", "text-white");
+    activeTab.classList.remove("text-gray-400");
+}
+
+function refreshLogs() {
+    fetch('{% url "clients:logs" client.slug %}')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('logs-container').innerHTML = 
+                '<pre class="whitespace-pre-wrap">' + data.logs + '</pre>';
+        });
+}
+
+// Initial load
+refreshLogs();
+
+// Auto-refresh wenn Client läuft
+{% if client.is_running %}
+setInterval(refreshLogs, 5000);
+{% endif %}
+</script>
+{% endblock %}
