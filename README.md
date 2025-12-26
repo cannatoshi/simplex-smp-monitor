@@ -12,9 +12,9 @@
 
 A web-based monitoring dashboard and stress testing suite for self-hosted SimpleX SMP/XFTP relay infrastructure. Built for operators who need visibility into their private messaging servers.
 
-> **Version:** 0.1.6-alpha (26. December 2025)  
+> **Version:** 0.1.7-alpha (27. December 2025)  
 > **Status:** Active Development  
-> **Tested on:** Debian 12, Ubuntu 24.04, Raspberry Pi OS  
+> **Tested on:** Debian 12, Ubuntu 24.04, Raspberry Pi OS (64-bit)  
 > **Companion to:** [SimpleX Private Infrastructure Tutorial](https://github.com/cannatoshi/simplex-smp-xftp-via-tor-on-rpi-hardened)
 
 ---
@@ -24,8 +24,8 @@ A web-based monitoring dashboard and stress testing suite for self-hosted Simple
 > This project is in active development. Core features work, but expect rough edges.
 > Not recommended for production use without thorough testing.
 > 
-> ✅ **What works:** Server management, multi-type testing, Tor support, i18n system  
-> 🚧 **In progress:** InfluxDB metrics, Grafana dashboards, WebSocket updates
+> ✅ **What works:** Server management, multi-type testing, Tor support, i18n system, **CLI Clients with Delivery Receipts**  
+> 🚧 **In progress:** InfluxDB metrics, Grafana dashboards, WebSocket updates, Test Panel
 
 ---
 
@@ -41,29 +41,33 @@ A web-based monitoring dashboard and stress testing suite for self-hosted Simple
 5. [Prerequisites](#prerequisites)
 6. [Install System Dependencies](#1-install-system-dependencies)
 7. [Install Tor](#2-install-tor)
-8. [Clone Repository](#3-clone-repository)
-9. [Setup Python Environment](#4-setup-python-environment)
-10. [Initialize Database](#5-initialize-database)
-11. [Start the Server](#6-start-the-server)
+8. [Install Docker](#3-install-docker)
+9. [Clone Repository](#4-clone-repository)
+10. [Setup Python Environment](#5-setup-python-environment)
+11. [Initialize Database](#6-initialize-database)
+12. [Start the Server](#7-start-the-server)
+13. [Setup CLI Clients](#8-setup-cli-clients-new-in-v017)
+14. [Setup Event Listener Service](#9-setup-event-listener-service-new-in-v017)
 
 ### Configuration
-12. [Tor Configuration](#tor-configuration)
-13. [Environment Variables](#environment-variables)
-14. [Monitoring Stack (Optional)](#monitoring-stack-optional)
+15. [Tor Configuration](#tor-configuration)
+16. [Environment Variables](#environment-variables)
+17. [Monitoring Stack (Optional)](#monitoring-stack-optional)
 
 ### Usage
-15. [Adding Servers](#adding-servers)
-16. [Connection Testing](#connection-testing)
-17. [Multi-Type Testing](#multi-type-testing)
+18. [Adding Servers](#adding-servers)
+19. [Connection Testing](#connection-testing)
+20. [Multi-Type Testing](#multi-type-testing)
+21. [SimpleX CLI Clients - Complete Guide](#simplex-cli-clients---complete-guide)
 
 ### Development
-18. [Project Structure](#project-structure)
-19. [Tech Stack](#tech-stack)
-20. [Roadmap](#roadmap)
-21. [Contributing](#contributing)
-22. [Related Projects](#related-projects)
-23. [License](#license)
-24. [Changelog](#changelog)
+22. [Project Structure](#project-structure)
+23. [Tech Stack](#tech-stack)
+24. [Roadmap](#roadmap)
+25. [Contributing](#contributing)
+26. [Related Projects](#related-projects)
+27. [License](#license)
+28. [Changelog](#changelog)
 
 ---
 
@@ -75,6 +79,7 @@ If you run your own SimpleX SMP/XFTP servers (especially via Tor hidden services
 - **What's the latency?** Measure response times across your infrastructure  
 - **Are messages being delivered?** Run stress tests to verify reliability
 - **What's happening over time?** Historical metrics and visualizations
+- **Do messages actually arrive at recipients?** Track delivery receipts end-to-end *(NEW)*
 
 This tool provides a **single dashboard** to monitor, test, and analyze your SimpleX relay infrastructure.
 
@@ -87,15 +92,21 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 | "Are messages being delivered reliably?" | Stress testing with delivery verification |
 | "I have 10 servers, hard to track" | Central dashboard for all servers |
 | "I need historical data" | InfluxDB + Grafana integration |
+| "Do messages reach the recipient?" | CLI Clients with ✓/✓✓ delivery tracking *(NEW)* |
 
 ---
 
 ## Features
 
-### ✅ Implemented (v0.1.6-alpha)
+### ✅ Implemented (v0.1.7-alpha)
 
 | Feature | Description |
 |---------|-------------|
+| **🆕 SimpleX CLI Clients** | Docker-based test clients for end-to-end message delivery testing |
+| **🆕 Delivery Receipts** | Track message status: ✓ server received, ✓✓ client received |
+| **🆕 WebSocket Commands** | Real-time communication with SimpleX CLI via WebSocket API |
+| **🆕 Event Listener** | Background service for delivery confirmation events |
+| **🆕 Message Statistics** | Per-client sent/received counters with success rates |
 | **Multi-Type Test System** | Monitoring, Stress, and Latency tests with dedicated workflows |
 | **APScheduler Integration** | Automated test execution with configurable intervals |
 | **i18n Translation System** | Alpine.js based with JSON language files (EN/DE, 25 prepared) |
@@ -115,6 +126,8 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 
 | Feature | Status | Target |
 |---------|--------|--------|
+| **Test Panel** | UI Design | v0.2.0 |
+| **Mesh Connections** | Planned | v0.2.0 |
 | **InfluxDB Integration** | Configured | v0.2.0 |
 | **Grafana Dashboards** | Docker ready | v0.2.0 |
 | **WebSocket Live Updates** | Channels ready | v0.3.0 |
@@ -159,6 +172,11 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 │   │   │  App    │ │   App   │ │   App   │ │   App   │      │   │
 │   │   └─────────┘ └─────────┘ └─────────┘ └─────────┘      │   │
 │   │                                                         │   │
+│   │   ┌─────────┐                                           │   │
+│   │   │ Clients │  🆕 SimpleX CLI Test Clients              │   │
+│   │   │   App   │  Docker + WebSocket + Delivery Tracking   │   │
+│   │   └─────────┘                                           │   │
+│   │                                                         │   │
 │   │   ┌─────────────────────────────────────────────────┐   │   │
 │   │   │              Core Module                        │   │   │
 │   │   │   SimplexCLIManager  │  MetricsWriter          │   │   │
@@ -196,7 +214,7 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 | **Python** | 3.11+ | With pip and venv |
 | **Tor** | Latest | For .onion server testing |
 | **Git** | Any | For cloning repository |
-| **Docker** | Optional | For InfluxDB/Grafana stack |
+| **Docker** | 24.x+ | For CLI Clients and InfluxDB/Grafana stack |
 
 ---
 
@@ -256,7 +274,49 @@ Expected output:
 
 ---
 
-### 3. Clone Repository
+### 3. Install Docker
+
+Docker is required for the SimpleX CLI Clients feature (NEW in v0.1.7).
+
+**Debian/Ubuntu/Raspberry Pi OS:**
+```bash
+# Install Docker
+sudo apt install -y docker.io docker-compose
+
+# Add your user to the docker group (avoids needing sudo)
+sudo usermod -aG docker $USER
+
+# IMPORTANT: Log out and log back in for group changes to take effect
+# Or run: newgrp docker
+
+# Enable Docker to start on boot
+sudo systemctl enable docker
+sudo systemctl start docker
+
+# Verify Docker is working
+docker --version
+docker run hello-world
+```
+
+**Expected output:**
+```
+Docker version 24.x.x, build xxxxxxx
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+```
+
+**Troubleshooting:**
+```bash
+# If you get "permission denied" errors:
+sudo chmod 666 /var/run/docker.sock
+
+# Or re-login to apply group changes:
+su - $USER
+```
+
+---
+
+### 4. Clone Repository
 ```bash
 cd ~
 git clone https://github.com/cannatoshi/simplex-smp-monitor.git
@@ -265,7 +325,7 @@ cd simplex-smp-monitor
 
 ---
 
-### 4. Setup Python Environment
+### 5. Setup Python Environment
 ```bash
 # Create virtual environment
 python3 -m venv .venv
@@ -282,7 +342,7 @@ pip install -r requirements.txt
 
 ---
 
-### 5. Initialize Database
+### 6. Initialize Database
 ```bash
 # Run migrations
 python manage.py migrate
@@ -293,7 +353,7 @@ python manage.py createsuperuser
 
 ---
 
-### 6. Start the Server
+### 7. Start the Server
 
 **Development (local access only):**
 ```bash
@@ -309,6 +369,152 @@ python manage.py runserver 0.0.0.0:8000
 
 - Local: http://127.0.0.1:8000
 - Network: http://YOUR_IP:8000
+
+---
+
+### 8. Setup CLI Clients (NEW in v0.1.7)
+
+The CLI Clients feature requires a custom Docker image. Follow these steps to set it up:
+
+#### 8.1 Build the Docker Image
+
+```bash
+# Navigate to the docker directory
+cd ~/simplex-smp-monitor/clients/docker
+
+# Build the image (this may take 2-5 minutes)
+docker build -t simplex-cli:latest -f Dockerfile.simplex-cli .
+
+# Verify the image was created
+docker images | grep simplex-cli
+```
+
+**Expected output:**
+```
+simplex-cli    latest    abc123def456    1 minute ago    ~350MB
+```
+
+#### 8.2 Test the Image (Optional)
+
+```bash
+# Run a test container
+docker run -d --name test-simplex \
+  -e SIMPLEX_PORT=3099 \
+  -e PROFILE_NAME=testuser \
+  -p 3099:3099 \
+  simplex-cli:latest
+
+# Check logs
+docker logs test-simplex
+
+# Clean up test container
+docker rm -f test-simplex
+```
+
+#### 8.3 Return to Project Root
+
+```bash
+cd ~/simplex-smp-monitor
+```
+
+---
+
+### 9. Setup Event Listener Service (NEW in v0.1.7)
+
+The Event Listener monitors all running clients for delivery receipts. You can run it manually or as a systemd service.
+
+#### Option A: Manual Start (for Testing)
+
+```bash
+# Activate virtual environment
+source ~/simplex-smp-monitor/.venv/bin/activate
+
+# Start the listener
+python manage.py listen_events
+```
+
+You'll see output like:
+```
+Starting Event Listener...
+Listening to 3 clients...
+  ✓ Connected: Client 001 (ws://localhost:3031)
+  ✓ Connected: Client 002 (ws://localhost:3032)
+  ✓ Connected: Client 003 (ws://localhost:3033)
+```
+
+#### Option B: Systemd Service (Recommended for Production)
+
+Create a systemd service file:
+
+```bash
+sudo nano /etc/systemd/system/simplex-events.service
+```
+
+Paste the following (adjust paths and username as needed):
+
+```ini
+[Unit]
+Description=SimpleX SMP Monitor Event Listener
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+Group=YOUR_USERNAME
+WorkingDirectory=/home/YOUR_USERNAME/simplex-smp-monitor
+Environment="PATH=/home/YOUR_USERNAME/simplex-smp-monitor/.venv/bin"
+ExecStart=/home/YOUR_USERNAME/simplex-smp-monitor/.venv/bin/python manage.py listen_events
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=simplex-events
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Replace `YOUR_USERNAME` with your actual username** (e.g., `cannatoshi`).
+
+Enable and start the service:
+
+```bash
+# Reload systemd
+sudo systemctl daemon-reload
+
+# Enable service to start on boot
+sudo systemctl enable simplex-events
+
+# Start the service
+sudo systemctl start simplex-events
+
+# Check status
+sudo systemctl status simplex-events
+```
+
+**View logs:**
+```bash
+# Follow logs in real-time
+sudo journalctl -u simplex-events -f
+
+# View last 100 lines
+sudo journalctl -u simplex-events -n 100
+```
+
+**Manage the service:**
+```bash
+# Stop
+sudo systemctl stop simplex-events
+
+# Restart
+sudo systemctl restart simplex-events
+
+# Disable autostart
+sudo systemctl disable simplex-events
+```
 
 ---
 
@@ -366,6 +572,9 @@ INFLUXDB_BUCKET=metrics
 # Tor (optional, defaults shown)
 TOR_SOCKS_HOST=127.0.0.1
 TOR_SOCKS_PORT=9050
+
+# Docker (for CLI Clients)
+DOCKER_HOST=unix:///var/run/docker.sock
 ```
 
 ---
@@ -446,6 +655,316 @@ The application supports three types of tests:
 
 ---
 
+## SimpleX CLI Clients - Complete Guide
+
+### What Are CLI Clients?
+
+CLI Clients are Docker containers running the SimpleX Chat CLI application. They allow you to:
+
+- **Test message delivery** between multiple clients
+- **Verify your SMP servers** are routing messages correctly
+- **Measure delivery latency** in real-time
+- **Track delivery receipts** (✓ server received, ✓✓ client received)
+
+Each client runs in isolation with its own identity, contacts, and message history.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Your Server                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │  Client 001  │  │  Client 002  │  │  Client 003  │          │
+│  │   (quinn)    │  │    (rosa)    │  │    (kate)    │          │
+│  │  Port 3031   │  │  Port 3032   │  │  Port 3033   │          │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
+│         │                 │                 │                    │
+│         └────────────┬────┴────┬────────────┘                    │
+│                      │         │                                 │
+│                      ▼         ▼                                 │
+│              ┌───────────────────────┐                           │
+│              │   Django Application  │                           │
+│              │   (WebSocket API)     │                           │
+│              └───────────┬───────────┘                           │
+│                          │                                       │
+│                          ▼                                       │
+│              ┌───────────────────────┐                           │
+│              │   Event Listener      │                           │
+│              │   (Delivery Receipts) │                           │
+│              └───────────────────────┘                           │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+                           │
+                           ▼ (Messages via Tor/.onion)
+                  ┌─────────────────┐
+                  │  Your SMP/XFTP  │
+                  │    Servers      │
+                  └─────────────────┘
+```
+
+### Step 1: Navigate to Clients
+
+1. Open your browser and go to `http://YOUR_IP:8000`
+2. Click **Clients** in the navigation bar
+3. You'll see the client list (empty initially)
+
+### Step 2: Create Your First Client
+
+1. Click **+ New Client** button
+2. The form auto-generates:
+   - **Name**: "Client 001", "Client 002", etc.
+   - **Slug**: "client-001", "client-002", etc.
+   - **Profile Name**: Random name (quinn, rosa, kate, etc.)
+   - **WebSocket Port**: Auto-assigned (3031, 3032, etc.)
+3. Optionally enable **Tor** if your SMP servers use .onion addresses
+4. Click **Create**
+
+### Step 3: Start the Client
+
+After creating, you'll see the client in the list with status "Created".
+
+1. Click on the client name to open the **Detail Page**
+2. Click the green **Start** button
+3. Wait 10-30 seconds for the container to initialize
+4. Status changes to **Running** (green indicator)
+
+**What happens when you start:**
+1. Docker creates a container from `simplex-cli:latest`
+2. SimpleX CLI initializes with the profile name
+3. If Tor is enabled, Tor daemon starts inside the container
+4. Socat starts forwarding WebSocket traffic
+5. Health check verifies everything is running
+
+### Step 4: Check Container Logs
+
+On the client detail page, you'll see the **Container Logs** section showing:
+
+```
+=== SimpleX CLI Container Starting ===
+External Port: 3031
+Tor: true
+Profile: quinn
+Starting Tor...
+Tor started successfully
+Starting simplex-chat...
+Starting socat forwarder...
+=== Ready ===
+```
+
+### Step 5: Create More Clients
+
+Repeat steps 2-3 to create at least **2 clients** (you need 2 to test messaging).
+
+Example setup:
+- **Client 001** (quinn) - Port 3031
+- **Client 002** (rosa) - Port 3032
+- **Client 003** (kate) - Port 3033
+
+### Step 6: Create Connections Between Clients
+
+Clients need to be "connected" before they can exchange messages (just like in the real SimpleX app).
+
+1. Open **Client 001** detail page
+2. Find the **Connections** section
+3. Click **+ New Connection**
+4. Select **Client 002** from the dropdown
+5. Click **Connect**
+
+**What happens:**
+1. Client 002 creates an invitation address
+2. Client 002 enables Auto-Accept for incoming contacts
+3. Client 001 connects using the invitation link
+4. Both clients exchange keys and establish contact
+5. Connection is saved in the database
+
+**Result:**
+- Client 001 sees contact named "rosa" (Client 002's profile)
+- Client 002 sees contact named "quinn" (Client 001's profile)
+
+### Step 7: Send Messages
+
+Once connected, you can send messages:
+
+1. On **Client 001** detail page, find **Send Message** form
+2. Select recipient: **rosa** (Client 002)
+3. Type a message: "Hello from Client 001!"
+4. Click **Send**
+
+**Message Flow:**
+```
+Client 001 (quinn)
+       │
+       │ 1. Send "Hello from Client 001!"
+       ▼
+  Your SMP Server (.onion)
+       │
+       │ 2. Server stores message
+       │ 3. Server sends ✓ (sndSent) to Client 001
+       │
+       │ 4. Client 002 retrieves message
+       ▼
+Client 002 (rosa)
+       │
+       │ 5. Client 002 sends receipt
+       ▼
+  Your SMP Server
+       │
+       │ 6. Server forwards ✓✓ (sndRcvd) to Client 001
+       ▼
+Client 001 (quinn)
+       │
+       │ 7. UI shows ✓✓ Delivered
+       ▼
+```
+
+### Step 8: Understanding Message Status
+
+The **Messages** section shows three tabs:
+
+#### Tab 1: ↑ Sent (Outgoing Messages)
+
+| Zeit | Empfänger | Nachricht | Status | Latenz |
+|------|-----------|-----------|--------|--------|
+| 14:32 | rosa | Hello from Client 001! | ✓✓ | 1,234ms |
+
+#### Tab 2: ↓ Received (Incoming Messages)
+
+| Zeit | Absender | Nachricht | Status |
+|------|----------|-----------|--------|
+| 14:33 | rosa | Hello back! | ✓ |
+
+#### Tab 3: All (Combined View)
+
+| Zeit | ↕ | Kontakt | Nachricht | Status | Latenz |
+|------|---|---------|-----------|--------|--------|
+| 14:32 | ↑ | rosa | Hello from Client 001! | ✓✓ | 1,234ms |
+| 14:33 | ↓ | rosa | Hello back! | ✓ | - |
+
+**Status Icons Explained:**
+
+| Icon | Status | Meaning |
+|------|--------|---------|
+| ⏳ | pending | Message is being sent |
+| ✓ | sent | SMP server received the message |
+| ✓✓ | delivered | Recipient client received the message |
+| ✗ | failed | Message delivery failed |
+
+### Step 9: Event Listener for Delivery Receipts
+
+The **Event Listener** is required for ✓✓ (delivered) status updates.
+
+**Check if it's running:**
+```bash
+sudo systemctl status simplex-events
+```
+
+**What it does:**
+- Connects to all running clients via WebSocket
+- Listens for `chatItemsStatusesUpdated` events
+- Updates message status from ✓ to ✓✓ when recipient confirms
+- Calculates and stores delivery latency
+
+**Without the Event Listener:**
+- Messages will show ✓ (sent) but never ✓✓ (delivered)
+- Latency won't be calculated
+
+### Step 10: Managing Clients
+
+#### Start/Stop/Restart
+
+- **Stop**: Stops the container but keeps data volume
+- **Restart**: Stops and starts the container
+- **Start**: Starts a stopped container
+
+#### Delete a Client
+
+1. Click **Delete** button (red)
+2. Confirm deletion
+3. Both the database entry AND Docker container are removed
+
+> **Note:** In v0.1.7, the delete bug was fixed - containers are now properly removed from Docker.
+
+### Client Statistics
+
+Each client shows statistics:
+
+| Stat | Description |
+|------|-------------|
+| **Status** | Running / Stopped / Created |
+| **Sent** | Number of messages sent |
+| **Received** | Number of messages received |
+| **Success Rate** | Percentage of delivered messages |
+
+### Capacity & Performance
+
+Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe, Debian 12):
+
+| Clients | RAM Usage | Status |
+|---------|-----------|--------|
+| 6 | ~400 MB | ✅ Stable |
+| 10 | ~650 MB | ✅ Stable |
+| 20 | ~1.2 GB | ✅ Stable |
+| 50 | ~3 GB | ⚠️ Tested |
+
+**Resource usage per client:**
+- ~50-60 MB RAM (without Tor)
+- ~70-80 MB RAM (with Tor)
+- Minimal CPU when idle
+- ~1 KB per WebSocket connection
+
+### Troubleshooting
+
+#### Client won't start
+```bash
+# Check Docker logs
+docker logs simplex-client-client-001
+
+# Check if port is in use
+ss -tlnp | grep 3031
+
+# Check Docker status
+docker ps -a | grep simplex-client
+```
+
+#### Messages stuck on ✓ (not ✓✓)
+```bash
+# Check Event Listener
+sudo systemctl status simplex-events
+
+# View Event Listener logs
+sudo journalctl -u simplex-events -f
+```
+
+#### WebSocket connection failed
+```bash
+# Test WebSocket manually
+websocat ws://localhost:3031
+
+# Check container health
+docker inspect simplex-client-client-001 | grep -A5 Health
+```
+
+#### Container keeps restarting
+```bash
+# Check container logs for errors
+docker logs --tail 50 simplex-client-client-001
+
+# Check disk space
+df -h
+```
+
+### Best Practices
+
+1. **Start with 2-3 clients** for initial testing
+2. **Enable Tor** if your SMP servers use .onion addresses
+3. **Run Event Listener** as systemd service for production
+4. **Monitor RAM usage** when adding many clients
+5. **Delete unused clients** to free resources
+
+---
+
 ## Project Structure
 ```
 simplex-smp-monitor/
@@ -470,6 +989,20 @@ simplex-smp-monitor/
 │   ├── views.py            # Test execution views
 │   ├── scheduler.py        # APScheduler integration
 │   └── urls.py
+├── clients/                # 🆕 SimpleX CLI Clients app (v0.1.7)
+│   ├── models.py           # SimplexClient, ClientConnection, TestMessage
+│   ├── views.py            # Client management, messaging views
+│   ├── urls.py
+│   ├── forms.py            # Client creation forms
+│   ├── services/
+│   │   ├── docker_manager.py    # Docker container lifecycle
+│   │   └── simplex_commands.py  # WebSocket command service
+│   ├── docker/
+│   │   ├── Dockerfile.simplex-cli  # Container image
+│   │   └── entrypoint.sh           # Container entrypoint
+│   └── management/
+│       └── commands/
+│           └── listen_events.py    # Delivery receipt listener
 ├── events/                 # Event logging app
 │   ├── models.py
 │   └── views.py
@@ -484,6 +1017,11 @@ simplex-smp-monitor/
 │   │   ├── detail_stress.html
 │   │   ├── detail_latency.html
 │   │   └── ...
+│   ├── clients/            # 🆕 Client templates (v0.1.7)
+│   │   ├── list.html       # Client overview with cards
+│   │   ├── detail.html     # Client detail with messaging
+│   │   ├── form.html       # Create/edit form
+│   │   └── confirm_delete.html
 │   └── events/
 ├── static/
 │   └── js/
@@ -515,16 +1053,20 @@ simplex-smp-monitor/
 | **Metrics Agent** | Telegraf |
 | **ASGI Server** | Daphne |
 | **Tor Proxy** | PySocks |
+| **Containers** | Docker 24.x (for CLI Clients) |
+| **WebSocket** | websockets (Python async library) |
 
 ---
 
 ## Roadmap
 
-### v0.2.0 - Metrics & Dashboards
+### v0.2.0 - Test Panel & Mesh Connections
+- [ ] Test Panel UI for bulk messaging scenarios
+- [ ] Mesh connections (connect all clients with each other)
+- [ ] Bulk client creation (create 10/20/50 clients at once)
 - [ ] Complete InfluxDB integration
 - [ ] Grafana dashboard templates
-- [ ] Historical metrics visualization
-- [ ] Test result analytics
+- [ ] Automated test schedules
 
 ### v0.3.0 - Real-Time & i18n
 - [ ] WebSocket live updates
@@ -536,6 +1078,7 @@ simplex-smp-monitor/
 - [ ] Scheduled test runs
 - [ ] Email/Webhook alerts
 - [ ] Test result history
+- [ ] Export results (CSV/JSON)
 
 ### v0.5.0 - Production Ready
 - [ ] Docker deployment
@@ -590,6 +1133,36 @@ This tool is intended for monitoring your **own** infrastructure. Do not use it 
 ---
 
 ## Changelog
+
+### v0.1.7-alpha (2025-12-27)
+
+**Added:**
+- 🆕 **SimpleX CLI Clients App** - Docker-based test clients for end-to-end message delivery testing
+- **Docker Container Management** - Start/Stop/Restart/Delete with proper cleanup
+- **Dockerfile.simplex-cli** - Custom image with SimpleX CLI, optional Tor, socat forwarder
+- **entrypoint.sh** - Container entrypoint with health checks
+- **SimplexCommandService** - WebSocket command service for real-time communication
+- **Client Connections** - Create connections between clients with Auto-Accept
+- **Message Sending** - Send messages via WebSocket with database tracking
+- **Delivery Receipt Tracking** - ✓ (server received), ✓✓ (client received)
+- **listen_events Command** - Background event listener for delivery confirmations
+- **Latency Measurement** - Per-message delivery time in milliseconds
+- **Table-based Message UI** - Tabs for Sent/Received/All messages
+- **Message Statistics** - Per-client sent/received counters with success rates
+
+**Fixed:**
+- **Container Deletion Bug** - Docker containers now properly removed when deleting clients
+- **Django 4+ DeleteView** - Changed from `delete()` to `post()` method
+- **Auto-Accept Order** - Must be called after address creation, not before
+- **Container Lookup** - Fallback to container name if ID lookup fails
+- **Template Grid Layout** - Fixed sidebar positioning in client detail view
+
+**Technical:**
+- New services: `docker_manager.py`, `simplex_commands.py`
+- New Docker files: `Dockerfile.simplex-cli`, `entrypoint.sh`
+- New management command: `listen_events.py`
+- Port range: 3031-3080 (configurable)
+- Tested: 6 clients stable on Raspberry Pi 5 (8GB RAM, 128GB NVMe)
 
 ### v0.1.6-alpha (2025-12-26)
 
