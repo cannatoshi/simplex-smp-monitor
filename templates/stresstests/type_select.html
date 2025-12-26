@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}New Test - SimpleX SMP Monitor{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto" x-init="document.title = $store.i18n.t('titles.type_select') + ' - SimpleX SMP Monitor'">
+    <div class="mb-8">
+        <a href="{% url 'stresstests:list' %}" class="text-slate-500 hover:text-slate-700 text-sm inline-flex items-center space-x-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span x-text="$store.i18n.t('tests.back_to_tests')">Back to Tests</span>
+        </a>
+    </div>
+
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2" x-text="$store.i18n.t('type_select.title')">Create New Test</h1>
+    <p class="text-slate-500 dark:text-slate-400 mb-8" x-text="$store.i18n.t('type_select.subtitle')">Choose the type of test.</p>
+
+    <div class="grid gap-4">
+        <!-- Server Monitoring -->
+        <a href="{% url 'stresstests:create' 'monitoring' %}"
+           class="bg-white dark:bg-slate-900 rounded-xl border-2 border-slate-200 dark:border-slate-800 p-6 hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors group">
+            <div class="flex items-start space-x-4">
+                <div class="p-4 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-900/50 transition-colors">
+                    <svg class="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-semibold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">📊 Server Monitoring</h3>
+                    <p class="text-slate-500 dark:text-slate-400 mt-1" x-text="$store.i18n.t('type_select.monitoring_desc')"></p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span class="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded text-xs font-medium" x-text="$store.i18n.t('type_select.tag_longterm')">Long-term</span>
+                        <span class="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded text-xs font-medium" x-text="$store.i18n.t('type_select.tag_automatic')">Automatic</span>
+                        <span class="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded text-xs font-medium">InfluxDB</span>
+                        <span class="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded text-xs font-medium">Grafana</span>
+                    </div>
+                </div>
+                <svg class="w-6 h-6 text-slate-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Stress Test -->
+        <a href="{% url 'stresstests:create' 'stress' %}"
+           class="bg-white dark:bg-slate-900 rounded-xl border-2 border-slate-200 dark:border-slate-800 p-6 hover:border-amber-500 dark:hover:border-amber-500 transition-colors group">
+            <div class="flex items-start space-x-4">
+                <div class="p-4 rounded-xl bg-amber-100 dark:bg-amber-900/30 group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50 transition-colors">
+                    <svg class="w-8 h-8 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-semibold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">⚡ Stress Test</h3>
+                    <p class="text-slate-500 dark:text-slate-400 mt-1" x-text="$store.i18n.t('type_select.stress_desc')"></p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span class="px-2 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded text-xs font-medium" x-text="$store.i18n.t('type_select.tag_onetime')">One-time</span>
+                        <span class="px-2 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded text-xs font-medium" x-text="$store.i18n.t('type_select.tag_cli')">CLI required</span>
+                        <span class="px-2 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded text-xs font-medium" x-text="$store.i18n.t('type_select.tag_load')">Load test</span>
+                    </div>
+                </div>
+                <svg class="w-6 h-6 text-slate-400 group-hover:text-amber-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+
+        <!-- Latency Check -->
+        <a href="{% url 'stresstests:create' 'latency' %}"
+           class="bg-white dark:bg-slate-900 rounded-xl border-2 border-slate-200 dark:border-slate-800 p-6 hover:border-primary-500 dark:hover:border-primary-500 transition-colors group">
+            <div class="flex items-start space-x-4">
+                <div class="p-4 rounded-xl bg-primary-100 dark:bg-primary-900/30 group-hover:bg-primary-200 dark:group-hover:bg-primary-900/50 transition-colors">
+                    <svg class="w-8 h-8 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-semibold text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">🔍 Latency Check</h3>
+                    <p class="text-slate-500 dark:text-slate-400 mt-1" x-text="$store.i18n.t('type_select.latency_desc')"></p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span class="px-2 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded text-xs font-medium" x-text="$store.i18n.t('type_select.tag_onetime')">One-time</span>
+                        <span class="px-2 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded text-xs font-medium" x-text="$store.i18n.t('type_select.tag_fast')">Fast</span>
+                        <span class="px-2 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 rounded text-xs font-medium" x-text="$store.i18n.t('type_select.tag_compare')">Compare</span>
+                    </div>
+                </div>
+                <svg class="w-6 h-6 text-slate-400 group-hover:text-primary-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

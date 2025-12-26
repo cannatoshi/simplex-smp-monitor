@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Stress Test - SimpleX SMP Monitor{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto" x-data="{ testAllServers: false }" x-init="document.title = $store.i18n.t('titles.create_stress') + ' - SimpleX SMP Monitor'">
+    <div class="mb-6">
+        <a href="{% url 'stresstests:type_select' %}" class="text-slate-500 hover:text-slate-700 text-sm inline-flex items-center space-x-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span x-text="$store.i18n.t('type_select.back_to_select')">Back to selection</span>
+        </a>
+    </div>
+
+    <div class="flex items-center space-x-3 mb-6">
+        <div class="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/30">
+            <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Stress Test</h1>
+            <p class="text-slate-500 text-sm" x-text="$store.i18n.t('create.stress_subtitle')">Test throughput and reliability</p>
+        </div>
+    </div>
+
+    <!-- CLI Warning -->
+    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
+        <div class="flex items-start space-x-3">
+            <svg class="w-6 h-6 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <div>
+                <p class="font-medium text-amber-800 dark:text-amber-300" x-text="$store.i18n.t('create.cli_required')">SimpleX CLI required</p>
+                <p class="text-sm text-amber-700 dark:text-amber-400 mt-1" x-text="$store.i18n.t('create.cli_required_desc')">For real stress tests, simplex-chat CLI must be installed.</p>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4" x-text="$store.i18n.t('create.basic_settings')">Basic Settings</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"><span x-text="$store.i18n.t('common.name')">Name</span> *</label>
+                    <input type="text" name="name" required :placeholder="$store.i18n.t('create.name_placeholder_stress')"
+                           class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" x-text="$store.i18n.t('common.description')">Description</label>
+                    <textarea name="description" rows="2" :placeholder="$store.i18n.t('create.description_placeholder_stress')"
+                              class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4" x-text="$store.i18n.t('create.test_parameters')">Test Parameters</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" x-text="$store.i18n.t('create.num_clients')">Number of Clients</label>
+                    <input type="number" name="num_clients" value="2" min="1" max="10"
+                           class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    <p class="text-xs text-slate-500 mt-1" x-text="$store.i18n.t('create.num_clients_desc')">Simulated chat clients (1-10)</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" x-text="$store.i18n.t('create.duration_sec')">Duration (seconds)</label>
+                    <input type="number" name="duration_seconds" value="60" min="10" max="3600"
+                           class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    <p class="text-xs text-slate-500 mt-1" x-text="$store.i18n.t('create.duration_desc')">How long the test runs</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" x-text="$store.i18n.t('create.message_interval')">Message Interval (sec)</label>
+                    <input type="number" name="message_interval_seconds" value="5" min="1" max="60"
+                           class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                    <p class="text-xs text-slate-500 mt-1" x-text="$store.i18n.t('create.message_interval_desc')">Time between messages</p>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                <p class="text-sm text-slate-600 dark:text-slate-400">
+                    <strong x-text="$store.i18n.t('common.preview') + ':'">Preview:</strong> 2 Clients × 60s ÷ 5s = ~24 messages total
+                </p>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4" x-text="$store.i18n.t('nav.servers')">Servers</h2>
+            
+            <label class="flex items-center space-x-3 cursor-pointer mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                <input type="checkbox" name="test_all_servers" x-model="testAllServers" class="w-5 h-5 rounded text-amber-600 focus:ring-amber-500">
+                <div>
+                    <span class="text-slate-900 dark:text-white font-medium" x-text="$store.i18n.t('create.test_all_servers')">Test all active servers</span>
+                    <p class="text-xs text-slate-500" x-text="$store.i18n.t('create.test_all_servers_desc')">Automatically include all active servers</p>
+                </div>
+            </label>
+
+            <div x-show="!testAllServers" x-cloak>
+                {% if servers %}
+                <div class="space-y-2 max-h-64 overflow-y-auto">
+                    {% for server in servers %}
+                    <label class="flex items-center space-x-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                        <input type="checkbox" name="servers" value="{{ server.pk }}" checked class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-amber-600 focus:ring-amber-500">
+                        <div class="flex-1">
+                            <span class="text-slate-900 dark:text-white font-medium">{{ server.name }}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ml-2">{{ server.server_type|upper }}</span>
+                            {% if server.is_onion %}<span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 ml-1">🧅 ONION</span>{% endif %}
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <p class="text-slate-500" x-text="$store.i18n.t('create.no_servers')">No servers available.</p>
+                    <a href="{% url 'servers:create' %}" class="text-primary-600 hover:underline text-sm"><span x-text="$store.i18n.t('tests.add_server')">Add server</span> →</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4" x-text="$store.i18n.t('create.metrics')">Metrics</h2>
+            <label class="flex items-center space-x-3 cursor-pointer">
+                <input type="checkbox" name="write_to_influxdb" checked class="w-5 h-5 rounded text-primary-600 focus:ring-primary-500">
+                <div>
+                    <span class="text-slate-900 dark:text-white font-medium" x-text="$store.i18n.t('create.write_influxdb')">Write to InfluxDB</span>
+                    <p class="text-xs text-slate-500" x-text="$store.i18n.t('create.write_influxdb_desc_stress')">Visualize latency and throughput in Grafana</p>
+                </div>
+            </label>
+        </div>
+
+        <div class="flex items-center justify-between">
+            <a href="{% url 'stresstests:list' %}" class="text-slate-600 dark:text-slate-400 hover:text-slate-900" x-text="$store.i18n.t('common.cancel')">Cancel</a>
+            <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2.5 rounded-lg font-medium inline-flex items-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span x-text="$store.i18n.t('create.create_stress')">Create Stress Test</span>
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

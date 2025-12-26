@@ -1,108 +1,54 @@
 {% extends 'base.html' %}
-
-{% block title %}Tests - SimpleX Test Suite{% endblock %}
-
+{% block title %}Tests - SimpleX SMP Monitor{% endblock %}
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
-        <span x-show="lang === 'en'">Stress Tests</span>
-        <span x-show="lang === 'de'" x-cloak>Stresstests</span>
-    </h1>
-    <a href="{% url 'stresstests:create' %}" 
+<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6" x-init="document.title = $store.i18n.t('nav.tests') + ' - SimpleX SMP Monitor'">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white" x-text="$store.i18n.t('tests.title')">Tests</h1>
+        <p class="text-slate-500 text-sm mt-1">{{ stats.total }} <span x-text="$store.i18n.t('common.total')">total</span>, {{ stats.active }} <span x-text="$store.i18n.t('common.active')">active</span></p>
+    </div>
+    <a href="{% url 'stresstests:type_select' %}"
        class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm inline-flex items-center space-x-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
         </svg>
-        <span x-show="lang === 'en'">New Test</span>
-        <span x-show="lang === 'de'" x-cloak>Neuer Test</span>
+        <span x-text="$store.i18n.t('tests.new_test')">New Test</span>
+    </a>
+</div>
+
+<!-- Filter -->
+<div class="flex flex-wrap gap-2 mb-6">
+    <a href="{% url 'stresstests:list' %}"
+       class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors {% if not test_type_filter %}bg-primary-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200{% endif %}">
+        <span x-text="$store.i18n.t('common.all')">All</span> ({{ stats.total }})
+    </a>
+    <a href="{% url 'stresstests:list' %}?type=monitoring"
+       class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors inline-flex items-center space-x-1 {% if test_type_filter == 'monitoring' %}bg-emerald-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200{% endif %}">
+        <span>📊</span>
+        <span>Monitoring ({{ stats.monitoring }})</span>
+    </a>
+    <a href="{% url 'stresstests:list' %}?type=stress"
+       class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors inline-flex items-center space-x-1 {% if test_type_filter == 'stress' %}bg-amber-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200{% endif %}">
+        <span>⚡</span>
+        <span>Stress ({{ stats.stress }})</span>
     </a>
 </div>
 
 {% if tests %}
-<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-    <table class="w-full">
-        <thead class="bg-slate-50 dark:bg-slate-800/50">
-            <tr>
-                <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    <span x-show="lang === 'en'">Name</span>
-                    <span x-show="lang === 'de'" x-cloak>Name</span>
-                </th>
-                <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
-                <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    <span x-show="lang === 'en'">Clients</span>
-                    <span x-show="lang === 'de'" x-cloak>Clients</span>
-                </th>
-                <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    <span x-show="lang === 'en'">Delivery Rate</span>
-                    <span x-show="lang === 'de'" x-cloak>Zustellrate</span>
-                </th>
-                <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    <span x-show="lang === 'en'">Date</span>
-                    <span x-show="lang === 'de'" x-cloak>Datum</span>
-                </th>
-                <th class="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    <span x-show="lang === 'en'">Actions</span>
-                    <span x-show="lang === 'de'" x-cloak>Aktionen</span>
-                </th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-            {% for test in tests %}
-            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <td class="px-5 py-4">
-                    <a href="{% url 'stresstests:detail' test.pk %}" class="text-slate-900 dark:text-white font-medium hover:text-primary-600 dark:hover:text-primary-400">
-                        {{ test.name }}
-                    </a>
-                </td>
-                <td class="px-5 py-4">
-                    <span class="px-2.5 py-1 rounded-full text-xs font-medium
-                        {% if test.status == 'completed' %}bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400
-                        {% elif test.status == 'running' %}bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400
-                        {% elif test.status == 'failed' %}bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400
-                        {% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
-                        {{ test.get_status_display }}
-                    </span>
-                </td>
-                <td class="px-5 py-4 text-slate-600 dark:text-slate-400">{{ test.num_clients }}</td>
-                <td class="px-5 py-4">
-                    {% if test.messages_sent > 0 %}
-                    <span class="font-medium {% if test.delivery_rate >= 90 %}text-emerald-600 dark:text-emerald-400{% elif test.delivery_rate >= 70 %}text-amber-600 dark:text-amber-400{% else %}text-red-600 dark:text-red-400{% endif %}">
-                        {{ test.delivery_rate }}%
-                    </span>
-                    {% else %}
-                    <span class="text-slate-400">—</span>
-                    {% endif %}
-                </td>
-                <td class="px-5 py-4 text-slate-500 dark:text-slate-500 text-sm">{{ test.created_at|date:"M d, Y H:i" }}</td>
-                <td class="px-5 py-4 text-right">
-                    <a href="{% url 'stresstests:detail' test.pk %}" 
-                       class="text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium">
-                        <span x-show="lang === 'en'">Details</span>
-                        <span x-show="lang === 'de'" x-cloak>Details</span>
-                    </a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="space-y-4">
+    {% for test in tests %}
+    {% include 'stresstests/_test_card.html' %}
+    {% endfor %}
 </div>
 {% else %}
 <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-12 text-center">
     <svg class="w-16 h-16 text-slate-300 dark:text-slate-700 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
     </svg>
-    <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-        <span x-show="lang === 'en'">No tests yet</span>
-        <span x-show="lang === 'de'" x-cloak>Noch keine Tests</span>
-    </h3>
-    <p class="text-slate-500 dark:text-slate-400 mb-4">
-        <span x-show="lang === 'en'">Start your first stress test to check server reliability.</span>
-        <span x-show="lang === 'de'" x-cloak>Starte deinen ersten Stresstest um die Server-Zuverlässigkeit zu prüfen.</span>
-    </p>
-    <a href="{% url 'stresstests:create' %}" 
+    <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-2" x-text="$store.i18n.t('tests.no_tests_title')">No tests yet</h3>
+    <p class="text-slate-500 dark:text-slate-400 mb-4" x-text="$store.i18n.t('tests.no_tests_desc')">Create your first test.</p>
+    <a href="{% url 'stresstests:type_select' %}"
        class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors font-medium inline-block">
-        <span x-show="lang === 'en'">Start First Test</span>
-        <span x-show="lang === 'de'" x-cloak>Ersten Test starten</span>
+        <span x-text="$store.i18n.t('tests.create_test')">Create Test</span>
     </a>
 </div>
 {% endif %}

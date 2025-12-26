@@ -79,10 +79,9 @@ class Test(models.Model):
 
     @property
     def success_rate(self):
-        total = self.successful_runs + self.failed_runs
-        if total == 0:
+        if self.total_runs == 0:
             return None
-        return round((self.successful_runs / total) * 100, 1)
+        return round((self.successful_runs / self.total_runs) * 100, 1)
 
     @property
     def is_active(self):

@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ test.name }} - SimpleX SMP Monitor{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'stresstests:list' %}" class="text-slate-500 hover:text-slate-700 text-sm inline-flex items-center space-x-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        <span x-text="$store.i18n.t('tests.back_to_tests')">Back to Tests</span>
+    </a>
+</div>
+
+<!-- Header -->
+<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+    <div class="flex items-start space-x-4">
+        <div class="p-4 rounded-xl bg-amber-100 dark:bg-amber-900/30">
+            <svg class="w-8 h-8 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ test.name }}</h1>
+            <p class="text-slate-500 text-sm">
+                Stress Test · {{ test.num_clients }} Clients · {{ test.duration_seconds }}s · {{ test.target_servers.count }} <span x-text="$store.i18n.t('nav.servers')">Servers</span>
+            </p>
+        </div>
+    </div>
+    
+    <div class="flex items-center space-x-3">
+        <span class="px-3 py-1.5 rounded-full text-sm font-medium
+            {% if test.status == 'active' %}bg-emerald-100 text-emerald-700
+            {% elif test.status == 'running' %}bg-amber-100 text-amber-700 animate-pulse
+            {% elif test.status == 'completed' %}bg-blue-100 text-blue-700
+            {% else %}bg-slate-100 text-slate-600{% endif %}">
+            {{ test.get_status_display }}
+        </span>
+        
+        <a href="{% url 'stresstests:edit' test.pk %}" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-slate-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+        </a>
+    </div>
+</div>
+
+<!-- Result Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 text-center">
+        <p class="text-3xl font-bold text-slate-900 dark:text-white">{{ test.messages_sent }}</p>
+        <p class="text-sm text-slate-500" x-text="$store.i18n.t('detail.sent')">Sent</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 text-center">
+        <p class="text-3xl font-bold text-emerald-600">{{ test.messages_received }}</p>
+        <p class="text-sm text-slate-500" x-text="$store.i18n.t('detail.received')">Received</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 text-center">
+        <p class="text-3xl font-bold {% if test.delivery_rate >= 90 %}text-emerald-600{% elif test.delivery_rate >= 70 %}text-amber-600{% else %}text-red-600{% endif %}">
+            {{ test.delivery_rate }}%
+        </p>
+        <p class="text-sm text-slate-500" x-text="$store.i18n.t('detail.delivery_rate')">Delivery Rate</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 text-center">
+        <p class="text-3xl font-bold text-primary-600">{{ test.avg_latency_ms|floatformat:0|default:'-' }}{% if test.avg_latency_ms %}ms{% endif %}</p>
+        <p class="text-sm text-slate-500">Ø <span x-text="$store.i18n.t('tests.latency')">Latency</span></p>
+    </div>
+</div>
+
+<!-- Configuration -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+        <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4" x-text="$store.i18n.t('detail.configuration')">Configuration</h2>
+        <dl class="space-y-3">
+            <div class="flex justify-between">
+                <dt class="text-slate-500">Clients</dt>
+                <dd class="text-slate-900 dark:text-white font-medium">{{ test.num_clients }}</dd>
+            </div>
+            <div class="flex justify-between">
+                <dt class="text-slate-500" x-text="$store.i18n.t('detail.duration')">Duration</dt>
+                <dd class="text-slate-900 dark:text-white font-medium">{{ test.duration_seconds }}s</dd>
+            </div>
+            <div class="flex justify-between">
+                <dt class="text-slate-500" x-text="$store.i18n.t('detail.message_interval')">Message Interval</dt>
+                <dd class="text-slate-900 dark:text-white font-medium">{{ test.message_interval_seconds }}s</dd>
+            </div>
+        </dl>
+    </div>
+    
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+        <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4" x-text="$store.i18n.t('tests.latency')">Latency</h2>
+        <dl class="space-y-3">
+            <div class="flex justify-between">
+                <dt class="text-slate-500" x-text="$store.i18n.t('detail.minimum')">Minimum</dt>
+                <dd class="text-emerald-600 font-medium">{{ test.min_latency_ms|floatformat:0|default:'-' }}{% if test.min_latency_ms %}ms{% endif %}</dd>
+            </div>
+            <div class="flex justify-between">
+                <dt class="text-slate-500" x-text="$store.i18n.t('detail.average')">Average</dt>
+                <dd class="text-primary-600 font-medium">{{ test.avg_latency_ms|floatformat:0|default:'-' }}{% if test.avg_latency_ms %}ms{% endif %}</dd>
+            </div>
+            <div class="flex justify-between">
+                <dt class="text-slate-500" x-text="$store.i18n.t('detail.maximum')">Maximum</dt>
+                <dd class="text-red-600 font-medium">{{ test.max_latency_ms|floatformat:0|default:'-' }}{% if test.max_latency_ms %}ms{% endif %}</dd>
+            </div>
+        </dl>
+    </div>
+</div>
+
+<!-- Servers -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 mb-6">
+    <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4"><span x-text="$store.i18n.t('nav.servers')">Servers</span> ({{ test.target_servers.count }})</h2>
+    <div class="flex flex-wrap gap-2">
+        {% for server in test.target_servers %}
+        <span class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm">
+            {{ server.name }}
+            <span class="text-slate-400 ml-1">{{ server.server_type|upper }}</span>
+        </span>
+        {% empty %}
+        <p class="text-slate-500" x-text="$store.i18n.t('tests.no_servers')">No servers selected</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- CLI Notice -->
+<div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+    <p class="text-amber-800 dark:text-amber-300">
+        <strong x-text="$store.i18n.t('detail.note') + ':'">Note:</strong> <span x-text="$store.i18n.t('detail.cli_notice')">Real message tests require the SimpleX CLI. Currently only TLS connection tests are performed.</span>
+    </p>
+</div>
+{% endblock %}

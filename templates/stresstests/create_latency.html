@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Latency Check - SimpleX SMP Monitor{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto" x-data="{ testAllServers: true }" x-init="document.title = $store.i18n.t('titles.create_latency') + ' - SimpleX SMP Monitor'">
+    <div class="mb-6">
+        <a href="{% url 'stresstests:type_select' %}" class="text-slate-500 hover:text-slate-700 text-sm inline-flex items-center space-x-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span x-text="$store.i18n.t('type_select.back_to_select')">Back to selection</span>
+        </a>
+    </div>
+
+    <div class="flex items-center space-x-3 mb-6">
+        <div class="p-3 rounded-xl bg-primary-100 dark:bg-primary-900/30">
+            <svg class="w-6 h-6 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Latency Check</h1>
+            <p class="text-slate-500 text-sm" x-text="$store.i18n.t('create.latency_subtitle')">One-time latency measurement</p>
+        </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
+        <div class="flex items-start space-x-3">
+            <svg class="w-6 h-6 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <p class="font-medium text-blue-900 dark:text-blue-300" x-text="$store.i18n.t('create.quick_compare')">Quick Compare</p>
+                <p class="text-sm text-blue-700 dark:text-blue-400 mt-1" x-text="$store.i18n.t('create.quick_compare_desc')">A latency check measures response times of all selected servers once.</p>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4" x-text="$store.i18n.t('create.basic_settings')">Basic Settings</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"><span x-text="$store.i18n.t('common.name')">Name</span> *</label>
+                    <input type="text" name="name" required value="Latency Check {{ 'now'|date:'d.m.Y H:i' }}" :placeholder="$store.i18n.t('create.name_placeholder_latency')"
+                           class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" x-text="$store.i18n.t('common.description')">Description</label>
+                    <textarea name="description" rows="2" :placeholder="$store.i18n.t('create.description_placeholder_latency')"
+                              class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4" x-text="$store.i18n.t('nav.servers')">Servers</h2>
+            
+            <label class="flex items-center space-x-3 cursor-pointer mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+                <input type="checkbox" name="test_all_servers" x-model="testAllServers" checked class="w-5 h-5 rounded text-primary-600 focus:ring-primary-500">
+                <div>
+                    <span class="text-slate-900 dark:text-white font-medium" x-text="$store.i18n.t('create.test_all_servers')">Test all active servers</span>
+                    <p class="text-xs text-slate-500" x-text="$store.i18n.t('create.test_all_recommended')">Recommended for a complete overview</p>
+                </div>
+            </label>
+
+            <div x-show="!testAllServers" x-cloak>
+                {% if servers %}
+                <div class="space-y-2 max-h-64 overflow-y-auto">
+                    {% for server in servers %}
+                    <label class="flex items-center space-x-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors">
+                        <input type="checkbox" name="servers" value="{{ server.pk }}" checked class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500">
+                        <div class="flex-1 flex items-center justify-between">
+                            <div>
+                                <span class="text-slate-900 dark:text-white font-medium">{{ server.name }}</span>
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ml-2">{{ server.server_type|upper }}</span>
+                                {% if server.is_onion %}<span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 ml-1">🧅</span>{% endif %}
+                            </div>
+                            {% if server.last_latency %}<span class="text-xs text-slate-500 font-mono">{{ server.last_latency }}ms</span>{% endif %}
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <p class="text-slate-500" x-text="$store.i18n.t('create.no_servers')">No servers available.</p>
+                    <a href="{% url 'servers:create' %}" class="text-primary-600 hover:underline text-sm"><span x-text="$store.i18n.t('tests.add_server')">Add server</span> →</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+            <a href="{% url 'stresstests:list' %}" class="text-slate-600 dark:text-slate-400 hover:text-slate-900" x-text="$store.i18n.t('common.cancel')">Cancel</a>
+            <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg font-medium inline-flex items-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span x-text="$store.i18n.t('create.create_latency')">Create & Start Check</span>
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

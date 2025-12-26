@@ -71,7 +71,7 @@
                         <span x-show="lang === 'en'">New Test</span>
                         <span x-show="lang === 'de'" x-cloak>Neuer Test</span>
                     </p>
-                    <a href="{% url 'stresstests:create' %}" 
+                    <a href="{% url 'stresstests:type_select' %}" 
                        class="text-lg font-semibold text-white hover:underline mt-1 inline-block">
                         <span x-show="lang === 'en'">Start Test →</span>
                         <span x-show="lang === 'de'" x-cloak>Test starten →</span>
@@ -191,7 +191,7 @@
                         <span x-show="lang === 'en'">No tests yet.</span>
                         <span x-show="lang === 'de'" x-cloak>Noch keine Tests.</span>
                     </p>
-                    <a href="{% url 'stresstests:create' %}" class="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline mt-1 inline-block">
+                    <a href="{% url 'stresstests:type_select' %}" class="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline mt-1 inline-block">
                         <span x-show="lang === 'en'">Start first test</span>
                         <span x-show="lang === 'de'" x-cloak>Ersten Test starten</span>
                     </a>

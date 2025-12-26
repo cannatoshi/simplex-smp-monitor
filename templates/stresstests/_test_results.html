@@ -1,0 +1,14 @@
+{% for result in results %}
+<div class="flex items-center justify-between p-3 rounded-lg {% if result.success %}bg-emerald-50 dark:bg-emerald-900/10{% else %}bg-red-50 dark:bg-red-900/10{% endif %}">
+    <div class="flex items-center space-x-2">
+        {% if result.success %}
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span class="text-emerald-700 dark:text-emerald-400">Online</span>
+        {% else %}
+        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+        <span class="text-red-700 dark:text-red-400">Error</span>
+        {% endif %}
+    </div>
+    <span class="font-mono text-sm">{{ result.latency_ms|default:'-' }}{% if result.latency_ms %}ms{% endif %}</span>
+</div>
+{% endfor %}

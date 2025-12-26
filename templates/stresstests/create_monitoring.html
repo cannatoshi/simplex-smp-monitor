@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Monitoring - SimpleX SMP Monitor{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto" x-data="{ testAllServers: false }" x-init="document.title = $store.i18n.t('titles.create_monitoring') + ' - SimpleX SMP Monitor'">
+    <div class="mb-6">
+        <a href="{% url 'stresstests:type_select' %}" class="text-slate-500 hover:text-slate-700 text-sm inline-flex items-center space-x-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span x-text="$store.i18n.t('type_select.back_to_select')">Back to selection</span>
+        </a>
+    </div>
+
+    <div class="flex items-center space-x-3 mb-6">
+        <div class="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
+            <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Server Monitoring</h1>
+            <p class="text-slate-500 text-sm" x-text="$store.i18n.t('create.monitoring_subtitle')">Long-term monitoring</p>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4" x-text="$store.i18n.t('create.basic_settings')">Basic Settings</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"><span x-text="$store.i18n.t('common.name')">Name</span> *</label>
+                    <input type="text" name="name" required :placeholder="$store.i18n.t('create.name_placeholder_monitoring')"
+                           class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" x-text="$store.i18n.t('common.description')">Description</label>
+                    <textarea name="description" rows="2" :placeholder="$store.i18n.t('create.description_placeholder_monitoring')"
+                              class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" x-text="$store.i18n.t('create.check_interval')">Check Interval</label>
+                    <select name="interval_minutes" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none">
+                        <option value="1" x-text="$store.i18n.t('create.interval_1min')">Every minute</option>
+                        <option value="5" selected x-text="$store.i18n.t('create.interval_5min')">Every 5 minutes</option>
+                        <option value="10" x-text="$store.i18n.t('create.interval_10min')">Every 10 minutes</option>
+                        <option value="15" x-text="$store.i18n.t('create.interval_15min')">Every 15 minutes</option>
+                        <option value="30" x-text="$store.i18n.t('create.interval_30min')">Every 30 minutes</option>
+                        <option value="60" x-text="$store.i18n.t('create.interval_60min')">Every hour</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4" x-text="$store.i18n.t('nav.servers')">Servers</h2>
+            
+            <label class="flex items-center space-x-3 cursor-pointer mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                <input type="checkbox" name="test_all_servers" x-model="testAllServers" class="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500">
+                <div>
+                    <span class="text-slate-900 dark:text-white font-medium" x-text="$store.i18n.t('create.test_all_servers')">Test all active servers</span>
+                    <p class="text-xs text-slate-500" x-text="$store.i18n.t('create.test_all_servers_desc')">Automatically include all active servers</p>
+                </div>
+            </label>
+
+            <div x-show="!testAllServers" x-cloak>
+                {% if servers %}
+                <div class="space-y-2 max-h-64 overflow-y-auto">
+                    {% for server in servers %}
+                    <label class="flex items-center space-x-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                        <input type="checkbox" name="servers" value="{{ server.pk }}" checked class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-emerald-500">
+                        <div class="flex-1">
+                            <span class="text-slate-900 dark:text-white font-medium">{{ server.name }}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ml-2">{{ server.server_type|upper }}</span>
+                            {% if server.is_onion %}<span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 ml-1">🧅 ONION</span>{% endif %}
+                        </div>
+                        {% if server.last_status == 'online' %}<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        {% elif server.last_status == 'error' %}<span class="w-2 h-2 rounded-full bg-red-500"></span>
+                        {% else %}<span class="w-2 h-2 rounded-full bg-slate-300"></span>{% endif %}
+                    </label>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <p class="text-slate-500" x-text="$store.i18n.t('create.no_servers')">No servers available.</p>
+                    <a href="{% url 'servers:create' %}" class="text-primary-600 hover:underline text-sm"><span x-text="$store.i18n.t('tests.add_server')">Add server</span> →</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4" x-text="$store.i18n.t('create.metrics')">Metrics</h2>
+            <label class="flex items-center space-x-3 cursor-pointer">
+                <input type="checkbox" name="write_to_influxdb" checked class="w-5 h-5 rounded text-primary-600 focus:ring-primary-500">
+                <div>
+                    <span class="text-slate-900 dark:text-white font-medium" x-text="$store.i18n.t('create.write_influxdb')">Write to InfluxDB</span>
+                    <p class="text-xs text-slate-500" x-text="$store.i18n.t('create.write_influxdb_desc')">Enables Grafana dashboards</p>
+                </div>
+            </label>
+        </div>
+
+        <div class="flex items-center justify-between">
+            <a href="{% url 'stresstests:list' %}" class="text-slate-600 dark:text-slate-400 hover:text-slate-900" x-text="$store.i18n.t('common.cancel')">Cancel</a>
+            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-medium inline-flex items-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span x-text="$store.i18n.t('create.create_monitoring')">Create Monitoring</span>
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
