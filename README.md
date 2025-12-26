@@ -12,7 +12,7 @@
 
 A web-based monitoring dashboard and stress testing suite for self-hosted SimpleX SMP/XFTP relay infrastructure. Built for operators who need visibility into their private messaging servers.
 
-> **Version:** 0.1.5-alpha (24. December 2025)  
+> **Version:** 0.1.6-alpha (26. December 2025)  
 > **Status:** Active Development  
 > **Tested on:** Debian 12, Ubuntu 24.04, Raspberry Pi OS  
 > **Companion to:** [SimpleX Private Infrastructure Tutorial](https://github.com/cannatoshi/simplex-smp-xftp-via-tor-on-rpi-hardened)
@@ -24,8 +24,8 @@ A web-based monitoring dashboard and stress testing suite for self-hosted Simple
 > This project is in active development. Core features work, but expect rough edges.
 > Not recommended for production use without thorough testing.
 > 
-> ✅ **What works:** Server management, connectivity testing, Tor support, bilingual UI  
-> 🚧 **In progress:** Stress testing, InfluxDB metrics, Grafana dashboards
+> ✅ **What works:** Server management, multi-type testing, Tor support, i18n system  
+> 🚧 **In progress:** InfluxDB metrics, Grafana dashboards, WebSocket updates
 
 ---
 
@@ -54,7 +54,7 @@ A web-based monitoring dashboard and stress testing suite for self-hosted Simple
 ### Usage
 15. [Adding Servers](#adding-servers)
 16. [Connection Testing](#connection-testing)
-17. [Stress Testing](#stress-testing)
+17. [Multi-Type Testing](#multi-type-testing)
 
 ### Development
 18. [Project Structure](#project-structure)
@@ -92,31 +92,29 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 
 ## Features
 
-### ✅ Implemented (v0.1.5-alpha)
+### ✅ Implemented (v0.1.6-alpha)
 
 | Feature | Description |
 |---------|-------------|
+| **Multi-Type Test System** | Monitoring, Stress, and Latency tests with dedicated workflows |
+| **APScheduler Integration** | Automated test execution with configurable intervals |
+| **i18n Translation System** | Alpine.js based with JSON language files (EN/DE, 25 prepared) |
+| **Live Countdown Timer** | Real-time test progress with Alpine.js reactivity |
 | **Server Management** | Add, edit, delete SMP/XFTP servers with full CRUD |
 | **7-Tab Configuration** | Basic, Monitoring, SSH, Control Port, Telegraf, SimpleX Config, Statistics |
 | **Connection Testing** | Real-time connectivity tests with latency measurement |
-| **Test Persistence** | Test results saved to database on form submit and card quick-test |
-| **Card Quick Test** | Test servers directly from server card with ⚡ button |
+| **Onion/ClearNet Badges** | Visual indicators for network type in results table |
+| **Dynamic Grafana Links** | Auto-detect server IP instead of localhost |
 | **Tor Integration** | Automatic .onion detection, tests via SOCKS5 proxy |
 | **Category System** | Organize servers with colored category labels |
-| **Duplicate Detection** | Warns before adding duplicate server addresses |
-| **Drag & Drop Sorting** | Reorder servers visually |
 | **Dark/Light Mode** | Toggle UI theme, persists in localStorage |
-| **Bilingual UI** | English/German language toggle |
-| **Status Tracking** | Online/Offline/Error status saved with server |
-| **ONION Badge** | Visual indicator for Tor hidden services |
-| **Password Protection** | Show/hide server passwords in UI |
+| **Language Switcher** | EN/DE toggle in navigation header |
 | **Responsive Design** | Works on desktop and mobile |
 
 ### 🚧 In Progress
 
 | Feature | Status | Target |
 |---------|--------|--------|
-| **Stress Testing** | UI ready | v0.2.0 |
 | **InfluxDB Integration** | Configured | v0.2.0 |
 | **Grafana Dashboards** | Docker ready | v0.2.0 |
 | **WebSocket Live Updates** | Channels ready | v0.3.0 |
@@ -125,7 +123,7 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 
 | Feature | Description |
 |---------|-------------|
-| **Scheduled Tests** | Cron-based automated testing |
+| **25 Language Support** | Full i18n for AR, ZH, JA, KO, RU, and 20 more |
 | **Alerting** | Email/Webhook notifications on failures |
 | **Multi-Node Support** | Monitor servers across multiple hosts |
 | **API Endpoints** | REST API for external integrations |
@@ -139,6 +137,11 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 ![Server List](screenshots/serverlist.png)
 
 *Dashboard showing server cards with status indicators, latency metrics, and quick actions*
+
+### Server Monitoring Detail
+![Server Monitoring](screenshots/server_monitoring.png)
+
+*Detailed monitoring view with live countdown, test results table, and Grafana integration*
 
 ---
 
@@ -159,6 +162,7 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 │   │   ┌─────────────────────────────────────────────────┐   │   │
 │   │   │              Core Module                        │   │   │
 │   │   │   SimplexCLIManager  │  MetricsWriter          │   │   │
+│   │   │   APScheduler        │  i18n System            │   │   │
 │   │   └─────────────────────────────────────────────────┘   │   │
 │   └─────────────────────────────────────────────────────────┘   │
 │                              │                                   │
@@ -423,9 +427,22 @@ docker-compose ps
 - Displayed in milliseconds after successful test
 - Stored in database for historical tracking
 
-### Stress Testing
+### Multi-Type Testing
 
-*Coming in v0.2.0*
+The application supports three types of tests:
+
+| Test Type | Purpose | Use Case |
+|-----------|---------|----------|
+| **Monitoring** | Connectivity & uptime checks | Regular health monitoring |
+| **Stress** | Load testing with multiple connections | Capacity planning |
+| **Latency** | Response time measurement | Performance optimization |
+
+**Creating a Test:**
+1. Navigate to **Tests** → **New Test**
+2. Select test type (Monitoring, Stress, or Latency)
+3. Choose servers to include
+4. Configure test parameters
+5. Start test and monitor progress with live countdown
 
 ---
 
@@ -448,19 +465,31 @@ simplex-smp-monitor/
 │   ├── views.py            # CRUD + testing views
 │   ├── urls.py
 │   └── templatetags/       # Custom template filters
-├── stresstests/            # Stress testing app
-│   ├── models.py
-│   ├── views.py
+├── stresstests/            # Multi-type testing app
+│   ├── models.py           # TestRun, TestResult, ServerStats
+│   ├── views.py            # Test execution views
+│   ├── scheduler.py        # APScheduler integration
 │   └── urls.py
 ├── events/                 # Event logging app
 │   ├── models.py
 │   └── views.py
 ├── templates/              # HTML templates
-│   ├── base.html           # Base template with nav
+│   ├── base.html           # Base template with nav + i18n
 │   ├── dashboard/
 │   ├── servers/
 │   ├── stresstests/
+│   │   ├── list.html
+│   │   ├── type_select.html
+│   │   ├── detail_monitoring.html
+│   │   ├── detail_stress.html
+│   │   ├── detail_latency.html
+│   │   └── ...
 │   └── events/
+├── static/
+│   └── js/
+│       └── i18n/           # Translation files
+│           ├── en.json     # English translations
+│           └── de.json     # German translations
 ├── screenshots/            # Documentation images
 ├── docker-compose.yml      # InfluxDB + Grafana stack
 ├── telegraf.conf           # Telegraf configuration
@@ -477,8 +506,9 @@ simplex-smp-monitor/
 
 | Layer | Technology |
 |-------|------------|
-| **Backend** | Django 5.x, Django Channels |
+| **Backend** | Django 5.x, Django Channels, APScheduler |
 | **Frontend** | HTMX, Alpine.js, Tailwind CSS |
+| **i18n** | Alpine.js $store with JSON language files |
 | **Database** | SQLite (dev), PostgreSQL (prod) |
 | **Time-Series** | InfluxDB 2.x |
 | **Visualization** | Grafana |
@@ -490,16 +520,17 @@ simplex-smp-monitor/
 
 ## Roadmap
 
-### v0.2.0 - Metrics & Testing
+### v0.2.0 - Metrics & Dashboards
 - [ ] Complete InfluxDB integration
 - [ ] Grafana dashboard templates
-- [ ] Basic stress testing implementation
-- [ ] Message send/receive verification
+- [ ] Historical metrics visualization
+- [ ] Test result analytics
 
-### v0.3.0 - Real-Time
+### v0.3.0 - Real-Time & i18n
 - [ ] WebSocket live updates
 - [ ] Real-time test progress
-- [ ] Live server status
+- [ ] Activate all 25 languages
+- [ ] RTL support (Arabic, Hebrew)
 
 ### v0.4.0 - Automation
 - [ ] Scheduled test runs
@@ -559,6 +590,29 @@ This tool is intended for monitoring your **own** infrastructure. Do not use it 
 ---
 
 ## Changelog
+
+### v0.1.6-alpha (2025-12-26)
+
+**Added:**
+- Multi-type test framework (Monitoring, Stress, Latency) with dedicated workflows
+- APScheduler integration for automated test execution
+- Professional i18n system with Alpine.js `$store.i18n`
+- JSON language files (`static/js/i18n/en.json`, `de.json`)
+- EN/DE translations active, 25 languages prepared for future activation
+- `timeAgo()` function for relative time display (e.g., "2 minutes ago")
+- Live countdown timer with real-time Alpine.js updates
+- Onion/ClearNet badges in test results table
+- Dynamic Grafana IP detection (replaces hardcoded localhost)
+- Language switcher in navigation header
+
+**Changed:**
+- Complete test system refactor with new models (TestRun, TestResult, ServerStats)
+- Symmetric 4-tile monitoring dashboard layout
+- Test detail pages redesigned for each test type
+
+**Fixed:**
+- Success rate calculation now capped at 100% (was showing 140%+)
+- Grafana links now use actual server IP instead of localhost
 
 ### v0.1.5-alpha (2025-12-25)
 
