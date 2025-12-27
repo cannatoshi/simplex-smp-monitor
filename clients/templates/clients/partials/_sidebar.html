@@ -1,0 +1,128 @@
+<!-- Sidebar - passt sich an Content-Höhe an -->
+<div class="flex flex-col h-full space-y-6">
+    <!-- Quick Send - AJAX Version -->
+    <div id="send-message-container" class="{% if not client.is_running or not connections %}hidden{% endif %} bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex-shrink-0">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-800">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Nachricht senden</h2>
+        </div>
+        <form id="send-message-form" class="p-4 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="sender" value="{{ client.id }}">
+            
+            <div>
+                <label class="block text-sm text-slate-500 mb-1">Empfänger</label>
+                <select name="contact_name" id="contact-select" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors">
+                    {% for conn in connections %}
+                        {% if conn.client_a == client %}
+                        <option value="{{ conn.contact_name_on_a }}" data-recipient="{{ conn.client_b.name }}">{{ conn.client_b.name }} ({{ conn.contact_name_on_a }})</option>
+                        {% else %}
+                        <option value="{{ conn.contact_name_on_b }}" data-recipient="{{ conn.client_a.name }}">{{ conn.client_a.name }} ({{ conn.contact_name_on_b }})</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm text-slate-500 mb-1">Nachricht</label>
+                <textarea name="message" id="message-input" rows="3" 
+                          class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
+                          placeholder="Test message..."></textarea>
+            </div>
+            
+            <button type="submit" id="send-btn" class="w-full px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2">
+                <span id="send-btn-text">Senden</span>
+                <svg id="send-spinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+            
+            <div id="send-feedback" class="hidden text-sm text-center py-2 rounded-lg"></div>
+        </form>
+    </div>
+    
+    <!-- Placeholder wenn keine Verbindungen -->
+    <div id="no-connections-send-placeholder" class="{% if not client.is_running or connections %}hidden{% endif %} bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 text-center flex-shrink-0">
+        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+        </div>
+        <p class="text-slate-500 text-sm">Erstelle zuerst eine Verbindung um Nachrichten zu senden</p>
+    </div>
+
+    <!-- Client Info - fixed height -->
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex-shrink-0">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-800">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Details</h2>
+        </div>
+        <div class="p-4 space-y-3 text-sm">
+            <div class="flex justify-between">
+                <span class="text-slate-500">Container ID</span>
+                <span class="text-slate-900 dark:text-white font-mono text-xs">{{ client.container_id|truncatechars:12 }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Container Name</span>
+                <span class="text-slate-900 dark:text-white">{{ client.container_name }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Data Volume</span>
+                <span class="text-slate-900 dark:text-white text-xs truncate max-w-[150px]">{{ client.data_volume_name }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Profilname</span>
+                <span class="text-slate-900 dark:text-white">{{ client.profile_name }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Tor</span>
+                <span class="{% if client.use_tor %}text-emerald-500{% else %}text-slate-400{% endif %}">
+                    {% if client.use_tor %}Aktiv{% else %}Inaktiv{% endif %}
+                </span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">WebSocket</span>
+                <span class="text-cyan-500 font-mono text-xs">ws://localhost:{{ client.websocket_port }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Erstellt</span>
+                <span class="text-slate-900 dark:text-white">{{ client.created_at|date:"d.m.Y H:i" }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Zuletzt aktiv</span>
+                <span class="text-slate-900 dark:text-white">{% if client.last_activity %}{{ client.last_activity|timesince }}{% else %}-{% endif %}</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- SMP Server Status - FLEX-1 damit es wächst um Content auszugleichen -->
+    {% if client.smp_servers.exists %}
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex-1 flex flex-col min-h-[150px]">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">SMP Server</h2>
+        </div>
+        <div class="p-4 space-y-3 flex-1">
+            {% for server in client.smp_servers.all %}
+            <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                    {% if server.last_status == 'online' %}
+                    <span class="relative flex h-2.5 w-2.5 flex-shrink-0">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    {% elif server.last_status == 'offline' or server.last_status == 'error' %}
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"></span>
+                    {% else %}
+                    <span class="w-2.5 h-2.5 rounded-full bg-slate-400 flex-shrink-0"></span>
+                    {% endif %}
+                    <span class="text-slate-900 dark:text-white" title="{{ server.host }}">{{ server.name }}</span>
+                </div>
+                <span class="text-slate-500 text-xs flex-shrink-0 ml-2">{{ server.server_type|upper }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Spacer wenn keine SMP Server - damit Sidebar trotzdem stretcht -->
+    <div class="flex-1"></div>
+    {% endif %}
+</div>

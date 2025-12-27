@@ -31,7 +31,14 @@
     <script src="{% static 'js/i18n.js' %}"></script>
     <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
     
-    <style>[x-cloak] { display: none !important; }</style>
+    <style>
+        [x-cloak] { display: none !important; }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fade-in 0.3s ease-out; }
+    </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 min-h-screen transition-colors duration-200"
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
@@ -43,6 +50,72 @@
                         <span class="text-2xl">🔍</span>
                         <span class="text-xl font-semibold text-slate-900 dark:text-white">SimpleX SMP Monitor</span>
                     </a>
+                    <!-- WebSocket Status Indicator with Tooltip -->
+                    <div class="relative ml-4" x-data="{ showTooltip: false }">
+                        <div 
+                            @mouseenter="showTooltip = true" 
+                            @mouseleave="showTooltip = false"
+                            class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 cursor-help"
+                        >
+                            <div id="ws-status" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                            <span id="ws-status-text" class="text-xs text-slate-500 dark:text-slate-400">Connecting...</span>
+                        </div>
+                        
+                        <!-- Tooltip -->
+                        <div 
+                            x-show="showTooltip" 
+                            x-cloak
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 translate-y-1"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 translate-y-1"
+                            class="absolute top-full left-0 mt-2 w-64 p-3 rounded-lg bg-white dark:bg-slate-800 shadow-xl ring-1 ring-slate-200 dark:ring-slate-700 z-50"
+                        >
+                            <div class="text-sm font-medium text-slate-900 dark:text-white mb-2">🔌 Real-Time Status</div>
+                            
+                            <div class="space-y-2 text-xs">
+                                <!-- WebSocket Connection -->
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 dark:text-slate-400">WebSocket</span>
+                                    <span id="ws-tooltip-connection" class="font-medium text-red-500">Disconnected</span>
+                                </div>
+                                
+                                <!-- Event Bridge -->
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 dark:text-slate-400">Event Bridge</span>
+                                    <span id="ws-tooltip-bridge" class="font-medium text-green-500">Running</span>
+                                </div>
+                                
+                                <!-- Connected Clients -->
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 dark:text-slate-400">Listening to</span>
+                                    <span id="ws-tooltip-clients" class="font-medium text-slate-700 dark:text-slate-300">0 Clients</span>
+                                </div>
+                                
+                                <!-- Redis -->
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 dark:text-slate-400">Channel Layer</span>
+                                    <span class="font-medium text-green-500">Redis</span>
+                                </div>
+                                
+                                <hr class="border-slate-200 dark:border-slate-700 my-2">
+                                
+                                <!-- Last Event -->
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 dark:text-slate-400">Last Event</span>
+                                    <span id="ws-tooltip-last-event" class="font-medium text-slate-700 dark:text-slate-300">-</span>
+                                </div>
+                                
+                                <!-- Uptime -->
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 dark:text-slate-400">Connected</span>
+                                    <span id="ws-tooltip-uptime" class="font-medium text-slate-700 dark:text-slate-300">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="hidden md:flex items-center space-x-1">
@@ -83,7 +156,7 @@
                 <a href="{% url 'servers:list' %}" class="px-3 py-1.5 rounded-lg text-sm {% if 'servers' in request.path %}bg-primary-100 dark:bg-primary-900/30 text-primary-700{% else %}text-slate-600 dark:text-slate-400{% endif %}" x-text="$store.i18n.t('nav.servers')">Servers</a>
                 <a href="{% url 'stresstests:list' %}" class="px-3 py-1.5 rounded-lg text-sm {% if 'tests' in request.path %}bg-primary-100 dark:bg-primary-900/30 text-primary-700{% else %}text-slate-600 dark:text-slate-400{% endif %}" x-text="$store.i18n.t('nav.tests')">Tests</a>
                 <a href="{% url 'events:list' %}" class="px-3 py-1.5 rounded-lg text-sm {% if 'events' in request.path %}bg-primary-100 dark:bg-primary-900/30 text-primary-700{% else %}text-slate-600 dark:text-slate-400{% endif %}" x-text="$store.i18n.t('nav.events')">Events</a>
-                    <a href="{% url 'clients:list' %}" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {% if 'clients' in request.path %}bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">Clients</a>
+                <a href="{% url 'clients:list' %}" class="px-3 py-1.5 rounded-lg text-sm {% if 'clients' in request.path %}bg-primary-100 dark:bg-primary-900/30 text-primary-700{% else %}text-slate-600 dark:text-slate-400{% endif %}">Clients</a>
             </div>
         </div>
     </nav>
@@ -95,10 +168,12 @@
     <footer class="border-t border-slate-200 dark:border-slate-800 py-6 mt-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
             <span class="text-slate-500 text-sm">© by cannatoshi</span>
-            <span class="text-slate-500 text-sm font-mono">i(N) cod(E) w(E) trus(T) › Alpha v0.2.0</span>
+            <span class="text-slate-500 text-sm font-mono">i(N) cod(E) w(E) trus(T) › Alpha v0.1.8</span>
         </div>
     </footer>
 
+    <!-- Live WebSocket Updates -->
+    <script src="{% static 'js/clients-live.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

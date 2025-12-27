@@ -1,0 +1,164 @@
+<!-- Connections mit Slide-Replace Header -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+    <!-- Header Area - switches between normal and connect mode -->
+    <div class="border-b border-slate-200 dark:border-slate-800 relative min-h-[60px]">
+        <!-- Normal Header -->
+        <div id="connections-header-normal" class="px-4 py-4 flex items-center justify-between transition-all duration-300">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Verbindungen</h2>
+            {% if client.is_running %}
+                {% if other_running_clients %}
+                <button onclick="showConnectPanel()" 
+                        class="text-sm text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 flex items-center gap-1 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span>Neue Verbindung</span>
+                </button>
+                {% else %}
+                <span class="text-xs text-slate-400">(keine weiteren Clients)</span>
+                {% endif %}
+            {% endif %}
+        </div>
+        
+        <!-- Connect Header (hidden, slides in) -->
+        <div id="connections-header-connect" class="absolute inset-0 px-4 py-4 bg-white dark:bg-slate-900 hidden flex items-center">
+            <form id="connect-form" class="w-full">
+                {% csrf_token %}
+                
+                <!-- Normal State -->
+                <div id="connect-normal" class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="w-2.5 h-2.5 rounded-full bg-cyan-500 flex-shrink-0"></div>
+                        <select name="target_slug" id="target-slug-select" 
+                                class="flex-1 min-w-0 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors">
+                            {% for other in other_running_clients %}
+                            <option value="{{ other.slug }}" data-name="{{ other.name }}" data-profile="{{ other.profile_name }}">
+                                {{ other.name }} ({{ other.profile_name }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <button type="button" onclick="hideConnectPanel()" 
+                                class="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
+                            Abbrechen
+                        </button>
+                        <button type="submit" 
+                                class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-all flex items-center gap-2 text-sm font-medium">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                            </svg>
+                            Verbinden
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Loading State -->
+                <div id="connect-loading" class="hidden flex items-center gap-3">
+                    <svg class="w-5 h-5 animate-spin text-cyan-500 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="connect-loading-text" class="text-sm text-cyan-600 dark:text-cyan-400 whitespace-nowrap">Verbinde...</span>
+                    <span class="text-xs text-slate-500 whitespace-nowrap">(ca. 3-5 Sekunden)</span>
+                </div>
+                
+                <!-- Success State -->
+                <div id="connect-success" class="hidden flex items-center gap-3">
+                    <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span id="connect-success-text" class="text-sm text-emerald-600 dark:text-emerald-400">Verbunden!</span>
+                </div>
+                
+                <!-- Error State -->
+                <div id="connect-error" class="hidden flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        <span id="connect-error-text" class="text-sm text-red-500">Fehler</span>
+                    </div>
+                    <button type="button" onclick="resetConnectPanel()" 
+                            class="text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white">
+                        Erneut versuchen
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Connection List -->
+    <div id="connections-list" class="divide-y divide-slate-200 dark:divide-slate-800">
+        {% for conn in connections %}
+        <div class="connection-item p-4 transition-all duration-300 hover:bg-slate-50 dark:hover:bg-slate-800/50" data-connection-id="{{ conn.pk }}">
+            <!-- Normal View -->
+            <div class="connection-normal flex items-center justify-between group">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        {% if conn.status == 'connected' %}
+                        <span class="flex h-2.5 w-2.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        {% elif conn.status == 'pending' or conn.status == 'connecting' %}
+                        <span class="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                        {% else %}
+                        <span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if conn.client_a == client %}
+                        <span class="text-slate-900 dark:text-white font-medium">{{ conn.client_b.name }}</span>
+                        <span class="text-slate-500 text-sm ml-1">({{ conn.contact_name_on_a }})</span>
+                        {% else %}
+                        <span class="text-slate-900 dark:text-white font-medium">{{ conn.client_a.name }}</span>
+                        <span class="text-slate-500 text-sm ml-1">({{ conn.contact_name_on_b }})</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="connection-status text-xs text-slate-500">{{ conn.get_status_display }}</span>
+                    <button onclick="showDeleteConfirm('{{ conn.pk }}')" 
+                            class="text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Delete Confirm View -->
+            <div class="connection-confirm hidden">
+                <div class="flex items-center justify-between bg-red-500/10 rounded-lg p-3 -mx-1">
+                    <span class="text-red-500 text-sm">Verbindung wirklich löschen?</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="cancelDelete('{{ conn.pk }}')" class="px-3 py-1 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">Abbrechen</button>
+                        <button onclick="confirmDelete('{{ conn.pk }}')" class="px-3 py-1 text-sm bg-red-600 hover:bg-red-500 text-white rounded transition-colors">Löschen</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Deleting State -->
+            <div class="connection-deleting hidden">
+                <div class="flex items-center gap-3 text-slate-500">
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm">Verbindung wird gelöscht...</span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div id="no-connections-placeholder" class="p-8 text-center">
+            <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+            </div>
+            <p class="text-slate-500">Keine Verbindungen</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
