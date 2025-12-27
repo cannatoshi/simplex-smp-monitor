@@ -12,7 +12,7 @@
 
 A web-based monitoring dashboard and stress testing suite for self-hosted SimpleX SMP/XFTP relay infrastructure. Built for operators who need visibility into their private messaging servers.
 
-> **Version:** 0.1.7-alpha (27. December 2025)  
+> **Version:** 0.1.8-alpha (27. December 2025)  
 > **Status:** Active Development  
 > **Tested on:** Debian 12, Ubuntu 24.04, Raspberry Pi OS (64-bit)  
 > **Companion to:** [SimpleX Private Infrastructure Tutorial](https://github.com/cannatoshi/simplex-smp-xftp-via-tor-on-rpi-hardened)
@@ -24,7 +24,7 @@ A web-based monitoring dashboard and stress testing suite for self-hosted Simple
 > This project is in active development. Core features work, but expect rough edges.
 > Not recommended for production use without thorough testing.
 > 
-> ✅ **What works:** Server management, multi-type testing, Tor support, i18n system, **CLI Clients with Delivery Receipts**  
+> ✅ **What works:** Server management, multi-type testing, Tor support, i18n system, **CLI Clients with Delivery Receipts**, **AJAX Messaging**, **Live UI Updates**  
 > 🚧 **In progress:** InfluxDB metrics, Grafana dashboards, WebSocket updates, Test Panel
 
 ---
@@ -59,15 +59,17 @@ A web-based monitoring dashboard and stress testing suite for self-hosted Simple
 19. [Connection Testing](#connection-testing)
 20. [Multi-Type Testing](#multi-type-testing)
 21. [SimpleX CLI Clients - Complete Guide](#simplex-cli-clients---complete-guide)
+22. [Client Detail Page - UI Features (NEW in v0.1.8)](#client-detail-page---ui-features-new-in-v018)
 
 ### Development
-22. [Project Structure](#project-structure)
-23. [Tech Stack](#tech-stack)
-24. [Roadmap](#roadmap)
-25. [Contributing](#contributing)
-26. [Related Projects](#related-projects)
-27. [License](#license)
-28. [Changelog](#changelog)
+23. [Project Structure](#project-structure)
+24. [Tech Stack](#tech-stack)
+25. [Roadmap](#roadmap)
+26. [Troubleshooting](#troubleshooting)
+27. [Contributing](#contributing)
+28. [Related Projects](#related-projects)
+29. [License](#license)
+30. [Changelog](#changelog)
 
 ---
 
@@ -80,6 +82,7 @@ If you run your own SimpleX SMP/XFTP servers (especially via Tor hidden services
 - **Are messages being delivered?** Run stress tests to verify reliability
 - **What's happening over time?** Historical metrics and visualizations
 - **Do messages actually arrive at recipients?** Track delivery receipts end-to-end *(NEW)*
+- **What's my success rate?** Real-time statistics with latency tracking *(NEW in v0.1.8)*
 
 This tool provides a **single dashboard** to monitor, test, and analyze your SimpleX relay infrastructure.
 
@@ -93,20 +96,30 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 | "I have 10 servers, hard to track" | Central dashboard for all servers |
 | "I need historical data" | InfluxDB + Grafana integration |
 | "Do messages reach the recipient?" | CLI Clients with ✓/✓✓ delivery tracking *(NEW)* |
+| "I want instant feedback without page reloads" | AJAX messaging with live UI updates *(NEW in v0.1.8)* |
 
 ---
 
 ## Features
 
-### ✅ Implemented (v0.1.7-alpha)
+### ✅ Implemented (v0.1.8-alpha)
 
 | Feature | Description |
 |---------|-------------|
-| **🆕 SimpleX CLI Clients** | Docker-based test clients for end-to-end message delivery testing |
-| **🆕 Delivery Receipts** | Track message status: ✓ server received, ✓✓ client received |
-| **🆕 WebSocket Commands** | Real-time communication with SimpleX CLI via WebSocket API |
-| **🆕 Event Listener** | Background service for delivery confirmation events |
-| **🆕 Message Statistics** | Per-client sent/received counters with success rates |
+| **🆕 AJAX Messaging System** | Send messages without page reload, instant UI feedback with animations |
+| **🆕 AJAX Connection Management** | Create/delete connections with smooth slide-in/slide-out animations |
+| **🆕 4-Corner Stats Cards** | Redesigned statistics display with corner-based information layout |
+| **🆕 Equal Height Layout** | Sidebar and content always match heights dynamically using CSS Grid + Flexbox |
+| **🆕 Live SMP Server LEDs** | Pulsing green indicators for online servers, red for offline, gray for unknown |
+| **🆕 Smart Connection Button** | Shows "(no more clients)" when all possible connections exist |
+| **🆕 Uptime Tracking** | Shows formatted uptime like "2h 15m" or "3d 5h" for running clients |
+| **🆕 Latency Statistics** | Min/Max/Average latency per client with sparkline placeholder |
+| **🆕 Model Methods** | New start(), stop(), set_error() methods for client lifecycle management |
+| **SimpleX CLI Clients** | Docker-based test clients for end-to-end message delivery testing |
+| **Delivery Receipts** | Track message status: ✓ server received, ✓✓ client received |
+| **WebSocket Commands** | Real-time communication with SimpleX CLI via WebSocket API |
+| **Event Listener** | Background service for delivery confirmation events |
+| **Message Statistics** | Per-client sent/received counters with success rates |
 | **Multi-Type Test System** | Monitoring, Stress, and Latency tests with dedicated workflows |
 | **APScheduler Integration** | Automated test execution with configurable intervals |
 | **i18n Translation System** | Alpine.js based with JSON language files (EN/DE, 25 prepared) |
@@ -128,6 +141,7 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 |---------|--------|--------|
 | **Test Panel** | UI Design | v0.2.0 |
 | **Mesh Connections** | Planned | v0.2.0 |
+| **Redis Integration** | Architecture Ready | v0.2.0 |
 | **InfluxDB Integration** | Configured | v0.2.0 |
 | **Grafana Dashboards** | Docker ready | v0.2.0 |
 | **WebSocket Live Updates** | Channels ready | v0.3.0 |
@@ -175,12 +189,13 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 │   │   ┌─────────┐                                           │   │
 │   │   │ Clients │  🆕 SimpleX CLI Test Clients              │   │
 │   │   │   App   │  Docker + WebSocket + Delivery Tracking   │   │
-│   │   └─────────┘                                           │   │
+│   │   └─────────┘  + AJAX Messaging (v0.1.8)                │   │
 │   │                                                         │   │
 │   │   ┌─────────────────────────────────────────────────┐   │   │
 │   │   │              Core Module                        │   │   │
 │   │   │   SimplexCLIManager  │  MetricsWriter          │   │   │
 │   │   │   APScheduler        │  i18n System            │   │   │
+│   │   │   AJAX Handlers      │  WebSocket Channels     │   │   │
 │   │   └─────────────────────────────────────────────────┘   │   │
 │   └─────────────────────────────────────────────────────────┘   │
 │                              │                                   │
@@ -192,6 +207,10 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 │   │   │ InfluxDB │◄───│ Telegraf │    │ Grafana  │         │   │
 │   │   │ (Metrics)│    │ (Agent)  │    │ (Graphs) │         │   │
 │   │   └──────────┘    └──────────┘    └──────────┘         │   │
+│   │                                                         │   │
+│   │   ┌──────────┐  🆕 Prepared for stress testing         │   │
+│   │   │  Redis   │    Real-time pub/sub, session storage   │   │
+│   │   └──────────┘                                          │   │
 │   │                                                         │   │
 │   └─────────────────────────────────────────────────────────┘   │
 │                                                                 │
@@ -534,7 +553,7 @@ The application uses these default Tor settings:
 
 If your Tor runs on a different port or host, edit `servers/views.py`:
 ```python
-# Tor SOCKS5 Proxy Einstellungen
+# Tor SOCKS5 Proxy Settings
 TOR_PROXY_HOST = '127.0.0.1'
 TOR_PROXY_PORT = 9050  # Change this if needed
 ```
@@ -672,29 +691,29 @@ Each client runs in isolation with its own identity, contacts, and message histo
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     Your Server                                  │
+│                     Your Server                                 │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │  Client 001  │  │  Client 002  │  │  Client 003  │          │
-│  │   (quinn)    │  │    (rosa)    │  │    (kate)    │          │
-│  │  Port 3031   │  │  Port 3032   │  │  Port 3033   │          │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
-│         │                 │                 │                    │
-│         └────────────┬────┴────┬────────────┘                    │
-│                      │         │                                 │
-│                      ▼         ▼                                 │
-│              ┌───────────────────────┐                           │
-│              │   Django Application  │                           │
-│              │   (WebSocket API)     │                           │
-│              └───────────┬───────────┘                           │
-│                          │                                       │
-│                          ▼                                       │
-│              ┌───────────────────────┐                           │
-│              │   Event Listener      │                           │
-│              │   (Delivery Receipts) │                           │
-│              └───────────────────────┘                           │
-│                                                                  │
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │  Client 001  │  │  Client 002  │  │  Client 003  │           │
+│  │   (quinn)    │  │    (rosa)    │  │    (kate)    │           │
+│  │  Port 3031   │  │  Port 3032   │  │  Port 3033   │           │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘           │
+│         │                 │                 │                   │
+│         └────────────┬────┴────┬────────────┘                   │
+│                      │         │                                │
+│                      ▼         ▼                                │
+│              ┌───────────────────────┐                          │
+│              │   Django Application  │                          │
+│              │   (WebSocket API)     │                          │
+│              └───────────┬───────────┘                          │
+│                          │                                      │
+│                          ▼                                      │
+│              ┌───────────────────────┐                          │
+│              │   Event Listener      │                          │
+│              │   (Delivery Receipts) │                          │
+│              └───────────────────────┘                          │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
                            │
                            ▼ (Messages via Tor/.onion)
@@ -825,20 +844,20 @@ The **Messages** section shows three tabs:
 
 #### Tab 1: ↑ Sent (Outgoing Messages)
 
-| Zeit | Empfänger | Nachricht | Status | Latenz |
-|------|-----------|-----------|--------|--------|
+| Time | Recipient | Message | Status | Latency |
+|------|-----------|---------|--------|---------|
 | 14:32 | rosa | Hello from Client 001! | ✓✓ | 1,234ms |
 
 #### Tab 2: ↓ Received (Incoming Messages)
 
-| Zeit | Absender | Nachricht | Status |
-|------|----------|-----------|--------|
+| Time | Sender | Message | Status |
+|------|--------|---------|--------|
 | 14:33 | rosa | Hello back! | ✓ |
 
 #### Tab 3: All (Combined View)
 
-| Zeit | ↕ | Kontakt | Nachricht | Status | Latenz |
-|------|---|---------|-----------|--------|--------|
+| Time | ↕ | Contact | Message | Status | Latency |
+|------|---|---------|---------|--------|---------|
 | 14:32 | ↑ | rosa | Hello from Client 001! | ✓✓ | 1,234ms |
 | 14:33 | ↓ | rosa | Hello back! | ✓ | - |
 
@@ -914,7 +933,7 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe, Debian 12):
 - Minimal CPU when idle
 - ~1 KB per WebSocket connection
 
-### Troubleshooting
+### Troubleshooting CLI Clients
 
 #### Client won't start
 ```bash
@@ -965,6 +984,394 @@ df -h
 
 ---
 
+## Client Detail Page - UI Features (NEW in v0.1.8)
+
+The v0.1.8 release brings a **completely redesigned Client Detail page** with modern AJAX-based interactions, animated transitions, and a professional UI layout.
+
+### 4-Corner Stats Cards Layout
+
+The statistics section has been rebuilt with a new **4-card layout** (replacing the previous 5-card design). Each card uses a sophisticated **4-corners + center** information pattern:
+
+```
+┌─────────────────┬─────────────────┬─────────────────┬─────────────────┐
+│     STATUS      │   MESSAGES      │  SUCCESS RATE   │     LATENCY     │
+├─────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ Port 3031    2h │ ✓4          ✗0  │ Today:4   Tot:4 │ ↓574ms   ↑802ms │
+│                 │                 │                 │                 │
+│   🟢 Running    │   4    │    2   │    100.0%       │     663ms       │
+│     Status      │ ↑Send  │ ↓Recv  │   Success Rate  │    Ø Latency    │
+│                 │                 │                 │                 │
+│ 1 Conn.    tom  │ ⏳0    2min ago │ ████████ 100%   │ ▁▃▅▇▅▃▁  L.15   │
+└─────────────────┴─────────────────┴─────────────────┴─────────────────┘
+```
+
+**Card Details:**
+
+| Card | Top-Left | Top-Right | Center | Bottom-Left | Bottom-Right |
+|------|----------|-----------|--------|-------------|--------------|
+| **Status** | Port number | Uptime | Status LED + Text | Connection count | Profile name |
+| **Messages** | ✓ Delivered | ✗ Failed | Sent \| Received split | ⏳ Pending | Last message time |
+| **Success Rate** | Today count | Total count | Percentage (color-coded) | Progress bar | - |
+| **Latency** | ↓ Min latency | ↑ Max latency | Ø Average latency | Sparkline | Trend label |
+
+### AJAX Messaging System
+
+Send messages **without page reload**:
+
+1. Type your message in the textarea
+2. Click "Send" button
+3. Button shows loading spinner during operation
+4. **Success:** Green feedback message, new message slides into table
+5. **Error:** Red feedback message with error details
+
+**Technical Implementation:**
+```javascript
+// Messages are sent via Fetch API with XMLHttpRequest header
+const response = await fetch('/clients/messages/send/', {
+    method: 'POST',
+    headers: {
+        'X-CSRFToken': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest'  // Identifies AJAX request
+    },
+    body: formData
+});
+
+// Server returns JSON for AJAX requests
+const data = await response.json();
+// { success: true, message_id: "...", content: "...", recipient: "...", status: "sent" }
+```
+
+**Features:**
+- Instant success/error feedback
+- Live stats counter update after send
+- New messages appear with slide-in animation
+- No page flicker or reload
+
+### AJAX Connection Management
+
+**Creating Connections:**
+1. Click "New Connection" button
+2. Select target client from dropdown panel
+3. Click "Connect"
+4. New connection slides into the list with animation
+5. Panel closes automatically on success
+
+**Deleting Connections:**
+1. Click the red "✗" button on a connection
+2. Confirm deletion
+3. Connection slides out with animation and disappears
+
+**Slide Animations:**
+```css
+@keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-out-right {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(30px); }
+}
+```
+
+### Smart Connection Button
+
+The "New Connection" button intelligently adapts based on available connections:
+
+| Condition | Display |
+|-----------|---------|
+| Client not running | Button hidden |
+| Running + other clients available | "New Connection" button shown |
+| Running + all possible connections exist | "(no more clients)" text shown |
+
+**Implementation:**
+```django
+{% if client.is_running %}
+    {% if other_running_clients %}
+        <button>New Connection</button>
+    {% else %}
+        <span class="text-slate-400">(no more clients)</span>
+    {% endif %}
+{% endif %}
+```
+
+### Live SMP Server Status LEDs
+
+Servers in the sidebar show **real-time status with animated LEDs**:
+
+| Status | Color | Animation |
+|--------|-------|-----------|
+| `online` | 🟢 Emerald green | Pulsing ping effect |
+| `offline` | 🔴 Red | Static |
+| `error` | 🔴 Red | Static |
+| `unknown` | ⚪ Gray | Static |
+
+**Pulsing LED HTML:**
+```html
+<span class="relative flex h-2.5 w-2.5">
+    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+</span>
+```
+
+### Equal Height Layout
+
+The main content and sidebar now **always match heights** using CSS Grid + Flexbox:
+
+**How it works:**
+- CSS Grid with `align-items: stretch` makes both columns equal height
+- Content column: Messages table has `flex-1` (grows to fill space)
+- Sidebar column: SMP Server box has `flex-1` (grows to fill space)
+
+**Behavior:**
+- If **content is taller** → SMP Server box stretches to match
+- If **sidebar is taller** → Messages table stretches to match
+- Both have `min-h-[...]` to prevent collapsing when empty
+
+### Uptime Display
+
+Running clients now show formatted uptime:
+
+| Duration | Display |
+|----------|---------|
+| < 1 minute | "45s" |
+| 1-59 minutes | "12m" |
+| 1-23 hours | "2h 15m" |
+| 1+ days | "3d 5h" |
+
+**Property Implementation:**
+```python
+@property
+def uptime_display(self):
+    if not self.started_at or self.status != 'running':
+        return None
+    delta = timezone.now() - self.started_at
+    seconds = int(delta.total_seconds())
+    
+    if seconds < 60:
+        return f"{seconds}s"
+    elif seconds < 3600:
+        return f"{seconds // 60}m"
+    elif seconds < 86400:
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        return f"{hours}h {minutes}m"
+    else:
+        days = seconds // 86400
+        hours = (seconds % 86400) // 3600
+        return f"{days}d {hours}h"
+```
+
+### Latency Statistics
+
+Each client now tracks latency statistics from sent messages:
+
+| Statistic | Description |
+|-----------|-------------|
+| **Min Latency** | Fastest message delivery time |
+| **Max Latency** | Slowest message delivery time |
+| **Avg Latency** | Average delivery time across all messages |
+| **Sparkline** | Visual representation of last 15 messages (placeholder) |
+
+**Model Properties:**
+```python
+@property
+def avg_latency_ms(self):
+    result = self.sent_messages.filter(
+        total_latency_ms__isnull=False
+    ).aggregate(avg=Avg('total_latency_ms'))
+    return round(result['avg']) if result['avg'] else None
+
+@property
+def min_latency_ms(self):
+    result = self.sent_messages.filter(
+        total_latency_ms__isnull=False
+    ).aggregate(min=Min('total_latency_ms'))
+    return result['min']
+
+@property
+def max_latency_ms(self):
+    result = self.sent_messages.filter(
+        total_latency_ms__isnull=False
+    ).aggregate(max=Max('total_latency_ms'))
+    return result['max']
+```
+
+### Unified Button Styling
+
+All action buttons now use consistent **cyan-blue** styling:
+
+```html
+<button class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors">
+    Action
+</button>
+```
+
+**Applied to:**
+- Start/Stop/Restart buttons
+- Send message button
+- New connection button
+- Edit/Delete buttons
+- All form submit buttons
+
+---
+
+## Troubleshooting
+
+### Common Issues (v0.1.8)
+
+#### 404 Error on "Send Message"
+
+**Symptom:** Clicking send returns 404 error or "Network Error"
+
+**Cause:** URL routing order - `<slug:slug>/` was matching before specific routes like `messages/send/`
+
+**Solution:** Update `clients/urls.py` - specific routes must come BEFORE generic slug routes:
+
+```python
+# CORRECT ORDER:
+urlpatterns = [
+    # Specific routes FIRST
+    path('messages/send/', views.SendMessageView.as_view(), name='send_message'),
+    path('connections/create/', views.ConnectionCreateView.as_view(), name='connection_create'),
+    
+    # Generic slug routes LAST
+    path('<slug:slug>/', views.ClientDetailView.as_view(), name='detail'),
+]
+```
+
+#### Message Stuck on ✓ (Never Shows ✓✓)
+
+**Symptom:** Messages show "sent" status but never update to "delivered"
+
+**Cause:** Event Listener not running
+
+**Solution:**
+```bash
+# Check if Event Listener is running
+sudo systemctl status simplex-events
+
+# Start if not running
+sudo systemctl start simplex-events
+
+# Check logs for errors
+sudo journalctl -u simplex-events -f
+```
+
+#### SMP Server LEDs Not Pulsing (All Gray/White)
+
+**Symptom:** All server LEDs show gray instead of green for online servers
+
+**Cause:** Template checking wrong field (`is_online` instead of `last_status`)
+
+**Solution:** Ensure `_sidebar.html` uses correct field:
+```django
+{% if server.last_status == 'online' %}
+    <!-- Pulsing green LED -->
+{% elif server.last_status == 'offline' or server.last_status == 'error' %}
+    <!-- Red LED -->
+{% else %}
+    <!-- Gray LED -->
+{% endif %}
+```
+
+#### Sidebar and Content Different Heights
+
+**Symptom:** Sidebar is shorter or longer than main content area
+
+**Cause:** Missing CSS flex properties
+
+**Solution:** Ensure these classes are present:
+- Grid container: `style="align-items: stretch;"`
+- Content column: `h-full flex flex-col`
+- Messages box: `flex-1 min-h-[300px]`
+- Sidebar container: `h-full`
+- SMP Server box: `flex-1 min-h-[150px]`
+
+#### Stats Not Updating After Sending Message
+
+**Symptom:** Sent counter stays at old value after sending
+
+**Cause:** AJAX response not updating DOM elements
+
+**Solution:** Check that stats elements have correct IDs:
+- `#stat-sent` - Sent message count
+- `#stat-received` - Received message count
+- `#stat-success-rate` - Success percentage
+
+#### Client Won't Start
+
+**Symptom:** Start button does nothing or shows error
+
+**Causes & Solutions:**
+
+1. **Docker not running:**
+   ```bash
+   sudo systemctl start docker
+   ```
+
+2. **Port already in use:**
+   ```bash
+   ss -tlnp | grep 3031
+   # Kill conflicting process or change client port
+   ```
+
+3. **Docker image not built:**
+   ```bash
+   cd ~/simplex-smp-monitor/clients/docker
+   docker build -t simplex-cli:latest -f Dockerfile.simplex-cli .
+   ```
+
+4. **Insufficient permissions:**
+   ```bash
+   sudo usermod -aG docker $USER
+   # Log out and log back in
+   ```
+
+#### WebSocket Connection Failed
+
+**Symptom:** "WebSocket connection failed" in browser console or logs
+
+**Causes & Solutions:**
+
+1. **Container not healthy:**
+   ```bash
+   docker logs simplex-client-client-001
+   docker inspect simplex-client-client-001 | grep -A5 Health
+   ```
+
+2. **Port not exposed:**
+   ```bash
+   docker port simplex-client-client-001
+   ```
+
+3. **Firewall blocking:**
+   ```bash
+   sudo ufw allow 3031:3080/tcp
+   ```
+
+### Debug Mode
+
+Enable Django debug mode for detailed error messages:
+
+```python
+# config/settings.py
+DEBUG = True
+```
+
+Check browser console (F12 → Console tab) for JavaScript errors.
+
+### Known Limitations (v0.1.8)
+
+| Limitation | Workaround | Fix Target |
+|------------|------------|------------|
+| Latency sparkline shows placeholder | Displays static bars | v0.2.5 |
+| Stats don't auto-refresh | Send message to trigger update | v0.2.0 |
+| Uptime resets on app restart | Expected behavior | - |
+| No bulk client operations | Create clients individually | v0.2.0 |
+
+---
+
 ## Project Structure
 ```
 simplex-smp-monitor/
@@ -989,10 +1396,10 @@ simplex-smp-monitor/
 │   ├── views.py            # Test execution views
 │   ├── scheduler.py        # APScheduler integration
 │   └── urls.py
-├── clients/                # 🆕 SimpleX CLI Clients app (v0.1.7)
+├── clients/                # SimpleX CLI Clients app
 │   ├── models.py           # SimplexClient, ClientConnection, TestMessage
-│   ├── views.py            # Client management, messaging views
-│   ├── urls.py
+│   ├── views.py            # Client management, AJAX messaging views
+│   ├── urls.py             # 🆕 Reordered for AJAX routes (v0.1.8)
 │   ├── forms.py            # Client creation forms
 │   ├── services/
 │   │   ├── docker_manager.py    # Docker container lifecycle
@@ -1000,9 +1407,16 @@ simplex-smp-monitor/
 │   ├── docker/
 │   │   ├── Dockerfile.simplex-cli  # Container image
 │   │   └── entrypoint.sh           # Container entrypoint
-│   └── management/
-│       └── commands/
-│           └── listen_events.py    # Delivery receipt listener
+│   ├── management/
+│   │   └── commands/
+│   │       └── listen_events.py    # Delivery receipt listener
+│   └── templates/
+│       └── clients/
+│           ├── detail.html         # 🆕 Redesigned with AJAX (v0.1.8)
+│           └── partials/
+│               ├── _stats.html     # 🆕 4-corner card layout (v0.1.8)
+│               ├── _sidebar.html   # 🆕 SMP LEDs, equal height (v0.1.8)
+│               └── _connections.html  # 🆕 Smart button, animations (v0.1.8)
 ├── events/                 # Event logging app
 │   ├── models.py
 │   └── views.py
@@ -1017,7 +1431,7 @@ simplex-smp-monitor/
 │   │   ├── detail_stress.html
 │   │   ├── detail_latency.html
 │   │   └── ...
-│   ├── clients/            # 🆕 Client templates (v0.1.7)
+│   ├── clients/            # Client templates
 │   │   ├── list.html       # Client overview with cards
 │   │   ├── detail.html     # Client detail with messaging
 │   │   ├── form.html       # Create/edit form
@@ -1035,6 +1449,7 @@ simplex-smp-monitor/
 ├── manage.py               # Django management script
 ├── LICENSE                 # AGPL-3.0 license
 ├── CHANGELOG.md            # Version history
+├── ROADMAP.md              # Development roadmap
 └── README.md               # This file
 ```
 
@@ -1046,6 +1461,8 @@ simplex-smp-monitor/
 |-------|------------|
 | **Backend** | Django 5.x, Django Channels, APScheduler |
 | **Frontend** | HTMX, Alpine.js, Tailwind CSS |
+| **AJAX** | Fetch API, XMLHttpRequest pattern *(NEW in v0.1.8)* |
+| **Animations** | CSS Keyframes (slide-in, slide-out, fade, ping) *(NEW in v0.1.8)* |
 | **i18n** | Alpine.js $store with JSON language files |
 | **Database** | SQLite (dev), PostgreSQL (prod) |
 | **Time-Series** | InfluxDB 2.x |
@@ -1055,6 +1472,7 @@ simplex-smp-monitor/
 | **Tor Proxy** | PySocks |
 | **Containers** | Docker 24.x (for CLI Clients) |
 | **WebSocket** | websockets (Python async library) |
+| **Real-Time** | Django Channels (WebSocket), Redis (planned for v0.2.0) |
 
 ---
 
@@ -1064,12 +1482,13 @@ simplex-smp-monitor/
 - [ ] Test Panel UI for bulk messaging scenarios
 - [ ] Mesh connections (connect all clients with each other)
 - [ ] Bulk client creation (create 10/20/50 clients at once)
+- [ ] Redis integration for real-time updates
 - [ ] Complete InfluxDB integration
 - [ ] Grafana dashboard templates
 - [ ] Automated test schedules
 
 ### v0.3.0 - Real-Time & i18n
-- [ ] WebSocket live updates
+- [ ] WebSocket live updates (stats auto-refresh)
 - [ ] Real-time test progress
 - [ ] Activate all 25 languages
 - [ ] RTL support (Arabic, Hebrew)
@@ -1133,6 +1552,54 @@ This tool is intended for monitoring your **own** infrastructure. Do not use it 
 ---
 
 ## Changelog
+
+### v0.1.8-alpha (2025-12-27)
+
+**🎨 UI/UX Overhaul:**
+- 🆕 **4-Corner Stats Cards** - Redesigned statistics with corner-based information layout
+- 🆕 **AJAX Messaging System** - Send messages without page reload, instant UI feedback
+- 🆕 **AJAX Connection Management** - Create/delete connections with smooth slide animations
+- 🆕 **Equal Height Layout** - Sidebar and content always match heights dynamically
+- 🆕 **Live SMP Server LEDs** - Pulsing green indicators for online servers
+- 🆕 **Smart Connection Button** - Shows "(no more clients)" when all connected
+- 🆕 **Unified Cyan Buttons** - Consistent button styling throughout the UI
+
+**🔧 Model Enhancements:**
+- 🆕 **started_at Field** - Tracks when client was started (for uptime calculation)
+- 🆕 **start() Method** - Sets status to running and records start time
+- 🆕 **stop() Method** - Sets status to stopped
+- 🆕 **set_error() Method** - Sets error status with message
+- 🆕 **uptime_display Property** - Formatted uptime like "2h 15m" or "3d 5h"
+- 🆕 **avg_latency_ms Property** - Average latency from sent messages
+- 🆕 **min_latency_ms Property** - Minimum latency
+- 🆕 **max_latency_ms Property** - Maximum latency
+- 🆕 **messages_delivered Property** - Count of successfully delivered messages
+
+**🐛 Critical Fixes:**
+- **URL Routing Order** - Specific routes now come before generic slug routes (fixes 404 on message send)
+- **SendMessageView AJAX** - Returns JsonResponse for AJAX requests instead of redirect
+- **SMP Server LEDs** - Fixed field reference (uses `last_status` instead of `is_online`)
+
+**🏗️ Infrastructure:**
+- AJAX patterns ready for upcoming Test Panel
+- WebSocket Channels integration for real-time broadcasts
+- Architecture prepared for Redis integration
+- CSS animations for professional UI transitions
+
+**📁 Files Modified:**
+- `clients/models.py` - New fields, properties, and methods
+- `clients/views.py` - AJAX support for SendMessageView
+- `clients/urls.py` - Route ordering fix
+- `clients/templates/clients/detail.html` - Grid layout, AJAX handlers
+- `clients/templates/clients/partials/_stats.html` - 4-corner card layout
+- `clients/templates/clients/partials/_sidebar.html` - SMP LEDs, flex-grow
+- `clients/templates/clients/partials/_connections.html` - Smart button, animations
+
+**⚠️ Migration Required:**
+```bash
+python manage.py makemigrations clients
+python manage.py migrate
+```
 
 ### v0.1.7-alpha (2025-12-27)
 
