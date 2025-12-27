@@ -7,6 +7,7 @@
 [![Django](https://img.shields.io/badge/Django-5.x-092E20.svg)](https://www.djangoproject.com/)
 [![Status](https://img.shields.io/badge/Status-Alpha-orange.svg)](#status)
 [![Tor](https://img.shields.io/badge/Tor-Supported-7D4698.svg)](https://www.torproject.org/)
+[![Redis](https://img.shields.io/badge/Redis-7.x-DC382D.svg)](https://redis.io/)
 [![Maintenance](https://img.shields.io/badge/Maintained-Actively-success.svg)](https://github.com/cannatoshi/simplex-smp-monitor/commits/main)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](#contributing)
 
@@ -24,8 +25,31 @@ A web-based monitoring dashboard and stress testing suite for self-hosted Simple
 > This project is in active development. Core features work, but expect rough edges.
 > Not recommended for production use without thorough testing.
 > 
-> ✅ **What works:** Server management, multi-type testing, Tor support, i18n system, **CLI Clients with Delivery Receipts**, **AJAX Messaging**, **Live UI Updates**  
-> 🚧 **In progress:** InfluxDB metrics, Grafana dashboards, WebSocket updates, Test Panel
+> ✅ **What works:** Server management, multi-type testing, Tor support, i18n system, **CLI Clients with Delivery Receipts**, **🆕 Real-Time WebSocket Infrastructure**, **🆕 Redis Channel Layer**, **🆕 Auto-Start Event Bridge**  
+> 🚧 **In progress:** InfluxDB metrics, Grafana dashboards, Test Panel
+
+---
+
+## 🚀 What's New in v0.1.8 - Real-Time Infrastructure
+
+This release transforms the application from polling-based to **event-driven real-time architecture**:
+
+```bash
+# OLD WAY (v0.1.7) - Two separate processes
+Terminal 1: python manage.py runserver 0.0.0.0:8000
+Terminal 2: python manage.py listen_events  # <- EXTRA STEP!
+
+# NEW WAY (v0.1.8) - Single command, everything auto-starts
+python manage.py runserver 0.0.0.0:8000
+# Event Bridge starts automatically! ✨
+```
+
+| Component | Description |
+|-----------|-------------|
+| **🔴 Redis Channel Layer** | Production-ready message broker (replaces InMemoryChannelLayer) |
+| **🌉 SimplexEventBridge** | Auto-connects to all running containers, processes events, pushes to browsers |
+| **📡 WebSocket Consumers** | Browser connections for live updates without page refresh |
+| **⚡ Auto-Start** | Event Bridge starts automatically with Django - no more manual commands! |
 
 ---
 
@@ -42,34 +66,35 @@ A web-based monitoring dashboard and stress testing suite for self-hosted Simple
 6. [Install System Dependencies](#1-install-system-dependencies)
 7. [Install Tor](#2-install-tor)
 8. [Install Docker](#3-install-docker)
-9. [Clone Repository](#4-clone-repository)
-10. [Setup Python Environment](#5-setup-python-environment)
-11. [Initialize Database](#6-initialize-database)
-12. [Start the Server](#7-start-the-server)
-13. [Setup CLI Clients](#8-setup-cli-clients-new-in-v017)
-14. [Setup Event Listener Service](#9-setup-event-listener-service-new-in-v017)
+9. [Setup Redis](#4-setup-redis-new-in-v018)
+10. [Clone Repository](#5-clone-repository)
+11. [Setup Python Environment](#6-setup-python-environment)
+12. [Initialize Database](#7-initialize-database)
+13. [Start the Server](#8-start-the-server)
+14. [Setup CLI Clients](#9-setup-cli-clients)
+15. [Event Listener Service (DEPRECATED)](#10-event-listener-service-deprecated-in-v018)
 
 ### Configuration
-15. [Tor Configuration](#tor-configuration)
-16. [Environment Variables](#environment-variables)
-17. [Monitoring Stack (Optional)](#monitoring-stack-optional)
+16. [Tor Configuration](#tor-configuration)
+17. [Redis Configuration](#redis-configuration-new-in-v018)
+18. [Environment Variables](#environment-variables)
+19. [Monitoring Stack (Optional)](#monitoring-stack-optional)
 
 ### Usage
-18. [Adding Servers](#adding-servers)
-19. [Connection Testing](#connection-testing)
-20. [Multi-Type Testing](#multi-type-testing)
-21. [SimpleX CLI Clients - Complete Guide](#simplex-cli-clients---complete-guide)
-22. [Client Detail Page - UI Features (NEW in v0.1.8)](#client-detail-page---ui-features-new-in-v018)
+20. [Adding Servers](#adding-servers)
+21. [Connection Testing](#connection-testing)
+22. [Multi-Type Testing](#multi-type-testing)
+23. [SimpleX CLI Clients - Complete Guide](#simplex-cli-clients---complete-guide)
 
 ### Development
-23. [Project Structure](#project-structure)
-24. [Tech Stack](#tech-stack)
-25. [Roadmap](#roadmap)
-26. [Troubleshooting](#troubleshooting)
-27. [Contributing](#contributing)
-28. [Related Projects](#related-projects)
-29. [License](#license)
-30. [Changelog](#changelog)
+24. [Project Structure](#project-structure)
+25. [Tech Stack](#tech-stack)
+26. [Roadmap](#roadmap)
+27. [Troubleshooting](#troubleshooting)
+28. [Contributing](#contributing)
+29. [Related Projects](#related-projects)
+30. [License](#license)
+31. [Changelog](#changelog)
 
 ---
 
@@ -81,8 +106,8 @@ If you run your own SimpleX SMP/XFTP servers (especially via Tor hidden services
 - **What's the latency?** Measure response times across your infrastructure  
 - **Are messages being delivered?** Run stress tests to verify reliability
 - **What's happening over time?** Historical metrics and visualizations
-- **Do messages actually arrive at recipients?** Track delivery receipts end-to-end *(NEW)*
-- **What's my success rate?** Real-time statistics with latency tracking *(NEW in v0.1.8)*
+- **Do messages actually arrive at recipients?** Track delivery receipts end-to-end
+- **Can I see updates in real-time?** WebSocket live updates without page refresh *(NEW in v0.1.8)*
 
 This tool provides a **single dashboard** to monitor, test, and analyze your SimpleX relay infrastructure.
 
@@ -95,8 +120,9 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 | "Are messages being delivered reliably?" | Stress testing with delivery verification |
 | "I have 10 servers, hard to track" | Central dashboard for all servers |
 | "I need historical data" | InfluxDB + Grafana integration |
-| "Do messages reach the recipient?" | CLI Clients with ✓/✓✓ delivery tracking *(NEW)* |
-| "I want instant feedback without page reloads" | AJAX messaging with live UI updates *(NEW in v0.1.8)* |
+| "Do messages reach the recipient?" | CLI Clients with ✓/✓✓ delivery tracking |
+| "I want instant feedback without page reloads" | **Real-time WebSocket updates** *(NEW in v0.1.8)* |
+| "Managing the Event Listener is annoying" | **Auto-starts with Django** *(NEW in v0.1.8)* |
 
 ---
 
@@ -104,21 +130,35 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 
 ### ✅ Implemented (v0.1.8-alpha)
 
+#### 🚀 Real-Time Infrastructure (NEW - Major Feature)
+
 | Feature | Description |
 |---------|-------------|
-| **🆕 AJAX Messaging System** | Send messages without page reload, instant UI feedback with animations |
-| **🆕 AJAX Connection Management** | Create/delete connections with smooth slide-in/slide-out animations |
-| **🆕 4-Corner Stats Cards** | Redesigned statistics display with corner-based information layout |
-| **🆕 Equal Height Layout** | Sidebar and content always match heights dynamically using CSS Grid + Flexbox |
-| **🆕 Live SMP Server LEDs** | Pulsing green indicators for online servers, red for offline, gray for unknown |
-| **🆕 Smart Connection Button** | Shows "(no more clients)" when all possible connections exist |
-| **🆕 Uptime Tracking** | Shows formatted uptime like "2h 15m" or "3d 5h" for running clients |
-| **🆕 Latency Statistics** | Min/Max/Average latency per client with sparkline placeholder |
-| **🆕 Model Methods** | New start(), stop(), set_error() methods for client lifecycle management |
+| **🔴 Redis Channel Layer** | Production-ready message broker for WebSocket communication |
+| **🌉 SimplexEventBridge** | Auto-connects to all running containers, processes SimpleX events |
+| **📡 WebSocket Consumers** | ClientUpdateConsumer + ClientDetailConsumer for live browser updates |
+| **⚡ Auto-Start Integration** | Event Bridge starts automatically with Django (no more manual listen_events!) |
+| **🟢 Live Status Indicator** | Green/red dot in navbar with connection status |
+| **🖥️ Frontend WebSocket Client** | clients-live.js with auto-reconnect |
+
+#### 🎨 UI/UX Improvements (Secondary)
+
+| Feature | Description |
+|---------|-------------|
+| **4-Corner Stats Cards** | Redesigned statistics layout |
+| **AJAX Messaging** | Send messages without page reload |
+| **AJAX Connections** | Create/delete connections with animations |
+| **Live SMP Server LEDs** | Pulsing indicators for server status |
+| **Uptime Tracking** | Formatted display like "2h 15m" |
+| **Latency Statistics** | Min/Max/Avg per client |
+
+#### 🐳 CLI Clients & Core Features
+
+| Feature | Description |
+|---------|-------------|
 | **SimpleX CLI Clients** | Docker-based test clients for end-to-end message delivery testing |
 | **Delivery Receipts** | Track message status: ✓ server received, ✓✓ client received |
 | **WebSocket Commands** | Real-time communication with SimpleX CLI via WebSocket API |
-| **Event Listener** | Background service for delivery confirmation events |
 | **Message Statistics** | Per-client sent/received counters with success rates |
 | **Multi-Type Test System** | Monitoring, Stress, and Latency tests with dedicated workflows |
 | **APScheduler Integration** | Automated test execution with configurable intervals |
@@ -141,10 +181,9 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 |---------|--------|--------|
 | **Test Panel** | UI Design | v0.2.0 |
 | **Mesh Connections** | Planned | v0.2.0 |
-| **Redis Integration** | Architecture Ready | v0.2.0 |
 | **InfluxDB Integration** | Configured | v0.2.0 |
 | **Grafana Dashboards** | Docker ready | v0.2.0 |
-| **WebSocket Live Updates** | Channels ready | v0.3.0 |
+| **Bridge Status API** | Architecture Ready | v0.2.0 |
 
 ### 📋 Planned
 
@@ -173,55 +212,62 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 ---
 
 ## Architecture
+
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    SimpleX SMP Monitor                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   ┌─────────────────────────────────────────────────────────┐   │
-│   │                  DJANGO APPLICATION                     │   │
-│   │                                                         │   │
-│   │   ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐      │   │
-│   │   │Dashboard│ │ Servers │ │  Tests  │ │ Events  │      │   │
-│   │   │  App    │ │   App   │ │   App   │ │   App   │      │   │
-│   │   └─────────┘ └─────────┘ └─────────┘ └─────────┘      │   │
-│   │                                                         │   │
-│   │   ┌─────────┐                                           │   │
-│   │   │ Clients │  🆕 SimpleX CLI Test Clients              │   │
-│   │   │   App   │  Docker + WebSocket + Delivery Tracking   │   │
-│   │   └─────────┘  + AJAX Messaging (v0.1.8)                │   │
-│   │                                                         │   │
-│   │   ┌─────────────────────────────────────────────────┐   │   │
-│   │   │              Core Module                        │   │   │
-│   │   │   SimplexCLIManager  │  MetricsWriter          │   │   │
-│   │   │   APScheduler        │  i18n System            │   │   │
-│   │   │   AJAX Handlers      │  WebSocket Channels     │   │   │
-│   │   └─────────────────────────────────────────────────┘   │   │
-│   └─────────────────────────────────────────────────────────┘   │
-│                              │                                   │
-│                              ▼                                   │
-│   ┌─────────────────────────────────────────────────────────┐   │
-│   │                  MONITORING STACK                       │   │
-│   │                                                         │   │
-│   │   ┌──────────┐    ┌──────────┐    ┌──────────┐         │   │
-│   │   │ InfluxDB │◄───│ Telegraf │    │ Grafana  │         │   │
-│   │   │ (Metrics)│    │ (Agent)  │    │ (Graphs) │         │   │
-│   │   └──────────┘    └──────────┘    └──────────┘         │   │
-│   │                                                         │   │
-│   │   ┌──────────┐  🆕 Prepared for stress testing         │   │
-│   │   │  Redis   │    Real-time pub/sub, session storage   │   │
-│   │   └──────────┘                                          │   │
-│   │                                                         │   │
-│   └─────────────────────────────────────────────────────────┘   │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼ (Tor SOCKS5 Proxy)
-                    ┌─────────────────┐
-                    │  YOUR SIMPLEX   │
-                    │    SERVERS      │
-                    │  (.onion:5223)  │
-                    └─────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         BROWSER (User)                                   │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  clients-live.js (NEW in v0.1.8)                                  │   │
+│  │  - Auto-connect WebSocket (/ws/clients/)                          │   │
+│  │  - Live DOM updates without refresh                               │   │
+│  │  - Auto-reconnect on disconnect                                   │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                          WebSocket │ /ws/clients/
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         DJANGO + CHANNELS                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   ┌──────────────────────────────────────────────────────────────────┐  │
+│   │  WebSocket Consumers (NEW in v0.1.8)                             │  │
+│   │  - ClientUpdateConsumer (/ws/clients/)                           │  │
+│   │  - ClientDetailConsumer (/ws/clients/<slug>/)                    │  │
+│   └──────────────────────────────────────────────────────────────────┘  │
+│                                    │                                    │
+│                         Channel Layer (Redis)                           │
+│                                    │                                    │
+│   ┌──────────────────────────────────────────────────────────────────┐  │
+│   │  SimplexEventBridge (NEW in v0.1.8)                              │  │
+│   │  - Auto-started in background thread with Django                 │  │
+│   │  - Connects to ALL running SimpleX containers                    │  │
+│   │  - Processes: newChatItems, chatItemsStatusesUpdated             │  │
+│   │  - Updates database, broadcasts to browsers                      │  │
+│   └──────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│   ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐           │
+│   │Dashboard│ │ Servers │ │  Tests  │ │ Events  │ │ Clients │           │
+│   │  App    │ │   App   │ │   App   │ │   App   │ │   App   │           │
+│   └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘           │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+            │                                              │
+            │ WebSocket :3031-3080                         │ Pub/Sub
+            ▼                                              ▼
+┌─────────────────────────┐                    ┌─────────────────────────┐
+│  SimpleX CLI Containers │                    │  Redis (Port 6379)      │
+│  - Client 001 (:3031)   │                    │  (NEW in v0.1.8)        │
+│  - Client 002 (:3032)   │                    │  - Channel Layer        │
+│  - Client 003 (:3033)   │                    │  - Message Broker       │
+│  - ...                  │                    └─────────────────────────┘
+└─────────────────────────┘
+            │
+            ▼ (Messages via Tor/.onion)
+┌─────────────────────────┐
+│  Your SMP/XFTP Servers  │
+│  (.onion:5223)          │
+└─────────────────────────┘
 ```
 
 ---
@@ -233,7 +279,8 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 | **Python** | 3.11+ | With pip and venv |
 | **Tor** | Latest | For .onion server testing |
 | **Git** | Any | For cloning repository |
-| **Docker** | 24.x+ | For CLI Clients and InfluxDB/Grafana stack |
+| **Docker** | 24.x+ | For CLI Clients, Redis, InfluxDB/Grafana |
+| **Redis** | 7.x | **NEW in v0.1.8** - For real-time WebSocket communication |
 
 ---
 
@@ -295,7 +342,7 @@ Expected output:
 
 ### 3. Install Docker
 
-Docker is required for the SimpleX CLI Clients feature (NEW in v0.1.7).
+Docker is required for the SimpleX CLI Clients feature and Redis.
 
 **Debian/Ubuntu/Raspberry Pi OS:**
 ```bash
@@ -335,7 +382,44 @@ su - $USER
 
 ---
 
-### 4. Clone Repository
+### 4. Setup Redis (NEW in v0.1.8)
+
+Redis is the backbone for real-time WebSocket communication.
+
+```bash
+# Start Redis container (persistent data)
+docker run -d \
+  --name simplex-redis \
+  --restart unless-stopped \
+  -p 6379:6379 \
+  -v simplex-redis-data:/data \
+  redis:7-alpine redis-server --appendonly yes
+
+# Verify Redis is running
+docker ps | grep redis
+
+# Test Redis connection
+docker exec simplex-redis redis-cli ping
+```
+
+Expected output:
+```
+PONG
+```
+
+**Why Redis?**
+
+| Feature          | InMemoryChannelLayer | Redis        |
+|------------------|----------------------|--------------|
+| Multi-process    | ❌ No                | ✅ Yes      |
+| Production-ready | ⚠️ Dev only          | ✅ Yes      |
+| 50+ Clients      | ❓ Maybe             | ✅ Stable   |
+| Persistence      | ❌ No                | ✅ Optional |
+
+---
+
+### 5. Clone Repository
+
 ```bash
 cd ~
 git clone https://github.com/cannatoshi/simplex-smp-monitor.git
@@ -344,7 +428,8 @@ cd simplex-smp-monitor
 
 ---
 
-### 5. Setup Python Environment
+### 6. Setup Python Environment
+
 ```bash
 # Create virtual environment
 python3 -m venv .venv
@@ -361,7 +446,8 @@ pip install -r requirements.txt
 
 ---
 
-### 6. Initialize Database
+### 7. Initialize Database
+
 ```bash
 # Run migrations
 python manage.py migrate
@@ -372,7 +458,7 @@ python manage.py createsuperuser
 
 ---
 
-### 7. Start the Server
+### 8. Start the Server
 
 **Development (local access only):**
 ```bash
@@ -384,6 +470,25 @@ python manage.py runserver
 python manage.py runserver 0.0.0.0:8000
 ```
 
+**You should see (NEW in v0.1.8):**
+```
+🚀 APScheduler gestartet - prüft alle 30 Sekunden
+✅ APScheduler gestartet - Monitoring läuft!
+INFO 🌉 Event Bridge thread started
+INFO 🚀 SimplexEventBridge starting...
+December 27, 2025 - 13:07:32
+Django version 5.2.9, using settings 'config.settings'
+Starting ASGI/Daphne version 4.2.1 development server at http://0.0.0.0:8000/
+```
+
+When you have running clients:
+```
+INFO ✓ Connected to Client 001
+INFO ✓ Connected to Client 002
+INFO   📡 Listening: Client 001 (ws://localhost:3031)
+INFO   📡 Listening: Client 002 (ws://localhost:3032)
+```
+
 **Access the dashboard:**
 
 - Local: http://127.0.0.1:8000
@@ -391,11 +496,11 @@ python manage.py runserver 0.0.0.0:8000
 
 ---
 
-### 8. Setup CLI Clients (NEW in v0.1.7)
+### 9. Setup CLI Clients
 
 The CLI Clients feature requires a custom Docker image. Follow these steps to set it up:
 
-#### 8.1 Build the Docker Image
+#### 9.1 Build the Docker Image
 
 ```bash
 # Navigate to the docker directory
@@ -413,7 +518,7 @@ docker images | grep simplex-cli
 simplex-cli    latest    abc123def456    1 minute ago    ~350MB
 ```
 
-#### 8.2 Test the Image (Optional)
+#### 9.2 Test the Image (Optional)
 
 ```bash
 # Run a test container
@@ -430,7 +535,7 @@ docker logs test-simplex
 docker rm -f test-simplex
 ```
 
-#### 8.3 Return to Project Root
+#### 9.3 Return to Project Root
 
 ```bash
 cd ~/simplex-smp-monitor
@@ -438,7 +543,14 @@ cd ~/simplex-smp-monitor
 
 ---
 
-### 9. Setup Event Listener Service (NEW in v0.1.7)
+### 10. Event Listener Service (DEPRECATED in v0.1.8)
+
+> ⚠️ **DEPRECATED:** In v0.1.8, the SimplexEventBridge starts automatically with Django. You no longer need to run `listen_events` manually or as a separate service!
+>
+> The information below is kept for users on v0.1.7 or for troubleshooting purposes.
+
+<details>
+<summary>Click to expand v0.1.7 Event Listener documentation</summary>
 
 The Event Listener monitors all running clients for delivery receipts. You can run it manually or as a systemd service.
 
@@ -461,7 +573,7 @@ Listening to 3 clients...
   ✓ Connected: Client 003 (ws://localhost:3033)
 ```
 
-#### Option B: Systemd Service (Recommended for Production)
+#### Option B: Systemd Service (for v0.1.7)
 
 Create a systemd service file:
 
@@ -535,6 +647,8 @@ sudo systemctl restart simplex-events
 sudo systemctl disable simplex-events
 ```
 
+</details>
+
 ---
 
 ## Tor Configuration
@@ -543,11 +657,11 @@ sudo systemctl disable simplex-events
 
 The application uses these default Tor settings:
 
-| Setting | Value |
-|---------|-------|
-| SOCKS5 Host | `127.0.0.1` |
-| SOCKS5 Port | `9050` |
-| Timeout | `30 seconds` |
+| Setting     | Value        |
+|-------------|--------------|
+| SOCKS5 Host | `127.0.0.1`  |
+| SOCKS5 Port | `9050`       |
+| Timeout     | `30 seconds` |
 
 ### Custom Tor SOCKS Proxy
 
@@ -570,6 +684,66 @@ TOR_PROXY_PORT = 9050
 
 ---
 
+## Redis Configuration (NEW in v0.1.8)
+
+### Default Configuration
+
+The application expects Redis on localhost:6379.
+
+**Django Settings (`config/settings.py`):**
+```python
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+```
+
+### Remote Redis
+
+If Redis runs on a different host:
+```python
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("192.168.1.100", 6379)],
+        },
+    },
+}
+```
+
+### Redis with Authentication
+
+```python
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis://:password@127.0.0.1:6379/0",)],
+        },
+    },
+}
+```
+
+### Check Redis Status
+
+```bash
+# Check if container is running
+docker ps | grep redis
+
+# Check Redis logs
+docker logs simplex-redis
+
+# Test connection
+docker exec simplex-redis redis-cli ping
+```
+
+---
+
 ## Environment Variables
 
 For production deployment, create a `.env` file:
@@ -581,6 +755,10 @@ ALLOWED_HOSTS=your-domain.com,localhost,127.0.0.1
 
 # Database (optional, defaults to SQLite)
 DATABASE_URL=postgres://user:pass@localhost/simplex_monitor
+
+# Redis (NEW in v0.1.8)
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
 
 # InfluxDB (optional)
 INFLUXDB_URL=http://localhost:8086
@@ -659,11 +837,11 @@ docker-compose ps
 
 The application supports three types of tests:
 
-| Test Type | Purpose | Use Case |
-|-----------|---------|----------|
-| **Monitoring** | Connectivity & uptime checks | Regular health monitoring |
-| **Stress** | Load testing with multiple connections | Capacity planning |
-| **Latency** | Response time measurement | Performance optimization |
+| Test Type      | Purpose                                | Use Case                   |
+|----------------|----------------------------------------|----------------------------|
+| **Monitoring** | Connectivity & uptime checks           | Regular health monitoring  |
+| **Stress**     | Load testing with multiple connections | Capacity planning          |
+| **Latency**    | Response time measurement              | Performance optimization   |
 
 **Creating a Test:**
 1. Navigate to **Tests** → **New Test**
@@ -704,14 +882,18 @@ Each client runs in isolation with its own identity, contacts, and message histo
 │                      │         │                                │
 │                      ▼         ▼                                │
 │              ┌───────────────────────┐                          │
-│              │   Django Application  │                          │
-│              │   (WebSocket API)     │                          │
+│              │  SimplexEventBridge   │  ← Auto-starts with      │
+│              │  (NEW in v0.1.8)      │    Django!               │
 │              └───────────┬───────────┘                          │
 │                          │                                      │
 │                          ▼                                      │
 │              ┌───────────────────────┐                          │
-│              │   Event Listener      │                          │
-│              │   (Delivery Receipts) │                          │
+│              │   Redis Channel Layer │  ← Real-time pub/sub     │
+│              └───────────┬───────────┘                          │
+│                          │                                      │
+│                          ▼                                      │
+│              ┌───────────────────────┐                          │
+│              │   Browser WebSocket   │  ← Live updates!         │
 │              └───────────────────────┘                          │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -834,7 +1016,7 @@ Client 002 (rosa)
        ▼
 Client 001 (quinn)
        │
-       │ 7. UI shows ✓✓ Delivered
+       │ 7. UI shows ✓✓ Delivered (NO PAGE REFRESH in v0.1.8!)
        ▼
 ```
 
@@ -870,24 +1052,17 @@ The **Messages** section shows three tabs:
 | ✓✓ | delivered | Recipient client received the message |
 | ✗ | failed | Message delivery failed |
 
-### Step 9: Event Listener for Delivery Receipts
+### Step 9: Real-Time Updates (NEW in v0.1.8)
 
-The **Event Listener** is required for ✓✓ (delivered) status updates.
+In v0.1.8, message status updates happen **automatically** via WebSocket:
 
-**Check if it's running:**
-```bash
-sudo systemctl status simplex-events
-```
+- When a message is delivered (✓ → ✓✓), the UI updates instantly
+- No page refresh needed
+- The SimplexEventBridge handles everything in the background
 
-**What it does:**
-- Connects to all running clients via WebSocket
-- Listens for `chatItemsStatusesUpdated` events
-- Updates message status from ✓ to ✓✓ when recipient confirms
-- Calculates and stores delivery latency
-
-**Without the Event Listener:**
-- Messages will show ✓ (sent) but never ✓✓ (delivered)
-- Latency won't be calculated
+**Check if it's working:**
+- Look for the green "Live" indicator in the navigation bar
+- Check Django console for "📡 Listening:" messages
 
 ### Step 10: Managing Clients
 
@@ -909,23 +1084,32 @@ sudo systemctl status simplex-events
 
 Each client shows statistics:
 
-| Stat | Description |
-|------|-------------|
-| **Status** | Running / Stopped / Created |
-| **Sent** | Number of messages sent |
-| **Received** | Number of messages received |
-| **Success Rate** | Percentage of delivered messages |
+| Stat             | Description                       |
+|------------------|-----------------------------------|
+| **Status**       | Running / Stopped / Created       |
+| **Sent**         | Number of messages sent           |
+| **Received**     | Number of messages received       |
+| **Success Rate** | Percentage of delivered messages  |
 
 ### Capacity & Performance
 
-Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe, Debian 12):
+**Raspberry Pi 5** (8GB RAM, 128GB NVMe, Debian 12):
 
-| Clients | RAM Usage | Status |
-|---------|-----------|--------|
-| 6 | ~400 MB | ✅ Stable |
-| 10 | ~650 MB | ✅ Stable |
-| 20 | ~1.2 GB | ✅ Stable |
-| 50 | ~3 GB | ⚠️ Tested |
+| Clients | RAM Usage | Status      |
+|---------|-----------|-------------|
+| 6       | ~400 MB   | ✅ Stable  |
+| 10      | ~650 MB   | ✅ Stable  |
+| 20      | ~1.2 GB   | ✅ Stable  |
+| 50      | ~3 GB     | ⚠️ Tested  |
+
+**Debian Server** (T1, 128GB RAM, NVMe SSD):
+
+| Clients | RAM Usage | Status      |
+|---------|-----------|-------------|
+| 50      | ~3 GB     | ✅ Stable  |
+| 100     | ~6 GB     | ✅ Stable  |
+| 200     | ~12 GB    | ✅ Stable  |
+| 500     | ~30 GB    | ⚠️ Tested  |
 
 **Resource usage per client:**
 - ~50-60 MB RAM (without Tor)
@@ -949,10 +1133,11 @@ docker ps -a | grep simplex-client
 
 #### Messages stuck on ✓ (not ✓✓)
 ```bash
-# Check Event Listener
-sudo systemctl status simplex-events
+# v0.1.8: Check if Event Bridge is running
+# Look for "📡 Listening:" in Django console
 
-# View Event Listener logs
+# v0.1.7: Check Event Listener
+sudo systemctl status simplex-events
 sudo journalctl -u simplex-events -f
 ```
 
@@ -978,479 +1163,106 @@ df -h
 
 1. **Start with 2-3 clients** for initial testing
 2. **Enable Tor** if your SMP servers use .onion addresses
-3. **Run Event Listener** as systemd service for production
+3. **Check Redis is running** for real-time updates (v0.1.8+)
 4. **Monitor RAM usage** when adding many clients
 5. **Delete unused clients** to free resources
-
----
-
-## Client Detail Page - UI Features (NEW in v0.1.8)
-
-The v0.1.8 release brings a **completely redesigned Client Detail page** with modern AJAX-based interactions, animated transitions, and a professional UI layout.
-
-### 4-Corner Stats Cards Layout
-
-The statistics section has been rebuilt with a new **4-card layout** (replacing the previous 5-card design). Each card uses a sophisticated **4-corners + center** information pattern:
-
-```
-┌─────────────────┬─────────────────┬─────────────────┬─────────────────┐
-│     STATUS      │   MESSAGES      │  SUCCESS RATE   │     LATENCY     │
-├─────────────────┼─────────────────┼─────────────────┼─────────────────┤
-│ Port 3031    2h │ ✓4          ✗0  │ Today:4   Tot:4 │ ↓574ms   ↑802ms │
-│                 │                 │                 │                 │
-│   🟢 Running    │   4    │    2   │    100.0%       │     663ms       │
-│     Status      │ ↑Send  │ ↓Recv  │   Success Rate  │    Ø Latency    │
-│                 │                 │                 │                 │
-│ 1 Conn.    tom  │ ⏳0    2min ago │ ████████ 100%   │ ▁▃▅▇▅▃▁  L.15   │
-└─────────────────┴─────────────────┴─────────────────┴─────────────────┘
-```
-
-**Card Details:**
-
-| Card | Top-Left | Top-Right | Center | Bottom-Left | Bottom-Right |
-|------|----------|-----------|--------|-------------|--------------|
-| **Status** | Port number | Uptime | Status LED + Text | Connection count | Profile name |
-| **Messages** | ✓ Delivered | ✗ Failed | Sent \| Received split | ⏳ Pending | Last message time |
-| **Success Rate** | Today count | Total count | Percentage (color-coded) | Progress bar | - |
-| **Latency** | ↓ Min latency | ↑ Max latency | Ø Average latency | Sparkline | Trend label |
-
-### AJAX Messaging System
-
-Send messages **without page reload**:
-
-1. Type your message in the textarea
-2. Click "Send" button
-3. Button shows loading spinner during operation
-4. **Success:** Green feedback message, new message slides into table
-5. **Error:** Red feedback message with error details
-
-**Technical Implementation:**
-```javascript
-// Messages are sent via Fetch API with XMLHttpRequest header
-const response = await fetch('/clients/messages/send/', {
-    method: 'POST',
-    headers: {
-        'X-CSRFToken': csrfToken,
-        'X-Requested-With': 'XMLHttpRequest'  // Identifies AJAX request
-    },
-    body: formData
-});
-
-// Server returns JSON for AJAX requests
-const data = await response.json();
-// { success: true, message_id: "...", content: "...", recipient: "...", status: "sent" }
-```
-
-**Features:**
-- Instant success/error feedback
-- Live stats counter update after send
-- New messages appear with slide-in animation
-- No page flicker or reload
-
-### AJAX Connection Management
-
-**Creating Connections:**
-1. Click "New Connection" button
-2. Select target client from dropdown panel
-3. Click "Connect"
-4. New connection slides into the list with animation
-5. Panel closes automatically on success
-
-**Deleting Connections:**
-1. Click the red "✗" button on a connection
-2. Confirm deletion
-3. Connection slides out with animation and disappears
-
-**Slide Animations:**
-```css
-@keyframes slide-in-right {
-    from { opacity: 0; transform: translateX(30px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slide-out-right {
-    from { opacity: 1; transform: translateX(0); }
-    to { opacity: 0; transform: translateX(30px); }
-}
-```
-
-### Smart Connection Button
-
-The "New Connection" button intelligently adapts based on available connections:
-
-| Condition | Display |
-|-----------|---------|
-| Client not running | Button hidden |
-| Running + other clients available | "New Connection" button shown |
-| Running + all possible connections exist | "(no more clients)" text shown |
-
-**Implementation:**
-```django
-{% if client.is_running %}
-    {% if other_running_clients %}
-        <button>New Connection</button>
-    {% else %}
-        <span class="text-slate-400">(no more clients)</span>
-    {% endif %}
-{% endif %}
-```
-
-### Live SMP Server Status LEDs
-
-Servers in the sidebar show **real-time status with animated LEDs**:
-
-| Status | Color | Animation |
-|--------|-------|-----------|
-| `online` | 🟢 Emerald green | Pulsing ping effect |
-| `offline` | 🔴 Red | Static |
-| `error` | 🔴 Red | Static |
-| `unknown` | ⚪ Gray | Static |
-
-**Pulsing LED HTML:**
-```html
-<span class="relative flex h-2.5 w-2.5">
-    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-</span>
-```
-
-### Equal Height Layout
-
-The main content and sidebar now **always match heights** using CSS Grid + Flexbox:
-
-**How it works:**
-- CSS Grid with `align-items: stretch` makes both columns equal height
-- Content column: Messages table has `flex-1` (grows to fill space)
-- Sidebar column: SMP Server box has `flex-1` (grows to fill space)
-
-**Behavior:**
-- If **content is taller** → SMP Server box stretches to match
-- If **sidebar is taller** → Messages table stretches to match
-- Both have `min-h-[...]` to prevent collapsing when empty
-
-### Uptime Display
-
-Running clients now show formatted uptime:
-
-| Duration | Display |
-|----------|---------|
-| < 1 minute | "45s" |
-| 1-59 minutes | "12m" |
-| 1-23 hours | "2h 15m" |
-| 1+ days | "3d 5h" |
-
-**Property Implementation:**
-```python
-@property
-def uptime_display(self):
-    if not self.started_at or self.status != 'running':
-        return None
-    delta = timezone.now() - self.started_at
-    seconds = int(delta.total_seconds())
-    
-    if seconds < 60:
-        return f"{seconds}s"
-    elif seconds < 3600:
-        return f"{seconds // 60}m"
-    elif seconds < 86400:
-        hours = seconds // 3600
-        minutes = (seconds % 3600) // 60
-        return f"{hours}h {minutes}m"
-    else:
-        days = seconds // 86400
-        hours = (seconds % 86400) // 3600
-        return f"{days}d {hours}h"
-```
-
-### Latency Statistics
-
-Each client now tracks latency statistics from sent messages:
-
-| Statistic | Description |
-|-----------|-------------|
-| **Min Latency** | Fastest message delivery time |
-| **Max Latency** | Slowest message delivery time |
-| **Avg Latency** | Average delivery time across all messages |
-| **Sparkline** | Visual representation of last 15 messages (placeholder) |
-
-**Model Properties:**
-```python
-@property
-def avg_latency_ms(self):
-    result = self.sent_messages.filter(
-        total_latency_ms__isnull=False
-    ).aggregate(avg=Avg('total_latency_ms'))
-    return round(result['avg']) if result['avg'] else None
-
-@property
-def min_latency_ms(self):
-    result = self.sent_messages.filter(
-        total_latency_ms__isnull=False
-    ).aggregate(min=Min('total_latency_ms'))
-    return result['min']
-
-@property
-def max_latency_ms(self):
-    result = self.sent_messages.filter(
-        total_latency_ms__isnull=False
-    ).aggregate(max=Max('total_latency_ms'))
-    return result['max']
-```
-
-### Unified Button Styling
-
-All action buttons now use consistent **cyan-blue** styling:
-
-```html
-<button class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors">
-    Action
-</button>
-```
-
-**Applied to:**
-- Start/Stop/Restart buttons
-- Send message button
-- New connection button
-- Edit/Delete buttons
-- All form submit buttons
-
----
-
-## Troubleshooting
-
-### Common Issues (v0.1.8)
-
-#### 404 Error on "Send Message"
-
-**Symptom:** Clicking send returns 404 error or "Network Error"
-
-**Cause:** URL routing order - `<slug:slug>/` was matching before specific routes like `messages/send/`
-
-**Solution:** Update `clients/urls.py` - specific routes must come BEFORE generic slug routes:
-
-```python
-# CORRECT ORDER:
-urlpatterns = [
-    # Specific routes FIRST
-    path('messages/send/', views.SendMessageView.as_view(), name='send_message'),
-    path('connections/create/', views.ConnectionCreateView.as_view(), name='connection_create'),
-    
-    # Generic slug routes LAST
-    path('<slug:slug>/', views.ClientDetailView.as_view(), name='detail'),
-]
-```
-
-#### Message Stuck on ✓ (Never Shows ✓✓)
-
-**Symptom:** Messages show "sent" status but never update to "delivered"
-
-**Cause:** Event Listener not running
-
-**Solution:**
-```bash
-# Check if Event Listener is running
-sudo systemctl status simplex-events
-
-# Start if not running
-sudo systemctl start simplex-events
-
-# Check logs for errors
-sudo journalctl -u simplex-events -f
-```
-
-#### SMP Server LEDs Not Pulsing (All Gray/White)
-
-**Symptom:** All server LEDs show gray instead of green for online servers
-
-**Cause:** Template checking wrong field (`is_online` instead of `last_status`)
-
-**Solution:** Ensure `_sidebar.html` uses correct field:
-```django
-{% if server.last_status == 'online' %}
-    <!-- Pulsing green LED -->
-{% elif server.last_status == 'offline' or server.last_status == 'error' %}
-    <!-- Red LED -->
-{% else %}
-    <!-- Gray LED -->
-{% endif %}
-```
-
-#### Sidebar and Content Different Heights
-
-**Symptom:** Sidebar is shorter or longer than main content area
-
-**Cause:** Missing CSS flex properties
-
-**Solution:** Ensure these classes are present:
-- Grid container: `style="align-items: stretch;"`
-- Content column: `h-full flex flex-col`
-- Messages box: `flex-1 min-h-[300px]`
-- Sidebar container: `h-full`
-- SMP Server box: `flex-1 min-h-[150px]`
-
-#### Stats Not Updating After Sending Message
-
-**Symptom:** Sent counter stays at old value after sending
-
-**Cause:** AJAX response not updating DOM elements
-
-**Solution:** Check that stats elements have correct IDs:
-- `#stat-sent` - Sent message count
-- `#stat-received` - Received message count
-- `#stat-success-rate` - Success percentage
-
-#### Client Won't Start
-
-**Symptom:** Start button does nothing or shows error
-
-**Causes & Solutions:**
-
-1. **Docker not running:**
-   ```bash
-   sudo systemctl start docker
-   ```
-
-2. **Port already in use:**
-   ```bash
-   ss -tlnp | grep 3031
-   # Kill conflicting process or change client port
-   ```
-
-3. **Docker image not built:**
-   ```bash
-   cd ~/simplex-smp-monitor/clients/docker
-   docker build -t simplex-cli:latest -f Dockerfile.simplex-cli .
-   ```
-
-4. **Insufficient permissions:**
-   ```bash
-   sudo usermod -aG docker $USER
-   # Log out and log back in
-   ```
-
-#### WebSocket Connection Failed
-
-**Symptom:** "WebSocket connection failed" in browser console or logs
-
-**Causes & Solutions:**
-
-1. **Container not healthy:**
-   ```bash
-   docker logs simplex-client-client-001
-   docker inspect simplex-client-client-001 | grep -A5 Health
-   ```
-
-2. **Port not exposed:**
-   ```bash
-   docker port simplex-client-client-001
-   ```
-
-3. **Firewall blocking:**
-   ```bash
-   sudo ufw allow 3031:3080/tcp
-   ```
-
-### Debug Mode
-
-Enable Django debug mode for detailed error messages:
-
-```python
-# config/settings.py
-DEBUG = True
-```
-
-Check browser console (F12 → Console tab) for JavaScript errors.
-
-### Known Limitations (v0.1.8)
-
-| Limitation | Workaround | Fix Target |
-|------------|------------|------------|
-| Latency sparkline shows placeholder | Displays static bars | v0.2.5 |
-| Stats don't auto-refresh | Send message to trigger update | v0.2.0 |
-| Uptime resets on app restart | Expected behavior | - |
-| No bulk client operations | Create clients individually | v0.2.0 |
 
 ---
 
 ## Project Structure
 ```
 simplex-smp-monitor/
-├── config/                 # Django project settings
-│   ├── settings.py         # Main configuration
-│   ├── urls.py             # URL routing
-│   └── asgi.py             # ASGI config for Daphne
-├── core/                   # Shared utilities
-│   ├── simplex/
-│   │   └── cli_manager.py  # SimpleX CLI wrapper
-│   └── metrics.py          # InfluxDB writer
-├── dashboard/              # Dashboard app
+├── config/                     # Django project settings
+│   ├── settings.py             # Main configuration + Redis Channel Layer
+│   ├── urls.py                 # URL routing
+│   ├── asgi.py                 # ASGI config with WebSocket routing
+│   └── wsgi.py
+├── core/                       # Shared utilities
+│   ├── __init__.py
+│   └── metrics.py              # InfluxDB writer
+├── dashboard/                  # Dashboard app
+│   ├── models.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── consumers.py            # WebSocket consumers
+│   └── routing.py              # WebSocket routing
+├── servers/                    # Server management app
+│   ├── models.py               # Server & Category models
+│   ├── views.py                # CRUD + testing views
+│   ├── urls.py
+│   └── templatetags/           # Custom template filters
+│       └── server_tags.py
+├── stresstests/                # Multi-type testing app
+│   ├── models.py               # TestRun, TestResult
+│   ├── views.py                # Test execution views
+│   ├── scheduler.py            # APScheduler integration
+│   ├── tasks.py
+│   └── urls.py
+├── clients/                    # SimpleX CLI Clients app
+│   ├── models.py               # SimplexClient, ClientConnection, TestMessage
+│   ├── views.py                # Client management views
+│   ├── urls.py
+│   ├── forms.py                # Client creation forms
+│   ├── consumers.py            # 🆕 WebSocket Consumers (v0.1.8)
+│   ├── routing.py              # 🆕 WebSocket URLs (v0.1.8)
+│   ├── apps.py                 # 🆕 Auto-start Event Bridge (v0.1.8)
+│   ├── services/
+│   │   ├── docker_manager.py   # Docker container lifecycle
+│   │   ├── simplex_commands.py # WebSocket command service
+│   │   ├── event_bridge.py     # 🆕 SimplexEventBridge (v0.1.8)
+│   │   └── websocket_pool.py   # WebSocket connection pooling
+│   ├── docker/
+│   │   ├── Dockerfile.simplex-cli
+│   │   └── entrypoint.sh
+│   ├── management/commands/
+│   │   ├── listen_events.py    # Event listener (deprecated in v0.1.8)
+│   │   └── clients.py          # Client management commands
+│   └── templates/clients/
+│       ├── list.html
+│       ├── detail.html
+│       ├── form.html
+│       ├── confirm_delete.html
+│       ├── test_panel.html
+│       └── partials/
+│           ├── _stats.html
+│           ├── _sidebar.html
+│           └── _connections.html
+├── events/                     # Event logging app
+│   ├── models.py
 │   ├── views.py
 │   └── urls.py
-├── servers/                # Server management app
-│   ├── models.py           # Server & Category models
-│   ├── views.py            # CRUD + testing views
-│   ├── urls.py
-│   └── templatetags/       # Custom template filters
-├── stresstests/            # Multi-type testing app
-│   ├── models.py           # TestRun, TestResult, ServerStats
-│   ├── views.py            # Test execution views
-│   ├── scheduler.py        # APScheduler integration
-│   └── urls.py
-├── clients/                # SimpleX CLI Clients app
-│   ├── models.py           # SimplexClient, ClientConnection, TestMessage
-│   ├── views.py            # Client management, AJAX messaging views
-│   ├── urls.py             # 🆕 Reordered for AJAX routes (v0.1.8)
-│   ├── forms.py            # Client creation forms
-│   ├── services/
-│   │   ├── docker_manager.py    # Docker container lifecycle
-│   │   └── simplex_commands.py  # WebSocket command service
-│   ├── docker/
-│   │   ├── Dockerfile.simplex-cli  # Container image
-│   │   └── entrypoint.sh           # Container entrypoint
-│   ├── management/
-│   │   └── commands/
-│   │       └── listen_events.py    # Delivery receipt listener
-│   └── templates/
-│       └── clients/
-│           ├── detail.html         # 🆕 Redesigned with AJAX (v0.1.8)
-│           └── partials/
-│               ├── _stats.html     # 🆕 4-corner card layout (v0.1.8)
-│               ├── _sidebar.html   # 🆕 SMP LEDs, equal height (v0.1.8)
-│               └── _connections.html  # 🆕 Smart button, animations (v0.1.8)
-├── events/                 # Event logging app
-│   ├── models.py
-│   └── views.py
-├── templates/              # HTML templates
-│   ├── base.html           # Base template with nav + i18n
+├── templates/                  # Global HTML templates
+│   ├── base.html
 │   ├── dashboard/
 │   ├── servers/
 │   ├── stresstests/
-│   │   ├── list.html
-│   │   ├── type_select.html
-│   │   ├── detail_monitoring.html
-│   │   ├── detail_stress.html
-│   │   ├── detail_latency.html
-│   │   └── ...
-│   ├── clients/            # Client templates
-│   │   ├── list.html       # Client overview with cards
-│   │   ├── detail.html     # Client detail with messaging
-│   │   ├── form.html       # Create/edit form
-│   │   └── confirm_delete.html
 │   └── events/
 ├── static/
+│   ├── css/
+│   │   └── app.css
 │   └── js/
-│       └── i18n/           # Translation files
-│           ├── en.json     # English translations
-│           └── de.json     # German translations
-├── screenshots/            # Documentation images
-├── docker-compose.yml      # InfluxDB + Grafana stack
-├── telegraf.conf           # Telegraf configuration
-├── requirements.txt        # Python dependencies
-├── manage.py               # Django management script
-├── LICENSE                 # AGPL-3.0 license
-├── CHANGELOG.md            # Version history
-├── ROADMAP.md              # Development roadmap
-└── README.md               # This file
+│       ├── clients-live.js     # 🆕 Frontend WebSocket client (v0.1.8)
+│       ├── i18n.js             # Translation system
+│       └── lang/               # Language files
+│           ├── en.json
+│           └── de.json
+├── monitoring/                 # Monitoring stack configs
+│   ├── grafana/
+│   │   ├── dashboards/
+│   │   └── provisioning/
+│   └── telegraf/
+│       └── telegraf.conf
+├── scripts/                    # Helper scripts
+│   ├── install_telegraf_rpi.sh
+│   └── start_dev.sh
+├── screenshots/                # Documentation images
+├── docker-compose.yml          # InfluxDB + Grafana + Redis stack
+├── requirements.txt
+├── manage.py
+├── LICENSE                     # AGPL-3.0
+├── CHANGELOG.md
+├── ROADMAP.md
+└── README.md
 ```
 
 ---
@@ -1458,48 +1270,49 @@ simplex-smp-monitor/
 ## Tech Stack
 
 | Layer | Technology |
-|-------|------------|
-| **Backend** | Django 5.x, Django Channels, APScheduler |
-| **Frontend** | HTMX, Alpine.js, Tailwind CSS |
-| **AJAX** | Fetch API, XMLHttpRequest pattern *(NEW in v0.1.8)* |
-| **Animations** | CSS Keyframes (slide-in, slide-out, fade, ping) *(NEW in v0.1.8)* |
-| **i18n** | Alpine.js $store with JSON language files |
-| **Database** | SQLite (dev), PostgreSQL (prod) |
-| **Time-Series** | InfluxDB 2.x |
-| **Visualization** | Grafana |
-| **Metrics Agent** | Telegraf |
-| **ASGI Server** | Daphne |
-| **Tor Proxy** | PySocks |
-| **Containers** | Docker 24.x (for CLI Clients) |
-| **WebSocket** | websockets (Python async library) |
-| **Real-Time** | Django Channels (WebSocket), Redis (planned for v0.2.0) |
+|--------------------|-----------------------------------------------------------------|
+| **Backend**        | Django 5.x, Django Channels, APScheduler                        |
+| **Real-Time**      | **Redis 7.x** (Channel Layer), **WebSockets** *(NEW in v0.1.8)* |
+| **Frontend**       | HTMX, Alpine.js, Tailwind CSS                                   |
+| **i18n**           | Alpine.js $store with JSON language files                       |
+| **Database**       | SQLite (dev), PostgreSQL (prod)                                 |
+| **Time-Series**    | InfluxDB 2.x                                                    |
+| **Visualization**  | Grafana                                                         |
+| **Metrics Agent**  | Telegraf                                                        |
+| **ASGI Server**    | Daphne                                                          |
+| **Tor Proxy**      | PySocks                                                         |
+| **Containers**     | Docker 24.x (for CLI Clients + Redis)                           |
+| **WebSocket**      | websockets (Python async library)                               |
 
 ---
 
 ## Roadmap
 
+### ✅ v0.1.8 - Real-Time Infrastructure (COMPLETED)
+- [x] Redis Channel Layer
+- [x] SimplexEventBridge with auto-start
+- [x] WebSocket Consumers
+- [x] Frontend WebSocket client
+- [x] Live status indicator
+- [x] UI/UX improvements
+
 ### v0.2.0 - Test Panel & Mesh Connections
 - [ ] Test Panel UI for bulk messaging scenarios
 - [ ] Mesh connections (connect all clients with each other)
 - [ ] Bulk client creation (create 10/20/50 clients at once)
-- [ ] Redis integration for real-time updates
+- [ ] Bridge status API endpoint
 - [ ] Complete InfluxDB integration
 - [ ] Grafana dashboard templates
 - [ ] Automated test schedules
 
-### v0.3.0 - Real-Time & i18n
-- [ ] WebSocket live updates (stats auto-refresh)
-- [ ] Real-time test progress
+### v0.3.0 - i18n & Alerts
 - [ ] Activate all 25 languages
 - [ ] RTL support (Arabic, Hebrew)
-
-### v0.4.0 - Automation
-- [ ] Scheduled test runs
 - [ ] Email/Webhook alerts
 - [ ] Test result history
 - [ ] Export results (CSV/JSON)
 
-### v0.5.0 - Production Ready
+### v0.4.0 - Production Ready
 - [ ] Docker deployment
 - [ ] PostgreSQL support
 - [ ] Security hardening
@@ -1510,6 +1323,97 @@ simplex-smp-monitor/
 - [ ] Custom test scenarios
 - [ ] Performance analytics
 - [ ] Mobile app
+
+---
+
+## Troubleshooting
+
+### Redis Not Running
+
+```bash
+# Check if container exists
+docker ps -a | grep redis
+
+# Start if stopped
+docker start simplex-redis
+
+# If doesn't exist, create it
+docker run -d \
+  --name simplex-redis \
+  --restart unless-stopped \
+  -p 6379:6379 \
+  -v simplex-redis-data:/data \
+  redis:7-alpine redis-server --appendonly yes
+
+# Test connection
+docker exec simplex-redis redis-cli ping
+```
+
+### Event Bridge Not Starting
+
+```bash
+# In Django output, you should see:
+INFO 🌉 Event Bridge thread started
+INFO 🚀 SimplexEventBridge starting...
+
+# If not visible, check settings.py logging config
+```
+
+### WebSocket Not Connecting
+
+1. Check browser console (F12) for errors
+2. Verify ASGI routing in `config/asgi.py`
+3. Check Redis is running: `docker exec simplex-redis redis-cli ping`
+
+### 404 Error on "Send Message"
+
+**Cause:** URL routing order - specific routes must come before generic slug routes.
+
+**Solution:** Check `clients/urls.py`:
+```python
+urlpatterns = [
+    # Specific routes FIRST
+    path('messages/send/', views.SendMessageView.as_view(), name='send_message'),
+    # Generic slug routes LAST
+    path('<slug:slug>/', views.ClientDetailView.as_view(), name='detail'),
+]
+```
+
+### Messages Stuck on ✓ (not ✓✓)
+
+**v0.1.8:** Check Event Bridge is connected:
+```bash
+# Look for "📡 Listening:" messages in Django console
+```
+
+**v0.1.7:** Check Event Listener:
+```bash
+sudo systemctl status simplex-events
+sudo journalctl -u simplex-events -f
+```
+
+### Client Won't Start
+
+```bash
+# Check Docker logs
+docker logs simplex-client-client-001
+
+# Check if port is in use
+ss -tlnp | grep 3031
+
+# Check Docker image exists
+docker images | grep simplex-cli
+```
+
+### Debug Mode
+
+Enable Django debug mode for detailed error messages:
+```python
+# config/settings.py
+DEBUG = True
+```
+
+Check browser console (F12 → Console tab) for JavaScript errors.
 
 ---
 
@@ -1527,11 +1431,14 @@ Contributions are welcome! Please:
 
 ## Related Projects
 
-| Project | Description |
-|---------|-------------|
-| **[SimpleX Private Infrastructure](https://github.com/cannatoshi/simplex-smp-xftp-via-tor-on-rpi-hardened)** | Battle-tested guide to deploy SimpleX SMP/XFTP on Raspberry Pi with Tor |
-| **[SimpleX Chat](https://github.com/simplex-chat/simplex-chat)** | The SimpleX Chat application |
-| **[SimpleXMQ](https://github.com/simplex-chat/simplexmq)** | SimpleX Messaging Queue protocol |
+- **[SimpleX Private Infrastructure](https://github.com/cannatoshi/simplex-smp-xftp-via-tor-on-rpi-hardened)**  
+  Battle-tested guide to deploy SimpleX SMP/XFTP on Raspberry Pi with Tor
+
+- **[SimpleX Chat](https://github.com/simplex-chat/simplex-chat)**  
+  The SimpleX Chat application
+
+- **[SimpleXMQ](https://github.com/simplex-chat/simplexmq)**  
+  SimpleX Messaging Queue protocol
 
 ---
 
@@ -1555,51 +1462,44 @@ This tool is intended for monitoring your **own** infrastructure. Do not use it 
 
 ### v0.1.8-alpha (2025-12-27)
 
-**🎨 UI/UX Overhaul:**
-- 🆕 **4-Corner Stats Cards** - Redesigned statistics with corner-based information layout
-- 🆕 **AJAX Messaging System** - Send messages without page reload, instant UI feedback
-- 🆕 **AJAX Connection Management** - Create/delete connections with smooth slide animations
-- 🆕 **Equal Height Layout** - Sidebar and content always match heights dynamically
-- 🆕 **Live SMP Server LEDs** - Pulsing green indicators for online servers
-- 🆕 **Smart Connection Button** - Shows "(no more clients)" when all connected
-- 🆕 **Unified Cyan Buttons** - Consistent button styling throughout the UI
+**🚀 MAJOR FEATURE: Real-Time Infrastructure**
 
-**🔧 Model Enhancements:**
-- 🆕 **started_at Field** - Tracks when client was started (for uptime calculation)
-- 🆕 **start() Method** - Sets status to running and records start time
-- 🆕 **stop() Method** - Sets status to stopped
-- 🆕 **set_error() Method** - Sets error status with message
-- 🆕 **uptime_display Property** - Formatted uptime like "2h 15m" or "3d 5h"
-- 🆕 **avg_latency_ms Property** - Average latency from sent messages
-- 🆕 **min_latency_ms Property** - Minimum latency
-- 🆕 **max_latency_ms Property** - Maximum latency
-- 🆕 **messages_delivered Property** - Count of successfully delivered messages
+The application is transformed from polling-based to event-driven architecture:
 
-**🐛 Critical Fixes:**
-- **URL Routing Order** - Specific routes now come before generic slug routes (fixes 404 on message send)
-- **SendMessageView AJAX** - Returns JsonResponse for AJAX requests instead of redirect
-- **SMP Server LEDs** - Fixed field reference (uses `last_status` instead of `is_online`)
+- **🔴 Redis Channel Layer** - Production-ready message broker
+- **🌉 SimplexEventBridge** - Auto-connects to all containers, processes events
+- **📡 WebSocket Consumers** - ClientUpdateConsumer + ClientDetailConsumer
+- **⚡ Auto-Start Integration** - Event Bridge starts with Django (no more manual listen_events!)
+- **🟢 Live Status Indicator** - Green/red dot with connection status
+- **🖥️ Frontend WebSocket Client** - clients-live.js with auto-reconnect
 
-**🏗️ Infrastructure:**
-- AJAX patterns ready for upcoming Test Panel
-- WebSocket Channels integration for real-time broadcasts
-- Architecture prepared for Redis integration
-- CSS animations for professional UI transitions
+**🎨 Secondary: UI/UX Improvements:**
+- 4-Corner Stats Cards layout
+- AJAX Messaging System
+- AJAX Connection Management
+- Live SMP Server LEDs
+- Uptime tracking, Latency statistics
 
-**📁 Files Modified:**
-- `clients/models.py` - New fields, properties, and methods
-- `clients/views.py` - AJAX support for SendMessageView
-- `clients/urls.py` - Route ordering fix
-- `clients/templates/clients/detail.html` - Grid layout, AJAX handlers
-- `clients/templates/clients/partials/_stats.html` - 4-corner card layout
-- `clients/templates/clients/partials/_sidebar.html` - SMP LEDs, flex-grow
-- `clients/templates/clients/partials/_connections.html` - Smart button, animations
+**🐛 Fixes:**
+- URL routing order (specific routes before slug)
+- SendMessageView AJAX response
+- SMP LED status field reference
 
-**⚠️ Migration Required:**
+**⚠️ Deprecation:**
+- `python manage.py listen_events` is deprecated (still works but not needed)
+
+**📦 New Dependencies:**
 ```bash
-python manage.py makemigrations clients
-python manage.py migrate
+pip install channels-redis
 ```
+
+**🔧 Upgrade from v0.1.7:**
+1. Start Redis container (see Installation Step 4)
+2. `pip install channels-redis`
+3. Update settings.py with Redis Channel Layer config
+4. Copy new files (consumers.py, routing.py, event_bridge.py, clients-live.js)
+5. Stop simplex-events service if running
+6. Restart Django server
 
 ### v0.1.7-alpha (2025-12-27)
 
