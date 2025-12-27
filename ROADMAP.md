@@ -76,6 +76,108 @@
 
 ---
 
+## ✅ Phase 1.6: Real-Time Infrastructure (COMPLETED - v0.1.8)
+
+### 🚀 This is the MAJOR feature of v0.1.8!
+
+The application was transformed from polling-based to **real-time event-driven architecture**.
+
+### 1.6.1 Redis Channel Layer ✅
+- [x] Redis Docker container setup
+- [x] channels-redis package integration
+- [x] Redis configuration in settings.py
+- [x] Replace InMemoryChannelLayer with RedisChannelLayer
+- [x] Persistent data volume for Redis
+
+**Docker Command:**
+```bash
+docker run -d \
+  --name simplex-redis \
+  --restart unless-stopped \
+  -p 6379:6379 \
+  -v simplex-redis-data:/data \
+  redis:7-alpine redis-server --appendonly yes
+```
+
+### 1.6.2 SimplexEventBridge ✅
+- [x] New service: `clients/services/event_bridge.py`
+- [x] Automatic connection to all running containers
+- [x] Connection sync every 5 seconds
+- [x] Reconnection on connection loss
+- [x] Event processing: `newChatItems`, `chatItemsStatusesUpdated`
+- [x] Database updates on events
+- [x] Push events to Channel Layer
+- [x] Broadcast to browser group "clients_all"
+
+### 1.6.3 WebSocket Consumers ✅
+- [x] New file: `clients/consumers.py`
+- [x] ClientUpdateConsumer (for client list page)
+- [x] ClientDetailConsumer (for detail page)
+- [x] Event handlers: client_status, client_stats, message_status, new_message
+- [x] Container log streaming (detail page)
+
+### 1.6.4 WebSocket Routing ✅
+- [x] New file: `clients/routing.py`
+- [x] URL: `/ws/clients/` for list page
+- [x] URL: `/ws/clients/<slug>/` for detail page
+- [x] ASGI config update in `config/asgi.py`
+
+### 1.6.5 Auto-Start Integration ✅
+- [x] Updated `clients/apps.py`
+- [x] Event Bridge starts automatically with Django
+- [x] Background thread with own event loop
+- [x] No more manual `listen_events` command needed!
+
+**Old Way (v0.1.7):**
+```bash
+# Terminal 1
+python manage.py runserver 0.0.0.0:8000
+# Terminal 2
+python manage.py listen_events  # <- EXTRA STEP!
+```
+
+**New Way (v0.1.8):**
+```bash
+# Single command - everything starts automatically!
+python manage.py runserver 0.0.0.0:8000
+```
+
+### 1.6.6 Frontend WebSocket Client ✅
+- [x] New file: `static/js/clients-live.js`
+- [x] Auto-connect on page load
+- [x] Auto-reconnect on disconnect
+- [x] Event handlers for all message types
+- [x] Live DOM updates without refresh
+- [x] Toast notifications for new messages
+- [x] Uptime tracking
+
+### 1.6.7 Live Status Indicator ✅
+- [x] Green/red indicator in navigation bar
+- [x] "Live" / "Reconnecting..." text
+- [x] Detailed tooltip on hover:
+  - WebSocket connection status
+  - Event Bridge status
+  - Number of connected clients
+  - Channel Layer type (Redis)
+  - Last event received
+  - Connection uptime (live counter)
+
+### 1.6.8 Secondary: UI/UX Improvements ✅
+- [x] 4-corner stats card layout
+- [x] AJAX messaging system
+- [x] AJAX connection management
+- [x] Slide animations
+- [x] Live SMP server LEDs
+- [x] Equal height layout
+- [x] Unified button styling
+
+### 1.6.9 Bug Fixes ✅
+- [x] URL routing order (specific routes before slug)
+- [x] SendMessageView AJAX response
+- [x] SMP LED status field reference
+
+---
+
 ## 🔄 Phase 2: Test Panel & Automation (IN PROGRESS - v0.2.0)
 
 ### 2.1 Test Panel UI
@@ -88,7 +190,7 @@
   - Test duration (minutes)
   - Message content (random/custom template)
 - [ ] Start/Stop/Pause controls
-- [ ] Real-time progress display
+- [ ] Real-time progress display (via WebSocket!)
 - [ ] Success/failure counters
 
 ### 2.2 Mesh Connections
@@ -99,6 +201,7 @@
 
 ### 2.3 Bulk Client Operations
 - [ ] Create multiple clients at once (e.g., "Create 10 clients")
+- [ ] Auto-port assignment (3031, 3032, ...)
 - [ ] Bulk start/stop/restart
 - [ ] Bulk delete with cleanup
 - [ ] Client group/tag system
@@ -109,6 +212,13 @@
 - [ ] Failed message analysis
 - [ ] Time-based graphs (Chart.js)
 - [ ] Export to CSV/JSON
+
+### 2.5 Extended Real-Time Features
+- [ ] WebSocket bridge status endpoint
+- [ ] "Listening to X clients" in tooltip
+- [ ] Live client list updates
+- [ ] Auto-refresh stats on list page
+- [ ] Connection status broadcasts
 
 ---
 
@@ -132,6 +242,13 @@
 - [ ] Latency trends
 - [ ] Uptime tracking
 - [ ] Client performance comparison
+- [ ] Real-time message flow visualization
+
+### 3.4 Historical Statistics
+- [ ] Latency sparkline with real data (currently placeholder)
+- [ ] Success rate trends over time
+- [ ] Per-server message counts
+- [ ] Daily/weekly/monthly reports
 
 ---
 
@@ -193,7 +310,7 @@
 
 ### 7.1 Scalability
 - [ ] PostgreSQL support
-- [ ] Redis caching
+- [ ] Redis clustering
 - [ ] Celery task queue
 - [ ] Kubernetes deployment
 - [ ] Multi-node support
@@ -222,12 +339,89 @@
 | 0.1.5-alpha | 2025-12-25 | 7-tab form, categories | ✅ Done |
 | 0.1.6-alpha | 2025-12-26 | Multi-type tests, i18n | ✅ Done |
 | 0.1.7-alpha | 2025-12-27 | CLI Clients, Delivery Receipts | ✅ Done |
-| 0.2.0 | 2026-01-15 | Test Panel, Mesh Connections | 🔄 Next |
+| **0.1.8-alpha** | **2025-12-27** | **Real-Time: Redis, WebSocket, Event Bridge** | **✅ Done** |
+| 0.2.0 | 2026-01-15 | Test Panel, Mesh, Bulk Ops | 🔄 Next |
 | 0.2.5 | 2026-02-01 | InfluxDB, Grafana | 📋 Planned |
 | 0.3.0 | 2026-03-01 | Alerts, Notifications | 📋 Planned |
 | 0.4.0 | 2026-04-01 | Remote Management | 📋 Planned |
 | 0.5.0 | 2026-06-01 | API, Mobile | 📋 Planned |
 | 1.0.0 | TBD | Production Ready | 📋 Future |
+
+---
+
+## Technology Stack Evolution
+
+### Current (v0.1.8)
+
+| Component | Technology | Status |
+|-----------|------------|--------|
+| Backend | Django 5.x | ✅ Active |
+| ASGI Server | Daphne | ✅ Active |
+| **WebSocket** | **Django Channels** | **✅ NEW in v0.1.8** |
+| **Message Broker** | **Redis** | **✅ NEW in v0.1.8** |
+| Frontend | HTMX + Alpine.js | ✅ Active |
+| AJAX | Fetch API | ✅ Active |
+| CSS | Tailwind CSS | ✅ Active |
+| Animations | CSS Keyframes | ✅ Active |
+| Database | SQLite | ✅ Active |
+| Containers | Docker | ✅ Active |
+
+### Planned (v0.2.0+)
+
+| Component | Technology | Target |
+|-----------|------------|--------|
+| Task Queue | Celery | v0.3.0 |
+| Time-Series DB | InfluxDB | v0.2.5 |
+| Visualization | Grafana | v0.2.5 |
+| Charts | Chart.js | v0.2.0 |
+| Production DB | PostgreSQL | v0.5.0 |
+
+---
+
+## Architecture Diagram (v0.1.8)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         BROWSER (User)                                   │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  clients-live.js                                                  │   │
+│  │  - Auto-connect WebSocket                                         │   │
+│  │  - Live DOM updates                                               │   │
+│  │  - Toast notifications                                            │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                          WebSocket │ /ws/clients/
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         DJANGO + CHANNELS                                │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  ClientUpdateConsumer / ClientDetailConsumer                      │   │
+│  │  - Receives events from Channel Layer                             │   │
+│  │  - Sends JSON to browser                                          │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                    │                                     │
+│                         Channel Layer                                    │
+│                                    │                                     │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  SimplexEventBridge (Auto-started in background thread)          │   │
+│  │  - Connects to all running containers                             │   │
+│  │  - Processes SimpleX events                                       │   │
+│  │  - Updates database                                               │   │
+│  │  - Broadcasts to "clients_all" group                              │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+            │                                              │
+            │ WebSocket :3031-3080                         │ Pub/Sub
+            ▼                                              ▼
+┌─────────────────────────┐                    ┌─────────────────────────┐
+│  SimpleX CLI Containers │                    │  Redis (Port 6379)      │
+│  - Client 001 (:3031)   │                    │  - Channel Layer        │
+│  - Client 002 (:3032)   │                    │  - Message Broker       │
+│  - Client 003 (:3033)   │                    │  - Persistent Storage   │
+│  - ...                  │                    │                         │
+└─────────────────────────┘                    └─────────────────────────┘
+```
 
 ---
 
@@ -255,6 +449,84 @@
 
 ---
 
+## Features Added Per Version
+
+### v0.1.8-alpha (Real-Time Infrastructure) 🚀
+**MAJOR FEATURE:**
+- Redis Channel Layer
+- SimplexEventBridge
+- WebSocket Consumers
+- Auto-start integration
+- Frontend WebSocket client
+- Live status indicator with tooltip
+
+**Secondary:**
+- 4-corner stats card layout
+- AJAX messaging system
+- AJAX connection management
+- Slide animations
+- Live SMP server LEDs
+- URL routing fix
+- SendMessageView AJAX support
+
+### v0.1.7-alpha (CLI Clients)
+- Docker container management
+- WebSocket command service
+- Client connections
+- Delivery receipt tracking
+- Event listener daemon (now deprecated!)
+- Message statistics
+- Client detail page
+- Container logs display
+
+### v0.1.6-alpha (Testing)
+- Multi-type test system
+- APScheduler integration
+- i18n translation system
+- Live countdown timer
+- Language switcher
+
+### v0.1.5-alpha (Server Config)
+- 7-tab server form
+- Category system
+- Quick test button
+- Extended server model
+
+### v0.1.4-alpha (UI/UX)
+- Dark/light mode
+- Bilingual support
+- Tor integration
+- Drag & drop
+
+### v0.1.0-alpha (Foundation)
+- Initial project structure
+- Server management
+- Dashboard
+- Event logging
+
+---
+
+## Known Issues & Limitations
+
+### v0.1.8
+
+| Issue | Workaround | Fix Target |
+|-------|------------|------------|
+| Tooltip shows "0 Clients" | Bridge status endpoint needed | v0.2.0 |
+| List page no auto-refresh | Visit detail page | v0.2.0 |
+| Toast notifications stack | Refresh page | v0.2.0 |
+| Latency sparkline placeholder | Shows static bars | v0.2.5 |
+
+### Architecture Limitations
+
+| Limitation | Impact | Solution |
+|------------|--------|----------|
+| SQLite for dev only | Single-writer | PostgreSQL in v0.5.0 |
+| No task queue | Sync operations | Celery in v0.3.0 |
+| Single Redis instance | No HA | Redis cluster in v0.5.0 |
+
+---
+
 ## Contributing
 
 Want to help? Check:
@@ -262,12 +534,26 @@ Want to help? Check:
 1. [Open Issues](https://github.com/cannatoshi/simplex-smp-monitor/issues)
 2. [Discussions](https://github.com/cannatoshi/simplex-smp-monitor/discussions)
 
-Priority areas:
-- Test Panel UI design
-- Grafana dashboard templates
-- Documentation improvements
-- Translation contributions
+### Priority Areas for v0.2.0
+
+| Area | Difficulty | Impact |
+|------|------------|--------|
+| Test Panel UI | Medium | High |
+| Bridge status API | Easy | Medium |
+| Mesh connection logic | Hard | High |
+| Chart.js integration | Medium | Medium |
+| Bulk client creation | Easy | Medium |
+| List page WebSocket | Easy | Medium |
+
+### How to Contribute
+
+1. Fork the repository
+2. Create a feature branch
+3. Follow existing code style
+4. Add tests if applicable
+5. Update documentation
+6. Submit a pull request
 
 ---
 
-*Last updated: 2025-12-27*
+*Last updated: 2025-12-27 (v0.1.8-alpha)*
