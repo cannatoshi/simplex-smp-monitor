@@ -6,6 +6,7 @@ mit Verbindungs- und Nachrichtenverfolgung.
 """
 
 from django.db import models
+from django.db.models import Avg, Min, Max
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
@@ -116,6 +117,12 @@ class SimplexClient(models.Model):
     # === Timestamps ===
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Erstellt')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Aktualisiert')
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Gestartet um',
+        help_text='Zeitpunkt des letzten Starts (für Uptime-Berechnung)'
+    )
     last_active_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -184,12 +191,99 @@ class SimplexClient(models.Model):
         return f"ws://localhost:{self.websocket_port}"
     
     @property
+    def data_volume_name(self):
+        """Alias für data_volume (Template-Kompatibilität)"""
+        return self.data_volume
+    
+    @property
+    def last_activity(self):
+        """Alias für last_active_at (Template-Kompatibilität)"""
+        return self.last_active_at
+    
+    @property
     def delivery_success_rate(self):
         """Berechnet Erfolgsrate der Nachrichtenzustellung"""
         total = self.messages_sent
         if total == 0:
             return 0.0
         return ((total - self.messages_failed) / total) * 100
+
+    @property
+    def uptime_display(self):
+        """Formatierte Uptime als lesbarer String"""
+        if not self.started_at or self.status != 'running':
+            return None
+        
+        delta = timezone.now() - self.started_at
+        secs = int(delta.total_seconds())
+        
+        if secs < 60:
+            return f"{secs}s"
+        elif secs < 3600:
+            return f"{secs // 60}m"
+        elif secs < 86400:
+            hours = secs // 3600
+            mins = (secs % 3600) // 60
+            return f"{hours}h {mins}m"
+        else:
+            days = secs // 86400
+            hours = (secs % 86400) // 3600
+            return f"{days}d {hours}h"
+    
+    @property
+    def avg_latency_ms(self):
+        """Durchschnittliche Latenz in Millisekunden"""
+        result = self.sent_messages.filter(
+            total_latency_ms__isnull=False
+        ).aggregate(avg=Avg('total_latency_ms'))
+        return result['avg']
+    
+    @property
+    def min_latency_ms(self):
+        """Minimale Latenz in Millisekunden"""
+        result = self.sent_messages.filter(
+            total_latency_ms__isnull=False
+        ).aggregate(min=Min('total_latency_ms'))
+        return result['min']
+    
+    @property
+    def max_latency_ms(self):
+        """Maximale Latenz in Millisekunden"""
+        result = self.sent_messages.filter(
+            total_latency_ms__isnull=False
+        ).aggregate(max=Max('total_latency_ms'))
+        return result['max']
+    
+    @property
+    def messages_delivered(self):
+        """Anzahl erfolgreich zugestellter Nachrichten"""
+        return self.messages_sent - self.messages_failed
+    
+    @property
+    def last_message_received(self):
+        """Zeitpunkt der letzten empfangenen Nachricht"""
+        last_msg = self.received_messages.order_by('-client_received_at').first()
+        if last_msg and last_msg.client_received_at:
+            return last_msg.client_received_at
+        return None
+    
+    def start(self):
+        """Setzt Status auf running und speichert Startzeit"""
+        self.status = self.Status.RUNNING
+        self.started_at = timezone.now()
+        self.last_error = ''
+        self.save(update_fields=['status', 'started_at', 'last_error', 'updated_at'])
+    
+    def stop(self):
+        """Setzt Status auf stopped"""
+        self.status = self.Status.STOPPED
+        self.save(update_fields=['status', 'updated_at'])
+    
+    def set_error(self, error_message: str):
+        """Setzt Status auf error mit Fehlermeldung"""
+        self.status = self.Status.ERROR
+        self.last_error = error_message
+        self.save(update_fields=['status', 'last_error', 'updated_at'])
     
     def update_stats(self, sent=0, received=0, failed=0):
         """Aktualisiert Statistiken"""
@@ -401,6 +495,31 @@ class TestMessage(models.Model):
             'failed': '❌'
         }.get(self.delivery_status, '?')
         return f"{status_icon} {self.sender.name} → {self.recipient.name}"
+    
+    @property
+    def recipient_name(self):
+        """Name des Empfängers (für Template)"""
+        return self.recipient.name if self.recipient else 'Unbekannt'
+    
+    @property
+    def sender_name(self):
+        """Name des Senders (für Template)"""
+        return self.sender.name if self.sender else 'Unbekannt'
+    
+    @property
+    def contact_name(self):
+        """Kontaktname (für 'Alle' Tab)"""
+        return self.recipient.name if hasattr(self, '_direction') and self._direction == 'sent' else self.sender.name
+    
+    @property
+    def direction(self):
+        """Richtung der Nachricht (für Template)"""
+        return getattr(self, '_direction', 'sent')
+    
+    @property
+    def received_at(self):
+        """Alias für client_received_at (Template-Kompatibilität)"""
+        return self.client_received_at or self.created_at
     
     def mark_sent(self):
         """Markiert Nachricht als vom Server empfangen (✓)"""
