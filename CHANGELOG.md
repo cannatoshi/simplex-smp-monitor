@@ -15,8 +15,480 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bulk client creation
 - InfluxDB metrics integration
 - Grafana dashboard templates
-- WebSocket live updates
 - Scheduled test runs
+
+---
+
+## [0.1.8-alpha] - 2025-12-27
+
+### 🚀 MAJOR FEATURE: Real-Time Infrastructure
+
+This release fundamentally transforms the application from polling-based to **real-time event-driven architecture**. The separate `listen_events` management command is replaced by an integrated WebSocket bridge that automatically starts with Django.
+
+---
+
+### ✨ Highlights
+
+- **Redis Channel Layer** - Production-ready message broker replacing InMemoryChannelLayer
+- **SimplexEventBridge** - Auto-connects to all running containers, processes events, pushes to browsers
+- **WebSocket Consumers** - Browser connections for live updates without page refresh
+- **Integrated Auto-Start** - No more manual `python manage.py listen_events`
+- **Live Status Indicator** - Real-time connection status with detailed tooltip
+
+---
+
+### Added
+
+#### 🔴 Redis Integration
+
+Redis is now the backbone for real-time communication between components.
+
+**Docker Container Setup:**
+```bash
+docker run -d \
+  --name simplex-redis \
+  --restart unless-stopped \
+  -p 6379:6379 \
+  -v simplex-redis-data:/data \
+  redis:7-alpine redis-server --appendonly yes
+```
+
+**Django Configuration (`config/settings.py`):**
+```python
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+```
+
+**New Dependency:**
+```bash
+pip install channels-redis
+```
+
+**Why Redis?**
+| Feature | InMemoryChannelLayer | Redis |
+|---------|---------------------|-------|
+| Multi-process | ❌ No | ✅ Yes |
+| Production-ready | ⚠️ Dev only | ✅ Yes |
+| 50+ Clients | ❓ Maybe | ✅ Stable |
+| Persistence | ❌ No | ✅ Optional |
+
+---
+
+#### 🌉 SimplexEventBridge (`clients/services/event_bridge.py`)
+
+The core of the real-time system. Replaces the old `listen_events` management command.
+
+**Architecture:**
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    DJANGO + CHANNELS                              │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│   ┌─────────────────────────────────────────────────────────┐    │
+│   │              SimplexEventBridge                          │    │
+│   │   - Connects to ALL running containers                   │    │
+│   │   - Listens for SimpleX events                           │    │
+│   │   - Updates database                                     │    │
+│   │   - Pushes to Browser Group "clients_all"                │    │
+│   └─────────────────────────────────────────────────────────┘    │
+│                              │                                    │
+│                              ▼                                    │
+│   ┌─────────────────────────────────────────────────────────┐    │
+│   │              Channel Layer (Redis)                       │    │
+│   └─────────────────────────────────────────────────────────┘    │
+│                              │                                    │
+│                              ▼                                    │
+│   ┌─────────────────────────────────────────────────────────┐    │
+│   │              ClientUpdateConsumer                        │    │
+│   │   - Browser WebSocket endpoint                           │    │
+│   │   - Receives: client_status, message_status, stats       │    │
+│   │   - Sends JSON to frontend                               │    │
+│   └─────────────────────────────────────────────────────────┘    │
+│                                                                   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Key Features:**
+- **Auto-sync connections** - Checks every 5 seconds for new/stopped clients
+- **Reconnection handling** - Automatic reconnect on connection loss
+- **Event processing** - Handles `newChatItems` and `chatItemsStatusesUpdated`
+- **Database updates** - Updates message status and client statistics
+- **Channel Layer push** - Broadcasts to all connected browsers
+
+**Event Types Processed:**
+
+| SimpleX Event | Action | Browser Event |
+|---------------|--------|---------------|
+| `newChatItems` | Mark message delivered, update counters | `new_message`, `client_stats` |
+| `chatItemsStatusesUpdated` | Mark as delivered, calculate latency | `message_status` |
+
+---
+
+#### 📡 WebSocket Consumers (`clients/consumers.py`)
+
+Two consumers for different use cases:
+
+**ClientUpdateConsumer** (`/ws/clients/`)
+- For the client list page
+- Receives updates for ALL clients
+- Group: `clients_all`
+
+**ClientDetailConsumer** (`/ws/clients/<slug>/`)
+- For individual client detail pages
+- Receives updates for specific client + global updates
+- Groups: `client_<slug>` + `clients_all`
+
+**Supported Event Types:**
+```python
+async def client_status(self, event):
+    """Client status changed (running/stopped/error)"""
+    
+async def client_stats(self, event):
+    """Message counters updated"""
+    
+async def message_status(self, event):
+    """Delivery status changed (sent/delivered/failed)"""
+    
+async def new_message(self, event):
+    """New message received by a client"""
+    
+async def container_log(self, event):
+    """Container log line (detail page only)"""
+```
+
+---
+
+#### 🔌 WebSocket Routing (`clients/routing.py`)
+
+```python
+websocket_urlpatterns = [
+    re_path(r'ws/clients/$', consumers.ClientUpdateConsumer.as_asgi()),
+    re_path(r'ws/clients/(?P<client_slug>[\w-]+)/$', consumers.ClientDetailConsumer.as_asgi()),
+]
+```
+
+---
+
+#### ⚡ Auto-Start via AppConfig (`clients/apps.py`)
+
+The Event Bridge now starts automatically with Django - no manual command needed!
+
+```python
+class ClientsConfig(AppConfig):
+    name = 'clients'
+    
+    def ready(self):
+        if os.environ.get('RUN_MAIN') == 'true':
+            self._start_bridge_thread()
+    
+    def _start_bridge_thread(self):
+        def run_bridge():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(start_event_bridge())
+        
+        thread = threading.Thread(target=run_bridge, daemon=True)
+        thread.start()
+```
+
+**Server Output on Start:**
+```
+🚀 APScheduler gestartet - prüft alle 30 Sekunden
+✅ APScheduler gestartet - Monitoring läuft!
+INFO 🌉 Event Bridge thread started
+INFO 🌉 Starting Event Bridge in background thread...
+INFO 🚀 SimplexEventBridge starting...
+INFO ✓ Connected to Client 001
+INFO ✓ Connected to Client 002
+INFO ✓ Connected to Client 003
+INFO   📡 Listening: Client 001 (ws://localhost:3031)
+INFO   📡 Listening: Client 002 (ws://localhost:3032)
+INFO   📡 Listening: Client 003 (ws://localhost:3033)
+```
+
+---
+
+#### 🖥️ Frontend WebSocket Client (`static/js/clients-live.js`)
+
+A complete JavaScript WebSocket client with:
+
+**Features:**
+- Auto-connect on page load
+- Auto-reconnect on disconnect (3 second delay)
+- Event handlers for all message types
+- Live DOM updates without page refresh
+- Toast notifications for new messages
+- Uptime tracking
+- Connection status indicator
+
+**Usage:**
+```javascript
+// Auto-initialized on DOMContentLoaded
+window.clientsWS = new ClientsWebSocket();
+
+// Manual event handlers
+window.clientsWS.on('new_message', (data) => {
+    console.log('New message:', data);
+});
+
+// Send commands
+window.clientsWS.send({ action: 'ping' });
+```
+
+**Built-in DOM Updates:**
+- `.status-badge` - Client status badges
+- `.stat-sent` / `.stat-received` - Message counters
+- `.message-status` - Delivery status icons
+- `.message-latency` - Latency values
+- `#ws-status` - Connection indicator
+
+---
+
+#### 🟢 Live Status Indicator
+
+Visual indicator in the navigation bar showing real-time connection status:
+
+**States:**
+| State | Indicator | Text |
+|-------|-----------|------|
+| Connected | 🟢 Green dot | "Live" |
+| Disconnected | 🔴 Pulsing red | "Reconnecting..." |
+
+**Tooltip Information (on hover):**
+- WebSocket: Connected/Disconnected
+- Event Bridge: Running
+- Listening to: X Clients
+- Channel Layer: Redis
+- Last Event: 📨 New Message
+- Connected: 5m 23s (live counter)
+
+---
+
+### Changed
+
+#### ASGI Configuration (`config/asgi.py`)
+
+Updated to include WebSocket routing:
+
+```python
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+from clients.routing import websocket_urlpatterns
+
+application = ProtocolTypeRouter({
+    "http": django_asgi_app,
+    "websocket": AuthMiddlewareStack(
+        URLRouter(websocket_urlpatterns)
+    ),
+})
+```
+
+#### Logging Configuration
+
+Added logging for real-time components:
+
+```python
+LOGGING = {
+    'loggers': {
+        'clients': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'clients.services.event_bridge': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+}
+```
+
+---
+
+### Deprecated
+
+#### `listen_events` Management Command
+
+The separate `python manage.py listen_events` command is now **deprecated**. The Event Bridge starts automatically with Django.
+
+**Old Way (v0.1.7):**
+```bash
+# Terminal 1
+python manage.py runserver 0.0.0.0:8000
+
+# Terminal 2 (separate process!)
+python manage.py listen_events
+```
+
+**New Way (v0.1.8):**
+```bash
+# Single command - everything starts automatically!
+python manage.py runserver 0.0.0.0:8000
+```
+
+The old command still works but is no longer needed.
+
+---
+
+### 🎨 Secondary Feature: UI/UX Improvements
+
+In addition to the real-time infrastructure, the Client Detail page received a visual overhaul:
+
+#### 4-Corner Stats Cards
+
+Redesigned statistics display with corner-based layout:
+
+| Card | Corners (TL, TR, BL, BR) | Center |
+|------|--------------------------|--------|
+| Status | Port, Uptime, Connections, Profile | 🟢 Running |
+| Messages | Delivered, Failed, Pending, Last | Sent \| Received |
+| Success Rate | Today, Total, -, Progress Bar | 100.0% |
+| Latency | Min, Max, -, Sparkline | Ø 663ms |
+
+#### AJAX Messaging System
+
+Send messages without page reload:
+- Fetch API with XMLHttpRequest header
+- JsonResponse for AJAX requests
+- Instant feedback with success/error messages
+- Live stats update after send
+- Slide-in animation for new messages
+
+#### AJAX Connection Management
+
+- Create connections asynchronously
+- Delete with slide-out animation
+- Smart button shows "(no more clients)" when all connected
+
+#### Live SMP Server Status LEDs
+
+- 🟢 Pulsing green for online servers (animate-ping)
+- 🔴 Red for offline/error
+- ⚪ Gray for unknown
+
+#### Equal Height Layout
+
+Sidebar and content always match heights using CSS Grid + Flexbox.
+
+---
+
+### Fixed
+
+#### URL Routing Order (Critical)
+
+**Problem:** `<slug:slug>/` was matching before `messages/send/`, causing 404 errors.
+
+**Solution:** Specific routes now come BEFORE generic slug routes in `clients/urls.py`:
+
+```python
+urlpatterns = [
+    # === SPECIFIC ROUTES FIRST ===
+    path('messages/send/', views.SendMessageView.as_view(), name='send_message'),
+    path('connections/create/', views.ConnectionCreateView.as_view(), name='connection_create'),
+    
+    # === GENERIC ROUTES LAST ===
+    path('<slug:slug>/', views.ClientDetailView.as_view(), name='detail'),
+]
+```
+
+#### SendMessageView AJAX Response
+
+**Problem:** View returned `HttpResponseRedirect` for all requests.
+**Solution:** Checks `X-Requested-With` header, returns `JsonResponse` for AJAX.
+
+#### SMP Server LEDs
+
+**Problem:** Template checked `server.is_online` (doesn't exist).
+**Solution:** Changed to `server.last_status == 'online'`.
+
+---
+
+### Technical Details
+
+**New Files:**
+```
+clients/
+├── consumers.py                    # WebSocket consumers
+├── routing.py                      # WebSocket URL patterns
+├── services/
+│   └── event_bridge.py             # SimplexEventBridge
+└── apps.py                         # Updated with auto-start
+
+config/
+└── asgi.py                         # Updated with Channels routing
+
+static/
+└── js/
+    └── clients-live.js             # Frontend WebSocket client
+```
+
+**Modified Files:**
+```
+config/settings.py                  # Redis Channel Layer, Logging
+clients/templates/clients/detail.html
+clients/templates/clients/partials/_stats.html
+clients/templates/clients/partials/_sidebar.html
+clients/views.py                    # AJAX support
+clients/urls.py                     # Route ordering
+templates/base.html                 # Live status indicator
+```
+
+**New Dependencies:**
+```
+channels-redis>=4.0
+redis>=4.6
+```
+
+---
+
+### Installation / Upgrade
+
+#### For New Installations
+
+1. Start Redis:
+```bash
+docker run -d \
+  --name simplex-redis \
+  --restart unless-stopped \
+  -p 6379:6379 \
+  -v simplex-redis-data:/data \
+  redis:7-alpine redis-server --appendonly yes
+```
+
+2. Install dependencies:
+```bash
+pip install channels-redis
+```
+
+3. Update `config/settings.py` with Redis Channel Layer config.
+
+4. Start server (Event Bridge starts automatically):
+```bash
+python manage.py runserver 0.0.0.0:8000
+```
+
+#### For Upgrades from v0.1.7
+
+1. Start Redis container (see above)
+2. Install channels-redis: `pip install channels-redis`
+3. Update settings.py with Redis config
+4. Copy new files (consumers.py, routing.py, event_bridge.py, clients-live.js)
+5. Update asgi.py and apps.py
+6. Stop the old `listen_events` process (no longer needed!)
+7. Restart Django server
+
+---
+
+### Known Issues
+
+1. **Bridge status in tooltip** - "Listening to X Clients" requires additional endpoint (shows 0)
+2. **Stats don't auto-refresh on list page** - Only detail page receives live updates
+3. **Toast notifications stack** - Multiple rapid messages can overlap
 
 ---
 
@@ -79,36 +551,11 @@ This release introduces comprehensive Docker-based test client infrastructure fo
 - **Quick Send Form** - Send messages directly from detail page
 
 ### Fixed
-- **Container Deletion Bug** - Docker containers now properly removed when deleting clients (was leaving orphaned containers)
+- **Container Deletion Bug** - Docker containers now properly removed when deleting clients
 - **Django 4+ DeleteView** - Changed from `delete()` to `post()` method for compatibility
 - **Auto-Accept Order** - Must be called after address creation, not before
 - **Container Lookup** - Added fallback to container name if ID lookup fails
-- **Template Grid Layout** - Fixed sidebar positioning in client detail view (was pushed below main content)
-
-### Technical Details
-
-**New Files:**
-```
-clients/
-├── services/
-│   ├── docker_manager.py      # Container lifecycle management
-│   └── simplex_commands.py    # WebSocket command service
-├── docker/
-│   ├── Dockerfile.simplex-cli # Container image definition
-│   └── entrypoint.sh          # Container startup script
-└── management/
-    └── commands/
-        └── listen_events.py   # Event listener daemon
-```
-
-**Dependencies Added:**
-- `websockets` - Python async WebSocket client
-- `docker` - Docker SDK for Python (docker-py)
-
-**Configuration:**
-- Port range: 3031-3080 (50 clients max by default)
-- Container naming: `simplex-client-{slug}`
-- Volume naming: `simplex-client-{slug}-data`
+- **Template Grid Layout** - Fixed sidebar positioning in client detail view
 
 ### Performance
 
@@ -156,12 +603,6 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe SSD, Debian 12):
 - **Card Quick Test** - ⚡ button with immediate database update
 - **Category System** - Colored labels for server organization
 - **Template Tags** - Fingerprint/password extraction from address
-- **Screenshots Folder** - `serverlist.png`
-
-### Changed
-- Server form completely redesigned with tabbed interface
-- Server cards now show quick test button and real-time latency
-- Connection testing saves results when form is submitted
 
 ### Fixed
 - Host property setter error (was read-only property)
@@ -178,19 +619,12 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe SSD, Debian 12):
 - **Tor Integration** - Automatic .onion detection, tests via SOCKS5 proxy
 - **Duplicate Detection** - Warning when adding duplicate server addresses
 - **Drag & Drop** - Reorder servers visually
-- **Server Details** - Host, Fingerprint, Password fields parsed from address
-- **Password Toggle** - Show/hide password in server cards
 - **Status Persistence** - Test results saved with server (Online/Offline/Error)
 - **ONION Badge** - Visual indicator for Tor hidden services
 
 ### Changed
 - Renamed project from "SimpleX Test Suite" to "SimpleX SMP Monitor"
-- Footer updated with copyright and slogan
-- Server cards redesigned with better information display
-
-### Fixed
-- CSRF token for HTMX DELETE requests
-- Form submission handling for server creation
+- Complete UI overhaul with Tailwind CSS
 
 ---
 
@@ -202,10 +636,7 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe SSD, Debian 12):
 - Server management (CRUD operations)
 - Dashboard with statistics overview
 - Event logging system
-- Stress test framework (UI only)
 - Docker Compose stack (InfluxDB, Grafana, Telegraf)
-- SimplexCLIManager for CLI integration
-- MetricsWriter for InfluxDB
 - HTMX + Alpine.js frontend
 - Basic Tailwind CSS styling
 
@@ -215,6 +646,7 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe SSD, Debian 12):
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 0.1.8-alpha | 2025-12-27 | **Real-Time Infrastructure**: Redis, WebSocket, Event Bridge |
 | 0.1.7-alpha | 2025-12-27 | CLI Clients, Docker, Delivery Receipts |
 | 0.1.6-alpha | 2025-12-26 | Multi-type tests, i18n, APScheduler |
 | 0.1.5-alpha | 2025-12-25 | 7-tab form, categories, quick test |
@@ -223,7 +655,8 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe SSD, Debian 12):
 
 ---
 
-[Unreleased]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.7-alpha...HEAD
+[Unreleased]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.8-alpha...HEAD
+[0.1.8-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.7-alpha...v0.1.8-alpha
 [0.1.7-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.6-alpha...v0.1.7-alpha
 [0.1.6-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.5-alpha...v0.1.6-alpha
 [0.1.5-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.4-alpha...v0.1.5-alpha
