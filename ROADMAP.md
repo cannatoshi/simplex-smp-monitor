@@ -1,8 +1,8 @@
-# SimpleX SMP Monitor - Roadmap v2 for 2026
+# SimpleX SMP Monitor - Roadmap v2.1 for 2025/2026
 
 ## 🎯 Vision
 
-**SimpleX SMP Monitor** is the world's first comprehensive security testing and infrastructure validation tool for SimpleX messaging infrastructure. It enables infrastructure operators—journalists, whistleblowers, NGOs, security researchers—to test their own SimpleX deployment with the same capabilities that external adversaries (including state-level actors) would have.
+**SimpleX SMP Monitor** is the world's first comprehensive security testing and infrastructure validation tool for SimpleX messaging infrastructure. It enables infrastructure operators / journalists, whistleblowers, NGOs, security researchers / to test their own SimpleX deployment with the same capabilities that external adversaries (including state-level actors) would have.
 
 ### What Makes This Tool Unique
 
@@ -37,9 +37,9 @@ This tool answers that question by providing **Adversary View Mode**—a simulat
 - Real-time event infrastructure (Redis + EventBridge)
 - Basic web UI with Django templates
 
-**Current Stack (v0.1.8):**
+**Stack (v0.1.8):**
 ```
-Frontend: Django Templates + Vanilla JS + Bootstrap
+Frontend: Django Templates + HTMX + Alpine.js
 Backend:  Django + Channels + Redis
 Clients:  Docker containers (simplex-chat CLI)
 Network:  Tor hidden services (.onion)
@@ -47,7 +47,7 @@ Network:  Tor hidden services (.onion)
 
 ---
 
-## 🚀 Phase 2: React Revolution (v0.2.0)
+## 🔄 Phase 2: React Revolution (v0.1.9 - v0.2.0) - IN PROGRESS
 
 ### The Big Shift: From Django Templates to React SPA
 
@@ -55,37 +55,33 @@ This phase transforms the application from a traditional server-rendered Django 
 
 ### 2.1 Architecture Transformation
 
-**OLD Architecture (v0.1.x):**
+**OLD Architecture (v0.1.8):**
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         BROWSER                                  │
+│                         BROWSER                                 │
 │  Django Templates (HTML) + Vanilla JavaScript                   │
 └─────────────────────────────────────────────────────────────────┘
                               │
                     HTTP (Full page loads)
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    DJANGO SERVER                                 │
-│  Views render HTML templates                                     │
-│  WebSocket for live updates                                      │
+│                    DJANGO SERVER                                │
+│  Views render HTML templates                                    │
+│  WebSocket for live updates                                     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**NEW Architecture (v0.2.0+):**
+**NEW Architecture (v0.2.0):**
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    REACT SPA (Browser)                           │
+│                    REACT SPA (Browser)                          │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │  Components        State           Services               │  │
-│  │  ├── Dashboard     ├── Redux/      ├── API Client        │  │
-│  │  ├── ClientList    │   Zustand     ├── WebSocket Hook    │  │
-│  │  ├── ClientCard    ├── React       ├── Auth Service      │  │
-│  │  ├── TestPanel     │   Query       └── Storage           │  │
-│  │  ├── Adversary     └── Context                           │  │
-│  │  │   View                                                 │  │
-│  │  ├── Traffic                                              │  │
-│  │  │   Dashboard                                            │  │
-│  │  └── Settings                                             │  │
+│  │  ├── Layout        ├── useState    ├── API Client         │  │
+│  │  ├── ClientStats   ├── useEffect   ├── WebSocket Hook     │  │
+│  │  ├── ClientConn.   ├── Zustand     ├── i18n               │  │
+│  │  ├── TestPanel     └── React Query └── Storage            │  │
+│  │  └── TrafficView                                          │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
            │                                    │
@@ -93,18 +89,18 @@ This phase transforms the application from a traditional server-rendered Django 
            │                                    │
            ▼                                    ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    DJANGO REST BACKEND                           │
+│                    DJANGO REST BACKEND                          │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │  Django REST Framework    Django Channels                 │  │
-│  │  ├── /api/servers/        ├── /ws/clients/               │  │
-│  │  ├── /api/clients/        ├── /ws/traffic/               │  │
-│  │  ├── /api/messages/       └── /ws/adversary/             │  │
-│  │  ├── /api/tests/                                          │  │
-│  │  └── /api/analysis/                                       │  │
+│  │  ├── /api/v1/servers/     ├── /ws/clients/                │  │
+│  │  ├── /api/v1/clients/     ├── /ws/traffic/                │  │
+│  │  ├── /api/v1/messages/    └── /ws/adversary/              │  │
+│  │  ├── /api/v1/connections/                                 │  │
+│  │  └── /api/v1/categories/                                  │  │
 │  └───────────────────────────────────────────────────────────┘  │
-│                              │                                   │
-│                    SimplexEventBridge                            │
-│                              │                                   │
+│                              │                                  │
+│                    SimplexEventBridge                           │
+│                              │                                  │
 └─────────────────────────────────────────────────────────────────┘
            │                                    │
            ▼                                    ▼
@@ -114,280 +110,258 @@ This phase transforms the application from a traditional server-rendered Django 
 └─────────────────────┘              └─────────────────────┘
 ```
 
+---
+
 ### 2.2 React Project Setup
 
 #### 2.2.1 Technology Stack
-- [ ] **Vite** - Fast build tool (not Create React App)
-- [ ] **React 18** - Latest React with concurrent features
-- [ ] **TypeScript** - Type safety throughout
-- [ ] **Tailwind CSS** - Utility-first styling (matches our PoC)
-- [ ] **React Router v6** - Client-side routing
+- [x] **Vite** - Fast build tool (not Create React App)
+- [x] **React 18** - Latest React with concurrent features
+- [x] **TypeScript** - Type safety throughout
+- [x] **Tailwind CSS** - Utility-first styling
+- [x] **React Router v6** - Client-side routing
+- [x] **react-i18next** - Internationalization (DE/EN active)
+- [x] **Lucide React** - Icon library
 - [ ] **Zustand** - Lightweight state management
 - [ ] **React Query** - Server state & caching
 - [ ] **Recharts** - Charts and visualizations
-- [ ] **Lucide React** - Icon library
 
 #### 2.2.2 Project Structure
 ```
 frontend/
 ├── src/
+│   ├── api/
+│   │   └── client.ts              # ✅ Centralized API client
 │   ├── components/
-│   │   ├── ui/                    # Base UI components
-│   │   │   ├── Button.tsx
-│   │   │   ├── Card.tsx
-│   │   │   ├── Badge.tsx
-│   │   │   ├── Modal.tsx
-│   │   │   ├── Toast.tsx
-│   │   │   ├── Tooltip.tsx
-│   │   │   └── Input.tsx
-│   │   ├── layout/                # Layout components
-│   │   │   ├── Sidebar.tsx
-│   │   │   ├── Header.tsx
-│   │   │   ├── Navigation.tsx
-│   │   │   └── Footer.tsx
-│   │   ├── clients/               # Client-related components
-│   │   │   ├── ClientList.tsx
-│   │   │   ├── ClientCard.tsx
-│   │   │   ├── ClientDetail.tsx
-│   │   │   ├── ClientStats.tsx
-│   │   │   ├── ConnectionModal.tsx
-│   │   │   └── MessagePanel.tsx
-│   │   ├── servers/               # Server-related components
-│   │   │   ├── ServerList.tsx
-│   │   │   ├── ServerCard.tsx
-│   │   │   ├── ServerForm.tsx
-│   │   │   └── ServerStatus.tsx
-│   │   ├── testing/               # Test panel components
-│   │   │   ├── TestPanel.tsx
-│   │   │   ├── TestConfig.tsx
-│   │   │   ├── TestProgress.tsx
-│   │   │   └── TestResults.tsx
-│   │   ├── traffic/               # Traffic analysis components
-│   │   │   ├── TrafficDashboard.tsx
-│   │   │   ├── LiveTrafficGraph.tsx
-│   │   │   ├── MessageTimeline.tsx
-│   │   │   ├── ActivityHeatmap.tsx
-│   │   │   ├── LatencyDistribution.tsx
-│   │   │   └── PacketSizeChart.tsx
-│   │   └── adversary/             # Adversary view components
-│   │       ├── AdversaryDashboard.tsx
-│   │       ├── TimingCorrelation.tsx
-│   │       ├── MetadataExposure.tsx
-│   │       ├── RiskAssessment.tsx
-│   │       ├── PatternDetection.tsx
-│   │       └── Recommendations.tsx
-│   ├── pages/
-│   │   ├── Dashboard.tsx
-│   │   ├── Clients.tsx
-│   │   ├── ClientDetail.tsx
-│   │   ├── Servers.tsx
-│   │   ├── TestPanel.tsx
-│   │   ├── TrafficAnalysis.tsx
-│   │   ├── AdversaryView.tsx
-│   │   └── Settings.tsx
+│   │   ├── layout/
+│   │   │   └── Layout.tsx         # ✅ Header, Nav, Dark Mode, i18n
+│   │   └── clients/
+│   │       ├── ClientStats.tsx    # ✅ 4 Statistics cards
+│   │       ├── ClientConnections.tsx  # ✅ Connection management
+│   │       ├── ClientSidebar.tsx  # ✅ Actions & Send Message
+│   │       └── ClientMessages.tsx # ✅ Sent/Received/All tabs
 │   ├── hooks/
-│   │   ├── useWebSocket.ts
-│   │   ├── useClients.ts
-│   │   ├── useServers.ts
-│   │   ├── useTraffic.ts
-│   │   └── useAdversary.ts
-│   ├── services/
-│   │   ├── api.ts                 # REST API client
-│   │   ├── websocket.ts           # WebSocket service
-│   │   └── storage.ts             # Local storage
-│   ├── store/
-│   │   ├── clientStore.ts
-│   │   ├── serverStore.ts
-│   │   ├── trafficStore.ts
-│   │   └── adversaryStore.ts
-│   ├── types/
-│   │   ├── client.ts
-│   │   ├── server.ts
-│   │   ├── message.ts
-│   │   ├── traffic.ts
-│   │   └── adversary.ts
-│   ├── utils/
-│   │   ├── formatting.ts
-│   │   ├── calculations.ts
-│   │   └── constants.ts
-│   ├── App.tsx
-│   ├── main.tsx
-│   └── index.css
-├── public/
-├── package.json
-├── tsconfig.json
-├── tailwind.config.js
-├── vite.config.ts
-└── README.md
+│   │   ├── useWebSocket.ts        # ❌ Planned
+│   │   ├── useClients.ts          # ❌ Planned
+│   │   └── useTraffic.ts          # ❌ Planned
+│   ├── pages/
+│   │   ├── Dashboard.tsx          # ✅ Migrated
+│   │   ├── Servers.tsx            # ✅ Migrated
+│   │   ├── ServerDetail.tsx       # ✅ Migrated
+│   │   ├── ServerForm.tsx         # ✅ Migrated
+│   │   ├── Clients.tsx            # ✅ Migrated
+│   │   ├── ClientDetail.tsx       # ✅ Migrated
+│   │   ├── ClientForm.tsx         # ✅ Migrated
+│   │   ├── Categories.tsx         # ✅ Migrated
+│   │   ├── Tests.tsx              # ⚠️ Placeholder only
+│   │   └── Events.tsx             # ⚠️ Placeholder only
+│   ├── i18n/
+│   │   ├── index.ts               # ✅ i18n configuration
+│   │   └── locales/
+│   │       ├── de.json            # ✅ German translations
+│   │       └── en.json            # ✅ English translations
+│   ├── App.tsx                    # ✅ Router configuration
+│   └── main.tsx                   # ✅ Entry point
+├── vite.config.ts                 # ✅ Vite + Proxy config
+├── tailwind.config.js             # ✅ Tailwind config
+├── tsconfig.json                  # ✅ TypeScript config
+└── package.json                   # ✅ Dependencies
 ```
 
 #### 2.2.3 Django REST API Endpoints
 
-**Servers API:**
+**Servers API:** ✅ Complete
 ```
-GET    /api/servers/              # List all servers
-POST   /api/servers/              # Create server
-GET    /api/servers/{id}/         # Get server details
-PUT    /api/servers/{id}/         # Update server
-DELETE /api/servers/{id}/         # Delete server
-POST   /api/servers/{id}/test/    # Test server connection
-```
-
-**Clients API:**
-```
-GET    /api/clients/              # List all clients
-POST   /api/clients/              # Create client
-GET    /api/clients/{slug}/       # Get client details
-PUT    /api/clients/{slug}/       # Update client
-DELETE /api/clients/{slug}/       # Delete client
-POST   /api/clients/{slug}/start/ # Start container
-POST   /api/clients/{slug}/stop/  # Stop container
-GET    /api/clients/{slug}/logs/  # Get container logs
-GET    /api/clients/{slug}/messages/     # Get messages
-POST   /api/clients/{slug}/messages/     # Send message
-GET    /api/clients/{slug}/connections/  # Get connections
-POST   /api/clients/{slug}/connections/  # Create connection
+GET    /api/v1/servers/              # List all servers
+POST   /api/v1/servers/              # Create server
+GET    /api/v1/servers/{id}/         # Get server details
+PUT    /api/v1/servers/{id}/         # Update server
+DELETE /api/v1/servers/{id}/         # Delete server
+POST   /api/v1/servers/{id}/test/    # Test server connection
 ```
 
-**Traffic Analysis API:**
+**Clients API:** ✅ Complete
 ```
-GET    /api/traffic/              # Get traffic overview
-GET    /api/traffic/live/         # Get live traffic data
-GET    /api/traffic/timeline/     # Get message timeline
-GET    /api/traffic/heatmap/      # Get activity heatmap
-GET    /api/traffic/latency/      # Get latency distribution
-GET    /api/traffic/packets/      # Get packet size analysis
-```
-
-**Adversary Analysis API:**
-```
-GET    /api/adversary/            # Get adversary view overview
-GET    /api/adversary/correlation/    # Get timing correlation data
-GET    /api/adversary/metadata/       # Get metadata exposure report
-GET    /api/adversary/patterns/       # Get detected patterns
-GET    /api/adversary/risk/           # Get risk assessment
-GET    /api/adversary/recommendations/ # Get security recommendations
-POST   /api/adversary/simulate/       # Run adversary simulation
+GET    /api/v1/clients/              # List all clients
+POST   /api/v1/clients/              # Create client
+GET    /api/v1/clients/{slug}/       # Get client details
+PUT    /api/v1/clients/{slug}/       # Update client
+DELETE /api/v1/clients/{slug}/       # Delete client
+POST   /api/v1/clients/{slug}/start/ # Start container
+POST   /api/v1/clients/{slug}/stop/  # Stop container
+GET    /api/v1/clients/{slug}/logs/  # Get container logs
+GET    /api/v1/clients/{slug}/connections/  # Get connections
 ```
 
-**Test Panel API:**
+**Messages API:** ✅ Complete (NEW in v0.1.9)
 ```
-GET    /api/tests/                # List test runs
-POST   /api/tests/                # Create/start test
-GET    /api/tests/{id}/           # Get test details
-POST   /api/tests/{id}/stop/      # Stop running test
-GET    /api/tests/{id}/results/   # Get test results
+GET    /api/v1/messages/                     # List all messages
+GET    /api/v1/messages/?client={uuid}       # Filter by client
+GET    /api/v1/messages/?direction=sent      # Filter sent
+GET    /api/v1/messages/?direction=received  # Filter received
 ```
 
-### 2.3 WebSocket Channels
+**Dashboard API:** ✅ Complete
+```
+GET    /api/v1/dashboard/stats/      # Dashboard statistics
+GET    /api/v1/dashboard/activity/   # Activity data
+GET    /api/v1/dashboard/latency/    # Latency data
+```
+
+**Categories API:** ✅ Complete
+```
+GET    /api/v1/categories/           # List categories
+```
+
+**Connections API:** ✅ Complete
+```
+GET    /api/v1/connections/          # List connections
+POST   /api/v1/connections/          # Create connection
+DELETE /api/v1/connections/{id}/     # Delete connection
+```
+
+**Tests API:** ❌ Needs React Integration
+```
+GET    /api/v1/tests/                # List test runs
+POST   /api/v1/tests/                # Create/start test
+GET    /api/v1/tests/{id}/           # Get test details
+POST   /api/v1/tests/{id}/stop/      # Stop running test
+GET    /api/v1/tests/{id}/results/   # Get test results
+```
+
+**Events API:** ❌ Needs React Integration
+```
+GET    /api/v1/events/               # List events
+GET    /api/v1/events/{id}/          # Get event details
+```
+
+---
+
+### 2.3 Vite Proxy Configuration ✅
 
 ```typescript
-// WebSocket message types
+// vite.config.ts - IMPLEMENTED
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3001,
+    host: true,
+    proxy: {
+      '/api': { target: 'http://localhost:8000', changeOrigin: true },
+      '/clients/messages/send/': { target: 'http://localhost:8000', changeOrigin: true },
+      '/clients/connections/': { target: 'http://localhost:8000', changeOrigin: true },
+      '^/clients/[a-z0-9-]+/connect/$': { target: 'http://localhost:8000', changeOrigin: true },
+      '^/clients/[a-z0-9-]+/start/$': { target: 'http://localhost:8000', changeOrigin: true },
+      '^/clients/[a-z0-9-]+/stop/$': { target: 'http://localhost:8000', changeOrigin: true },
+      '^/clients/[a-z0-9-]+/restart/$': { target: 'http://localhost:8000', changeOrigin: true },
+      '/ws': { target: 'ws://localhost:8000', ws: true },
+    },
+  },
+})
+```
 
-// Client Updates Channel: /ws/clients/
-interface ClientUpdate {
-  type: 'client_status' | 'client_stats' | 'message_status' | 'new_message';
-  payload: ClientPayload;
+---
+
+### 2.4 Migration Progress
+
+#### ✅ v0.1.9 - Part 1: Core Pages (COMPLETED)
+
+| Task | Status |
+|------|--------|
+| Set up Vite + React project | ✅ Done |
+| Configure Tailwind CSS | ✅ Done |
+| Set up React Router | ✅ Done |
+| Create Layout component | ✅ Done |
+| Implement API service layer | ✅ Done |
+| Add dark/light mode toggle | ✅ Done |
+| Add language switcher (i18n) | ✅ Done |
+| CSRF-exempt for HTMX views | ✅ Done |
+| TestMessageViewSet API | ✅ Done |
+| Migrate Dashboard page | ✅ Done |
+| Migrate Servers list page | ✅ Done |
+| Migrate Server detail page | ✅ Done |
+| Migrate Server form page | ✅ Done |
+| Migrate Clients list page | ✅ Done |
+| Migrate Client detail page | ✅ Done |
+| Migrate Client form page | ✅ Done |
+| Migrate Categories page | ✅ Done |
+
+#### 🔄 v0.2.0 - Part 2: Tests, Events & WebSocket (TODO)
+
+| Task | Status |
+|------|--------|
+| Migrate Tests list page | ❌ Todo |
+| Migrate Test detail page | ❌ Todo |
+| Migrate Test form page | ❌ Todo |
+| Migrate Events list page | ❌ Todo |
+| Migrate Event detail page | ❌ Todo |
+| Create useWebSocket hook | ❌ Todo |
+| Integrate WebSocket in Clients | ❌ Todo |
+| Live status updates without refresh | ❌ Todo |
+| Add Zustand for state management | ❌ Todo |
+| Add React Query for caching | ❌ Todo |
+| Configure production build | ❌ Todo |
+| Update deployment scripts | ❌ Todo |
+| Remove legacy Django templates | ❌ Todo |
+
+---
+
+### 2.5 WebSocket Integration (Planned for v0.2.0)
+
+```typescript
+// Planned: useWebSocket hook
+function useWebSocket(url: string) {
+  const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [lastMessage, setLastMessage] = useState<any>(null);
+  
+  useEffect(() => {
+    const ws = new WebSocket(url);
+    ws.onopen = () => setStatus('connected');
+    ws.onclose = () => {
+      setStatus('disconnected');
+      // Auto-reconnect after 3 seconds
+      setTimeout(() => reconnect(), 3000);
+    };
+    ws.onmessage = (e) => setLastMessage(JSON.parse(e.data));
+    return () => ws.close();
+  }, [url]);
+  
+  return { status, lastMessage };
 }
 
-// Traffic Channel: /ws/traffic/
-interface TrafficUpdate {
-  type: 'traffic_event' | 'latency_update' | 'packet_captured';
-  payload: TrafficPayload;
-}
-
-// Adversary Channel: /ws/adversary/
-interface AdversaryUpdate {
-  type: 'correlation_detected' | 'pattern_found' | 'risk_changed';
-  payload: AdversaryPayload;
-}
-
-// Test Channel: /ws/tests/{test_id}/
-interface TestUpdate {
-  type: 'progress' | 'message_sent' | 'message_received' | 'error' | 'complete';
-  payload: TestPayload;
+// Usage in ClientDetail
+function ClientDetail() {
+  const { status, lastMessage } = useWebSocket('/ws/clients/');
+  
+  useEffect(() => {
+    if (lastMessage?.type === 'client_stats') {
+      // Update stats without page refresh
+      setStats(lastMessage.payload);
+    }
+  }, [lastMessage]);
 }
 ```
 
-### 2.4 Core React Components
+---
 
-#### 2.4.1 Live Status Indicator
-```tsx
-// Real-time connection status with detailed tooltip
-<LiveIndicator
-  websocketStatus="connected"
-  eventBridgeStatus="running"
-  connectedClients={12}
-  channelLayer="Redis"
-  lastEvent="2 seconds ago"
-  uptime="4h 32m"
-/>
-```
-
-#### 2.4.2 Client Card
-```tsx
-// Animated client card with live stats
-<ClientCard
-  name="Client 001"
-  status="online"
-  profile="quinn"
-  messagesSent={142}
-  messagesReceived={138}
-  deliveryRate={97.2}
-  avgLatency={342}
-  lastActivity="2 seconds ago"
-  onStartStop={() => {}}
-  onViewDetails={() => {}}
-/>
-```
-
-#### 2.4.3 Message Timeline
-```tsx
-// Visual timeline of messages across clients
-<MessageTimeline
-  clients={clients}
-  events={events}
-  timeRange="1h"
-  onEventClick={(event) => {}}
-  showCorrelations={true}
-/>
-```
-
-### 2.5 Development Workflow
+### 2.6 Development Workflow
 
 ```bash
 # Development (two terminals)
 # Terminal 1: Django backend
-cd backend/
-source venv/bin/activate
+cd ~/simplex-smp-monitor
+source .venv/bin/activate
 python manage.py runserver 0.0.0.0:8000
 
 # Terminal 2: React frontend
-cd frontend/
-npm run dev  # Vite dev server on :5173
+cd ~/simplex-smp-monitor/frontend
+npm run dev  # Vite dev server on :3001
 
-# Production build
+# Production build (planned)
 cd frontend/
 npm run build  # Creates dist/ folder
-# Copy to Django static files or serve separately
+# Then serve via Django or separate web server
 ```
-
-### 2.6 Migration Checklist
-
-- [ ] Set up Vite + React project
-- [ ] Configure Tailwind CSS
-- [ ] Set up React Router
-- [ ] Create base UI components
-- [ ] Implement API service layer
-- [ ] Implement WebSocket hooks
-- [ ] Migrate Dashboard page
-- [ ] Migrate Clients list page
-- [ ] Migrate Client detail page
-- [ ] Migrate Servers page
-- [ ] Add dark/light mode toggle
-- [ ] Add language switcher (i18n)
-- [ ] Configure production build
-- [ ] Update deployment scripts
 
 ---
 
@@ -425,57 +399,57 @@ class TrafficEvent(models.Model):
 #### 3.3.1 Live Traffic Monitor
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  📡 Live Traffic                                    ● In  ● Out │
+│     Live Traffic                                    ● In  ● Out │
 │─────────────────────────────────────────────────────────────────│
 │     1000 ┤                                                      │
 │      750 ┤        ╭───╮      ╭──╮                               │
-│      500 ┤   ╭────╯   ╰──────╯  ╰────╮      ╭──╮               │
-│      250 ┤───╯                       ╰──────╯  ╰───            │
+│      500 ┤   ╭────╯   ╰──────╯  ╰────╮      ╭──╮                │
+│      250 ┤───╯                       ╰──────╯  ╰───             │
 │        0 └──────────────────────────────────────────────────────│
-│          277s   279s   281s   283s   285s   287s   289s        │
+│          277s   279s   281s   283s   285s   287s   289s         │
 │─────────────────────────────────────────────────────────────────│
-│     0.5 KB/s          0.3 KB/s           60                    │
-│     Incoming          Outgoing           Events/min            │
+│     0.5 KB/s          0.3 KB/s           60                     │
+│     Incoming          Outgoing           Events/min             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 #### 3.3.2 Message Timeline
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  📨 Message Timeline                              Last 60 min   │
+│     Message Timeline                              Last 60 min   │
 │─────────────────────────────────────────────────────────────────│
 │                   -0m     -15m     -30m     -45m     -60m       │
-│  Client 001  │    ●●●      ●        ●●       ●        ●●●      │
-│  Client 002  │     ●      ●●●       ●       ●●         ●       │
-│  Client 003  │    ●●       ●       ●●●       ●        ●●       │
-│  Client 004  │     ●       ●        ●       ●●●        ●       │
+│  Client 001  │    ●●●      ●        ●●       ●        ●●●       │
+│  Client 002  │     ●      ●●●       ●       ●●         ●        │
+│  Client 003  │    ●●       ●       ●●●       ●        ●●        │
+│  Client 004  │     ●       ●        ●       ●●●        ●        │
 │─────────────────────────────────────────────────────────────────│
-│              ● Sent (solid)    ○ Received (hollow)             │
+│              ● Sent (solid)    ○ Received (hollow)              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 #### 3.3.3 Activity Heatmap
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  🗓️ Activity Heatmap                                            │
+│     Activity Heatmap                                            │
 │─────────────────────────────────────────────────────────────────│
 │       0h  3h  6h  9h  12h 15h 18h 21h                           │
-│  Mon  ░░  ░░  ▒▒  ▓▓  ██  ██  ▓▓  ▒▒                           │
-│  Tue  ░░  ░░  ▒▒  ▓▓  ██  ██  ▓▓  ░░                           │
-│  Wed  ░░  ░░  ░▒  ▓▓  ██  ▓▓  ▒▒  ░░                           │
-│  Thu  ░░  ░░  ▒▒  ▓▓  ██  ██  ▓▓  ▒▒                           │
-│  Fri  ░░  ░░  ▒▒  ██  ██  ▓▓  ▒▒  ░░                           │
-│  Sat  ░░  ░░  ░░  ▒▒  ▓▓  ▓▓  ▒▒  ░░                           │
-│  Sun  ░░  ░░  ░░  ▒▒  ▒▒  ▒▒  ░░  ░░                           │
+│  Mon  ░░  ░░  ▒▒  ▓▓  ██  ██  ▓▓  ▒▒                            │
+│  Tue  ░░  ░░  ▒▒  ▓▓  ██  ██  ▓▓  ░░                            │
+│  Wed  ░░  ░░  ░▒  ▓▓  ██  ▓▓  ▒▒  ░░                            │
+│  Thu  ░░  ░░  ▒▒  ▓▓  ██  ██  ▓▓  ▒▒                            │
+│  Fri  ░░  ░░  ▒▒  ██  ██  ▓▓  ▒▒  ░░                            │
+│  Sat  ░░  ░░  ░░  ▒▒  ▓▓  ▓▓  ▒▒  ░░                            │
+│  Sun  ░░  ░░  ░░  ▒▒  ▒▒  ▒▒  ░░  ░░                            │
 │─────────────────────────────────────────────────────────────────│
-│       Low ░░░░▒▒▒▒▓▓▓▓████ High                                │
+│       Low ░░░░▒▒▒▒▓▓▓▓████ High                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 #### 3.3.4 Latency Distribution
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  ⚡ Latency Distribution (ms)                                   │
+│     Latency Distribution (ms)                                   │
 │─────────────────────────────────────────────────────────────────│
 │     50 ┤        ████                                            │
 │     40 ┤        ████                                            │
@@ -483,7 +457,7 @@ class TrafficEvent(models.Model):
 │     20 ┤    ████████████                                        │
 │     10 ┤████████████████████                                    │
 │      0 └────────────────────────────────────────────────────────│
-│        0-200  200-400  400-600  600-800  800-1000  1000+       │
+│        0-200  200-400  400-600  600-800  800-1000  1000+        │
 │─────────────────────────────────────────────────────────────────│
 │       342ms              891ms              98.2%               │
 │       Median             P95                < 1 second          │
@@ -495,13 +469,13 @@ class TrafficEvent(models.Model):
 ┌─────────────────────────────────────────────────────────────────┐
 │  📦 Packet Sizes                                                │
 │─────────────────────────────────────────────────────────────────│
-│    <1 KB  ████████████████████████████████████████  (68%) Text │
-│   1-5 KB  ██████████████████████  (22%)                  Text  │
-│  5-10 KB  ██████  (6%)                                  Mixed  │
-│ 10-50 KB  ██  (3%)                                     Voice?  │
-│   >50 KB  █  (1%)                                       Files  │
+│    <1 KB  ████████████████████████████████████████  (68%) Text  │
+│   1-5 KB  ██████████████████████  (22%)                  Text   │
+│  5-10 KB  ██████  (6%)                                  Mixed   │
+│ 10-50 KB  ██  (3%)                                     Voice?   │
+│   >50 KB  █  (1%)                                       Files   │
 │─────────────────────────────────────────────────────────────────│
-│  ⚠️ Packet size can reveal message type to observers           │
+│     Packet size can reveal message type to observers            │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -556,31 +530,31 @@ Traditional security testing focuses on whether encryption works. Adversary View
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  ADVERSARY CAPABILITY LEVELS                                     │
+│  ADVERSARY CAPABILITY LEVELS                                    │
 │─────────────────────────────────────────────────────────────────│
-│                                                                  │
+│                                                                 │
 │  Level 1: Passive Local Observer                                │
 │  ├── Who: Coffee shop WiFi operator, home router                │
 │  ├── Sees: That you use Tor, timing of connections              │
 │  └── Cannot: See destinations, content, identify contacts       │
-│                                                                  │
+│                                                                 │
 │  Level 2: ISP / Network Provider                                │
 │  ├── Who: Telekom, Vodafone, corporate IT                       │
 │  ├── Sees: All Level 1 + traffic volume patterns                │
 │  └── Cannot: Break Tor, read content, identify servers          │
-│                                                                  │
+│                                                                 │
 │  Level 3: State Actor (Single Country)                          │
 │  ├── Who: BKA, FBI, local intelligence                          │
 │  ├── Sees: All Level 2 + legal access to ISP data               │
 │  ├── Tools: Wireshark, standard forensics, court orders         │
 │  └── Cannot: Global traffic correlation, break E2E crypto       │
-│                                                                  │
+│                                                                 │
 │  Level 4: Global Passive Adversary (Theoretical)                │
 │  ├── Who: NSA-level capability                                  │
 │  ├── Sees: All Level 3 + global traffic patterns                │
 │  ├── Can: Timing correlation across multiple endpoints          │
 │  └── Cannot: Break E2E encryption, read message content         │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -616,27 +590,27 @@ We CAN observe both endpoints = Level 4 simulation!
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  👁️ ADVERSARY VIEW - Security Audit Mode                        │
+│     ADVERSARY VIEW - Security Audit Mode                        │
 │─────────────────────────────────────────────────────────────────│
 │  Simulating: [Level 3: State Actor ▼]       [▶ Start Analysis]  │
 │─────────────────────────────────────────────────────────────────│
-│                                                                  │
+│                                                                 │
 │  ┌─────────────────────────────────────────────────────────────┐│
-│  │  📊 OVERALL SECURITY SCORE                                  ││
-│  │                                                              ││
+│  │     OVERALL SECURITY SCORE                                  ││
+│  │                                                             ││
 │  │         ╭──────────────────╮                                ││
 │  │         │                  │                                ││
 │  │         │       72%        │  GOOD                          ││
 │  │         │                  │                                ││
 │  │         ╰──────────────────╯                                ││
-│  │                                                              ││
-│  │  ✅ Content Protection: EXCELLENT (E2E encrypted)           ││
-│  │  ✅ Identity Protection: GOOD (No user IDs on server)       ││
-│  │  ⚠️ Timing Privacy: MODERATE (Patterns detected)            ││
-│  │  ⚠️ Activity Privacy: MODERATE (Regular schedule visible)   ││
-│  │                                                              ││
+│  │                                                             ││
+│  │     Content Protection: EXCELLENT (E2E encrypted)           ││
+│  │     Identity Protection: GOOD (No user IDs on server)       ││
+│  │     Timing Privacy: MODERATE (Patterns detected)            ││
+│  │     Activity Privacy: MODERATE (Regular schedule visible)   ││
+│  │                                                             ││
 │  └─────────────────────────────────────────────────────────────┘│
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -644,158 +618,65 @@ We CAN observe both endpoints = Level 4 simulation!
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  ⏱️ TIMING CORRELATION ATTACK SIMULATION                         │
+│     TIMING CORRELATION ATTACK SIMULATION                        │
 │─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│  Monitoring Period: 2 hours                                      │
-│  Events Analyzed: 847                                            │
-│                                                                  │
+│                                                                 │
+│  Monitoring Period: 2 hours                                     │
+│  Events Analyzed: 847                                           │
+│                                                                 │
 │  DETECTED CORRELATIONS:                                         │
 │  ┌─────────────────────────────────────────────────────────────┐│
-│  │                                                              ││
+│  │                                                             ││
 │  │  Client A              Correlation              Client B    ││
 │  │  ─────────             ───────────              ─────────   ││
-│  │  14:32:05 [SEND] ──────── 94.7% ────────► 14:32:07 [RECV]  ││
-│  │  14:33:12 [SEND] ──────── 91.2% ────────► 14:33:14 [RECV]  ││
-│  │  14:35:00 [SEND] ──────── 96.1% ────────► 14:35:02 [RECV]  ││
-│  │  14:38:45 [SEND] ──────── 89.8% ────────► 14:38:47 [RECV]  ││
-│  │                                                              ││
+│  │  14:32:05 [SEND] ──────── 94.7% ────────► 14:32:07 [RECV]   ││
+│  │  14:33:12 [SEND] ──────── 91.2% ────────► 14:33:14 [RECV]   ││
+│  │  14:35:00 [SEND] ──────── 96.1% ────────► 14:35:02 [RECV]   ││
+│  │  14:38:45 [SEND] ──────── 89.8% ────────► 14:38:47 [RECV]   ││
+│  │                                                             ││
 │  └─────────────────────────────────────────────────────────────┘│
-│                                                                  │
-│  ⚠️ HIGH CONFIDENCE CORRELATION DETECTED                        │
-│                                                                  │
+│                                                                 │
+│     HIGH CONFIDENCE CORRELATION DETECTED                        │
+│                                                                 │
 │  An adversary observing both endpoints can determine with       │
 │  94.7% confidence that Client A and Client B are communicating. │
-│                                                                  │
-│  Average Latency: 2.1 seconds (consistent = easier to correlate)│
-│  Pattern: Regular intervals (~3 minutes) increases risk         │
-│                                                                  │
-│  🔒 WHAT REMAINS PROTECTED:                                     │
-│  ├── Message content: [ENCRYPTED - Not visible]                 │
-│  ├── Message topic: [UNKNOWN]                                   │
-│  └── Specific identities: [Requires additional correlation]     │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-#### 4.4.3 Metadata Exposure Report
+#### 4.4.3 Security Recommendations
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  📋 METADATA EXPOSURE REPORT                                     │
+│    SECURITY RECOMMENDATIONS                                     │
 │─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│  ⚠️ EXPOSED TO ADVERSARY (Level 3):                             │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │                                                              ││
-│  │  Activity Times                                              ││
-│  │  └── User is most active: 09:00-17:00 weekdays              ││
-│  │  └── Timezone inference: Likely Central European (CET)      ││
-│  │  └── Sleep pattern: Inactive 23:00-07:00                    ││
-│  │                                                              ││
-│  │  Communication Patterns                                      ││
-│  │  └── Average messages/hour: 15                              ││
-│  │  └── Burst patterns detected: Yes (meetings?)               ││
-│  │  └── Regular intervals: Every ~3 minutes                    ││
-│  │                                                              ││
-│  │  Traffic Characteristics                                     ││
-│  │  └── Average packet size: 1.2 KB (text messages)            ││
-│  │  └── Large transfers detected: 3 (likely files)             ││
-│  │  └── Network used: Tor (visible to ISP)                     ││
-│  │                                                              ││
-│  └─────────────────────────────────────────────────────────────┘│
-│                                                                  │
-│  🔒 PROTECTED FROM ADVERSARY:                                   │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │                                                              ││
-│  │  ✅ Message Content         [E2E Encrypted]                 ││
-│  │  ✅ Contact Identities      [Not stored on server]          ││
-│  │  ✅ Contact List            [Doesn't exist centrally]       ││
-│  │  ✅ Server Destination      [Hidden by Tor]                 ││
-│  │  ✅ User Account            [No accounts in SimpleX]        ││
-│  │                                                              ││
-│  └─────────────────────────────────────────────────────────────┘│
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-#### 4.4.4 Pattern Detection
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  🔍 PATTERN DETECTION ENGINE                                     │
-│─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│  ⚠️ DETECTED PATTERNS:                                          │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │ 🔴 HIGH RISK: Regular Interval Communication              │   │
-│  │                                                           │   │
-│  │ Client A sends messages every ~180 seconds (±12s)        │   │
-│  │ This regularity makes correlation attacks trivial.       │   │
-│  │                                                           │   │
-│  │ Recommendation: Add random delays between 30-300 seconds │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │ 🟡 MEDIUM RISK: Workday Activity Pattern                  │   │
-│  │                                                           │   │
-│  │ Activity concentrated during business hours (CET)        │   │
-│  │ Suggests professional use / European timezone            │   │
-│  │                                                           │   │
-│  │ Recommendation: Consider scheduled background traffic    │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │ 🟢 LOW RISK: Varying Message Sizes                        │   │
-│  │                                                           │   │
-│  │ Good mix of packet sizes observed                        │   │
-│  │ Makes content type inference more difficult              │   │
-│  │                                                           │   │
-│  │ Status: No action needed                                 │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-#### 4.4.5 Security Recommendations
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  💡 SECURITY RECOMMENDATIONS                                     │
-│─────────────────────────────────────────────────────────────────│
-│                                                                  │
+│                                                                 │
 │  Based on analysis, here are actionable improvements:           │
-│                                                                  │
-│  1. TIMING OBFUSCATION                          [Implement ▶]   │
+│                                                                 │
+│  1. TIMING OBFUSCATION                          [Implement >]   │
 │     ├── Current: Messages sent immediately                      │
 │     ├── Risk: Timing correlation is trivial                     │
 │     └── Fix: Add random delays (30-300s) to break patterns      │
-│                                                                  │
-│  2. COVER TRAFFIC                               [Implement ▶]   │
+│                                                                 │
+│  2. COVER TRAFFIC                               [Implement >]   │
 │     ├── Current: No dummy messages                              │
 │     ├── Risk: Real message timing visible                       │
 │     └── Fix: Send periodic dummy messages to create noise       │
-│                                                                  │
-│  3. MESSAGE BATCHING                            [Implement ▶]   │
+│                                                                 │
+│  3. MESSAGE BATCHING                            [Implement >]   │
 │     ├── Current: Each message sent individually                 │
 │     ├── Risk: Individual messages can be tracked                │
 │     └── Fix: Batch multiple messages, send at intervals         │
-│                                                                  │
-│  4. ACTIVITY SCHEDULE                           [Review ▶]      │
-│     ├── Current: Activity follows work schedule                 │
-│     ├── Risk: Timezone/occupation inference possible            │
-│     └── Fix: Use delayed delivery, schedule variation           │
-│                                                                  │
+│                                                                 │
 │  ─────────────────────────────────────────────────────────────  │
-│                                                                  │
+│                                                                 │
 │  ESTIMATED IMPROVEMENT AFTER IMPLEMENTATION:                    │
-│                                                                  │
+│                                                                 │
 │  Before: Correlation Probability 94.7%  ████████████████████░░  │
 │  After:  Correlation Probability 23.1%  █████░░░░░░░░░░░░░░░░░  │
-│                                                                  │
-│  [📊 Generate Full Report]  [📥 Export PDF]  [🔄 Re-analyze]    │
-│                                                                  │
+│                                                                 │
+│  [ Generate Full Report]    [ Export PDF]    [ Re-analyze]      │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -807,72 +688,42 @@ We CAN observe both endpoints = Level 4 simulation!
 class TimingCorrelator:
     """
     Implements timing correlation attack simulation.
-    
-    Algorithm:
-    1. Collect all send events from Client A
-    2. Collect all receive events from Client B
-    3. For each send event, find receive events within time window
-    4. Calculate correlation probability based on:
-       - Time difference (closer = higher probability)
-       - Regularity of intervals
-       - Historical patterns
     """
     
     def __init__(self, time_window_ms=5000):
         self.time_window = time_window_ms
         
     async def analyze(self, client_a_id, client_b_id, duration_minutes=60):
-        # Get events from both clients
         cutoff = timezone.now() - timedelta(minutes=duration_minutes)
         
         sends = await TrafficEvent.objects.filter(
             client_id=client_a_id,
             direction='out',
-            event_type='message',
             timestamp__gte=cutoff
         ).order_by('timestamp').values('timestamp', 'correlation_id')
         
         receives = await TrafficEvent.objects.filter(
             client_id=client_b_id,
             direction='in',
-            event_type='message',
             timestamp__gte=cutoff
         ).order_by('timestamp').values('timestamp', 'correlation_id')
         
         correlations = []
-        
         for send in sends:
             for recv in receives:
                 delta_ms = (recv['timestamp'] - send['timestamp']).total_seconds() * 1000
-                
                 if 0 < delta_ms < self.time_window:
                     probability = self._calculate_probability(delta_ms)
                     correlations.append({
                         'send_time': send['timestamp'],
                         'recv_time': recv['timestamp'],
-                        'delta_ms': delta_ms,
                         'probability': probability,
                     })
         
         return {
             'correlations': correlations,
             'overall_probability': self._aggregate_probability(correlations),
-            'risk_level': self._assess_risk(correlations),
         }
-    
-    def _calculate_probability(self, delta_ms):
-        """
-        Probability decreases with time difference.
-        Uses exponential decay model.
-        """
-        # Peak probability at ~2 seconds (typical Tor latency)
-        expected_latency = 2000
-        variance = 1000
-        
-        diff = abs(delta_ms - expected_latency)
-        probability = math.exp(-(diff ** 2) / (2 * variance ** 2))
-        
-        return min(probability * 100, 99.9)  # Cap at 99.9%
 ```
 
 #### 4.5.2 Pattern Detection Engine
@@ -885,7 +736,6 @@ class PatternDetector:
     
     async def detect_all_patterns(self, client_id, duration_hours=24):
         events = await self._get_events(client_id, duration_hours)
-        
         patterns = []
         
         # Check for regular intervals
@@ -898,45 +748,7 @@ class PatternDetector:
         if tod_pattern:
             patterns.append(tod_pattern)
         
-        # Check for burst patterns (many messages in short time)
-        burst_pattern = self._detect_burst_pattern(events)
-        if burst_pattern:
-            patterns.append(burst_pattern)
-        
-        # Check for packet size patterns
-        size_pattern = self._detect_size_pattern(events)
-        if size_pattern:
-            patterns.append(size_pattern)
-        
         return patterns
-    
-    def _detect_interval_pattern(self, events):
-        """
-        Detect if messages are sent at regular intervals.
-        """
-        if len(events) < 10:
-            return None
-            
-        intervals = []
-        for i in range(1, len(events)):
-            delta = (events[i].timestamp - events[i-1].timestamp).total_seconds()
-            intervals.append(delta)
-        
-        mean_interval = statistics.mean(intervals)
-        std_dev = statistics.stdev(intervals)
-        coefficient_of_variation = std_dev / mean_interval
-        
-        if coefficient_of_variation < 0.2:  # Very regular
-            return {
-                'type': 'regular_interval',
-                'risk': 'high',
-                'description': f'Messages sent every ~{int(mean_interval)} seconds (±{int(std_dev)}s)',
-                'recommendation': 'Add random delays between 30-300 seconds',
-                'mean_interval': mean_interval,
-                'variation': coefficient_of_variation,
-            }
-        
-        return None
 ```
 
 ### 4.6 Adversary View Modes
@@ -958,149 +770,13 @@ The Test Panel allows operators to run comprehensive stress tests and reliabilit
 
 ### 5.2 Test Types
 
-#### 5.2.1 Delivery Reliability Test
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  📬 DELIVERY RELIABILITY TEST                                    │
-│─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│  Configuration:                                                  │
-│  ├── Source Clients: [✓] Client 001  [✓] Client 002             │
-│  ├── Target Clients: [✓] Client 003  [✓] Client 004             │
-│  ├── Messages per pair: [100]                                    │
-│  ├── Interval: [500] ms                                          │
-│  └── Timeout for delivery: [30] seconds                          │
-│                                                                  │
-│  [▶ Start Test]                                                  │
-│                                                                  │
-│  ─────────────────────────────────────────────────────────────  │
-│                                                                  │
-│  Progress: ████████████████░░░░  80%  (320/400 messages)        │
-│                                                                  │
-│  Live Results:                                                   │
-│  ├── Sent: 320                                                   │
-│  ├── Delivered (✓✓): 298                                        │
-│  ├── Pending (✓): 18                                             │
-│  ├── Failed (✗): 4                                               │
-│  └── Success Rate: 93.1%                                        │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-#### 5.2.2 Latency Benchmark Test
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  ⚡ LATENCY BENCHMARK TEST                                       │
-│─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│  Test Configuration:                                             │
-│  ├── Ping-pong pairs: 4                                          │
-│  ├── Iterations: 100                                             │
-│  └── Measure: Round-trip time                                    │
-│                                                                  │
-│  Results:                                                        │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │ Route              Min     Avg     Max     P95     P99     │ │
-│  │ ──────────────────────────────────────────────────────────│ │
-│  │ 001 ↔ 003          1.2s    2.1s    4.8s    3.9s    4.5s   │ │
-│  │ 001 ↔ 004          1.4s    2.3s    5.1s    4.2s    4.8s   │ │
-│  │ 002 ↔ 003          1.1s    2.0s    4.5s    3.8s    4.3s   │ │
-│  │ 002 ↔ 004          1.3s    2.2s    4.9s    4.0s    4.6s   │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│  Overall P95: 4.0s   Target: < 5s   Status: ✅ PASS             │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-#### 5.2.3 Stress Test
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  🔥 STRESS TEST                                                  │
-│─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│  Configuration:                                                  │
-│  ├── Clients: 20 (all)                                           │
-│  ├── Messages/client/minute: [60]                                │
-│  ├── Duration: [30] minutes                                      │
-│  └── Pattern: [Sustained ▼]                                      │
-│                                                                  │
-│  Expected Load:                                                  │
-│  └── 1,200 messages/minute across all clients                    │
-│                                                                  │
-│  [▶ Start Stress Test]                                          │
-│                                                                  │
-│  ─────────────────────────────────────────────────────────────  │
-│                                                                  │
-│  Status: Running (18:42 remaining)                               │
-│                                                                  │
-│  Metrics:                                                        │
-│  ├── Messages Sent: 14,234                                       │
-│  ├── Messages Delivered: 13,891                                  │
-│  ├── Current Rate: 1,187 msg/min                                 │
-│  ├── Error Rate: 2.4%                                            │
-│  ├── Avg Latency: 2.8s (increasing ⚠️)                          │
-│  └── Memory Usage: 4.2 GB / 8 GB                                │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-#### 5.2.4 Mesh Connection Test
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  🕸️ MESH CONNECTION TEST                                        │
-│─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│  Create full mesh between selected clients:                     │
-│                                                                  │
-│  Select Clients:                                                 │
-│  [✓] Client 001   [✓] Client 002   [✓] Client 003               │
-│  [✓] Client 004   [ ] Client 005   [ ] Client 006               │
-│                                                                  │
-│  Connections to create: 6 bidirectional (12 total)              │
-│                                                                  │
-│  [▶ Create Mesh]                                                 │
-│                                                                  │
-│  ─────────────────────────────────────────────────────────────  │
-│                                                                  │
-│  Connection Matrix:                                              │
-│                                                                  │
-│          001   002   003   004                                   │
-│    001    -    ✓✓    ✓✓    ✓✓                                   │
-│    002   ✓✓     -    ✓✓    ⏳                                   │
-│    003   ✓✓    ✓✓     -    ✓✓                                   │
-│    004   ✓✓    ⏳    ✓✓     -                                   │
-│                                                                  │
-│  Progress: 10/12 connections established                        │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 5.3 Bulk Operations
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  📦 BULK OPERATIONS                                              │
-│─────────────────────────────────────────────────────────────────│
-│                                                                  │
-│  Create Multiple Clients:                                       │
-│  ├── Quantity: [10]                                              │
-│  ├── Prefix: [stress-test-]                                      │
-│  ├── Auto-assign ports: ✓ (starting at 3041)                    │
-│  └── Auto-start: ✓                                               │
-│                                                                  │
-│  [Create 10 Clients]                                            │
-│                                                                  │
-│  ─────────────────────────────────────────────────────────────  │
-│                                                                  │
-│  Bulk Actions:                                                   │
-│  [▶ Start All]  [⏹ Stop All]  [🔄 Restart All]  [🗑️ Delete All] │
-│                                                                  │
-│  Select by Status:                                               │
-│  [Select Online]  [Select Offline]  [Select Errored]            │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+| Test Type | Description | Use Case |
+|-----------|-------------|----------|
+| **Delivery Reliability** | Test message delivery across clients | Verify infrastructure |
+| **Latency Benchmark** | Measure round-trip times | Performance tuning |
+| **Stress Test** | High-volume message load | Capacity planning |
+| **Mesh Connection** | Create full mesh between clients | Network testing |
+| **Bulk Operations** | Create/manage many clients at once | Scale testing |
 
 ---
 
@@ -1160,49 +836,60 @@ Pre-built dashboards for:
 
 | Version | Target | Focus | Status |
 |---------|--------|-------|--------|
-| 0.1.8 | Done | Real-Time Infrastructure | ✅ Complete |
-| **0.2.0** | **2026-01-30** | **React UI + Architecture** | 🔄 Next |
-| 0.2.5 | 2026-02-15 | Traffic Analysis Dashboard | 📋 Planned |
-| **0.3.0** | **2026-03-01** | **Adversary View (Security Audit)** | 📋 Planned |
-| 0.3.5 | 2026-03-15 | Advanced Test Panel | 📋 Planned |
-| 0.4.0 | 2026-04-01 | Monitoring & Grafana | 📋 Planned |
-| 0.5.0 | 2026-05-01 | Enterprise Features | 📋 Planned |
-| 1.0.0 | 2026-06-01 | Production Ready | 📋 Future |
+| 0.1.8 | 2025-12-27 | Real-Time Infrastructure | ✅ Complete |
+| **0.1.9** | **2025-12-29** | **React Migration Part 1** (Core Pages) | ✅ **Complete** |
+| **0.2.0** | **2026-01-15** | **React Migration Part 2** (Tests, Events, WebSocket) | 🔄 **Next** |
+| 0.2.5 | 2026-02-01 | Traffic Analysis Dashboard | 📋 Planned |
+| 0.3.0 | 2026-02-15 | Adversary View (Security Audit) | 📋 Planned |
+| 0.3.5 | 2026-03-01 | Advanced Test Panel | 📋 Planned |
+| 0.4.0 | 2026-03-15 | Monitoring & Grafana | 📋 Planned |
+| 0.5.0 | 2026-04-01 | Enterprise Features | 📋 Planned |
+| 1.0.0 | 2026-05-01 | Production Ready | 📋 Future |
 
 ---
 
-## 🛠️ Technology Stack (Final)
+## 🛠️ Technology Stack (Current)
 
-### Frontend (NEW)
-| Component | Technology |
-|-----------|------------|
-| Framework | React 18 + TypeScript |
-| Build Tool | Vite |
-| Styling | Tailwind CSS |
-| Routing | React Router v6 |
-| State | Zustand + React Query |
-| Charts | Recharts |
-| Icons | Lucide React |
-| WebSocket | Native + Custom Hook |
+### Frontend (v0.1.9)
+| Component | Technology | Status |
+|-----------|------------|--------|
+| Framework | React 18 + TypeScript | ✅ Implemented |
+| Build Tool | Vite 5.x | ✅ Implemented |
+| Styling | Tailwind CSS 3.x | ✅ Implemented |
+| Routing | React Router v6 | ✅ Implemented |
+| State | useState + Props | ✅ Implemented |
+| i18n | react-i18next | ✅ Implemented |
+| Icons | Lucide React | ✅ Implemented |
+| State Management | Zustand | 📋 Planned (v0.2.0) |
+| Server State | React Query | 📋 Planned (v0.2.0) |
+| WebSocket | Custom Hook | 📋 Planned (v0.2.0) |
+| Charts | Recharts | 📋 Planned (v0.2.5) |
 
-### Backend (Evolved)
-| Component | Technology |
-|-----------|------------|
-| Framework | Django 5.x |
-| API | Django REST Framework |
-| WebSocket | Django Channels |
-| Message Broker | Redis |
-| Task Queue | Celery (planned) |
-| Database | SQLite → PostgreSQL |
-| Time-Series | InfluxDB (planned) |
+### Backend (Stable)
+| Component | Technology | Status |
+|-----------|------------|--------|
+| Framework | Django 5.x | ✅ Stable |
+| API | Django REST Framework | ✅ Stable |
+| WebSocket | Django Channels | ✅ Stable |
+| Message Broker | Redis 7.x | ✅ Stable |
+| Task Queue | Celery | 📋 Planned |
+| Database | SQLite → PostgreSQL | ✅ / 📋 |
+| Time-Series | InfluxDB | 📋 Planned (v0.4.0) |
 
 ### Infrastructure
-| Component | Technology |
-|-----------|------------|
-| Containers | Docker |
-| SimpleX CLI | simplex-chat in Docker |
-| Network | Tor hidden services |
-| Monitoring | Grafana (planned) |
+| Component | Technology | Status |
+|-----------|------------|--------|
+| Containers | Docker 24.x | ✅ Stable |
+| SimpleX CLI | simplex-chat in Docker | ✅ Stable |
+| Network | Tor hidden services | ✅ Stable |
+| Monitoring | Grafana | 📋 Planned (v0.4.0) |
+
+### Legacy (Deprecated)
+| Component | Technology | Status |
+|-----------|------------|--------|
+| Frontend | Django Templates | ⚠️ Deprecated |
+| Interactivity | HTMX + Alpine.js | ⚠️ Deprecated |
+| i18n | Alpine.js $store | ⚠️ Deprecated |
 
 ---
 
@@ -1226,17 +913,19 @@ Pre-built dashboards for:
 
 Priority areas for contribution:
 
-| Area | Difficulty | Impact |
-|------|------------|--------|
-| React Component Library | Medium | High |
-| Timing Correlation Algorithm | Hard | Very High |
-| Traffic Visualization | Medium | High |
-| Pattern Detection Engine | Hard | Very High |
-| Grafana Dashboard Templates | Easy | Medium |
-| Documentation & Tutorials | Easy | High |
+| Area | Difficulty | Impact | Version |
+|------|------------|--------|---------|
+| Tests Page (React) | Medium | High | v0.2.0 |
+| Events Page (React) | Medium | High | v0.2.0 |
+| WebSocket React Hooks | Medium | High | v0.2.0 |
+| Traffic Visualization | Hard | Very High | v0.2.5 |
+| Timing Correlation Algorithm | Hard | Very High | v0.3.0 |
+| Pattern Detection Engine | Hard | Very High | v0.3.0 |
+| Grafana Dashboard Templates | Easy | Medium | v0.4.0 |
+| Documentation & Tutorials | Easy | High | Ongoing |
 
 ---
 
-*Last updated: 2025-12-28*
-*Version: Roadmap v2.0*
+*Last updated: 2025-12-29*
+*Version: Roadmap v2.1*
 *Author: cannatoshi*
