@@ -10,12 +10,539 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Test Panel UI for bulk messaging
+- Test Panel UI (React) for bulk messaging
+- Events Page (React)
+- WebSocket integration in React
 - Mesh connections (all-to-all)
 - Bulk client creation
+- Traffic Analysis Dashboard
+- Adversary View (Security Audit Mode)
 - InfluxDB metrics integration
 - Grafana dashboard templates
 - Scheduled test runs
+
+---
+
+## [0.1.9-alpha] - 2025-12-29
+
+### 🚀 MAJOR FEATURE: React SPA Migration
+
+This release completely transforms the frontend from Django Templates + HTMX + Alpine.js to a modern **React Single Page Application** with TypeScript.
+
+---
+
+### ✨ Highlights
+
+- **React 18 + TypeScript** - Modern, type-safe frontend architecture
+- **Vite 5.x** - Fast HMR development server with optimized production builds
+- **Tailwind CSS** - Utility-first styling with dark mode support
+- **React Router v6** - Client-side routing with nested layouts
+- **react-i18next** - Internationalization system (DE/EN active, 25+ prepared)
+- **REST API** - Full Django REST Framework backend for all entities
+- **Modular Components** - Reusable UI components with clean separation
+
+---
+
+### Added
+
+#### 🆕 React Frontend (`frontend/`)
+
+Complete React SPA replacing Django Templates:
+
+**New Project Structure:**
+```
+frontend/
+├── src/
+│   ├── api/
+│   │   └── client.ts              # Centralized API client
+│   ├── components/
+│   │   ├── layout/
+│   │   │   └── Layout.tsx         # Header, Nav, Dark Mode, i18n
+│   │   └── clients/
+│   │       ├── ClientStats.tsx    # 4 Statistics cards
+│   │       ├── ClientConnections.tsx
+│   │       ├── ClientSidebar.tsx
+│   │       └── ClientMessages.tsx
+│   ├── pages/
+│   │   ├── Dashboard.tsx
+│   │   ├── Servers.tsx
+│   │   ├── ServerDetail.tsx
+│   │   ├── ServerForm.tsx
+│   │   ├── Clients.tsx
+│   │   ├── ClientDetail.tsx
+│   │   ├── ClientForm.tsx
+│   │   ├── Categories.tsx
+│   │   ├── Tests.tsx
+│   │   └── Events.tsx
+│   ├── i18n/
+│   │   ├── index.ts
+│   │   └── locales/
+│   │       ├── de.json
+│   │       └── en.json
+│   ├── App.tsx
+│   └── main.tsx
+├── vite.config.ts
+├── tailwind.config.js
+├── tsconfig.json
+└── package.json
+```
+
+**Technology Stack:**
+
+| Component | Technology |
+|-----------|------------|
+| Framework | React 18 |
+| Language | TypeScript 5.x |
+| Build Tool | Vite 5.x |
+| Styling | Tailwind CSS 3.x |
+| Routing | React Router v6 |
+| i18n | react-i18next |
+| Icons | Lucide React |
+| HTTP Client | Fetch API |
+
+---
+
+#### 📡 New REST API Endpoints
+
+**TestMessageViewSet** (`/api/v1/messages/`):
+```
+GET  /api/v1/messages/                    # List all messages
+GET  /api/v1/messages/?client={uuid}      # Filter by client
+GET  /api/v1/messages/?direction=sent     # Filter sent messages
+GET  /api/v1/messages/?direction=received # Filter received messages
+```
+
+**Implementation (`clients/api/views.py`):**
+```python
+class TestMessageViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for test messages (read-only)"""
+    queryset = TestMessage.objects.all()
+    serializer_class = TestMessageSerializer
+    
+    def get_queryset(self):
+        queryset = TestMessage.objects.all()
+        client_id = self.request.query_params.get('client')
+        direction = self.request.query_params.get('direction')
+        
+        if client_id:
+            queryset = queryset.filter(
+                Q(sender_id=client_id) | Q(recipient_id=client_id)
+            )
+        
+        if direction == 'sent' and client_id:
+            queryset = queryset.filter(sender_id=client_id)
+        elif direction == 'received' and client_id:
+            queryset = queryset.filter(recipient_id=client_id)
+        
+        return queryset.order_by('-created_at')[:50]
+```
+
+---
+
+#### 🎨 Migrated Pages
+
+| Page | Components | Features |
+|------|------------|----------|
+| **Dashboard** | Stats cards, Activity chart | Real-time statistics |
+| **Servers** | List, Detail, Form | Full CRUD, Quick Test |
+| **ServerDetail** | 7-tab interface | All server configuration |
+| **ServerForm** | Multi-tab form | Create/Edit with validation |
+| **Clients** | List with filters | Status badges, Actions |
+| **ClientDetail** | Stats, Connections, Messages, Sidebar | Modular components |
+| **ClientForm** | Two-column layout | SMP server multi-select |
+| **Categories** | List view | Category management |
+
+---
+
+#### 🌐 Centralized API Client (`src/api/client.ts`)
+
+Type-safe API client with all endpoints:
+
+```typescript
+// Base configuration
+const API_BASE = '/api/v1';
+
+// Type definitions
+export interface SimplexClient {
+  id: string;           // UUID (not number!)
+  slug: string;
+  name: string;
+  profile_name: string;
+  websocket_port: number;
+  status: 'running' | 'stopped' | 'error' | 'starting';
+  tor_enabled: boolean;
+  smp_server_ids: number[];  // number[], not string[]
+  messages_sent: number;
+  messages_received: number;
+  // ...
+}
+
+export interface TestMessage {
+  id: string;
+  direction?: 'sent' | 'received';
+  sender: string;
+  recipient: string;
+  sender_name: string;
+  recipient_name: string;
+  content: string;
+  delivery_status: 'pending' | 'sent' | 'delivered' | 'failed';
+  total_latency_ms: number | null;  // null, not undefined!
+  created_at: string;
+}
+
+// API methods
+export const clientsApi = {
+  list: () => apiFetch<SimplexClient[]>('/clients/'),
+  get: (id: string) => apiFetch<SimplexClient>(`/clients/${id}/`),
+  create: (data) => apiFetch('/clients/', { method: 'POST', body: data }),
+  update: (id, data) => apiFetch(`/clients/${id}/`, { method: 'PUT', body: data }),
+  delete: (id) => apiFetch(`/clients/${id}/`, { method: 'DELETE' }),
+  start: (id) => apiFetch(`/clients/${id}/start/`, { method: 'POST' }),
+  stop: (id) => apiFetch(`/clients/${id}/stop/`, { method: 'POST' }),
+  restart: (id) => apiFetch(`/clients/${id}/restart/`, { method: 'POST' }),
+};
+
+export const messagesApi = {
+  list: (clientId?: string, direction?: 'sent' | 'received') => 
+    apiFetch<TestMessage[]>(`/messages/?client=${clientId}&direction=${direction}`)
+      .then(r => Array.isArray(r) ? r : r.results),  // Handle pagination
+};
+```
+
+---
+
+#### 🔧 Vite Proxy Configuration
+
+Selective proxy for API and HTMX action endpoints:
+
+```typescript
+// vite.config.ts
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3001,
+    host: true,
+    proxy: {
+      // REST API
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      // HTMX Action Endpoints (specific paths only!)
+      '/clients/messages/send/': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/clients/connections/': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      // Dynamic client action paths
+      '^/clients/[a-z0-9-]+/connect/$': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '^/clients/[a-z0-9-]+/start/$': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '^/clients/[a-z0-9-]+/stop/$': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '^/clients/[a-z0-9-]+/restart/$': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      // WebSocket
+      '/ws': {
+        target: 'ws://localhost:8000',
+        ws: true,
+      },
+    },
+  },
+})
+```
+
+> **Important:** Do NOT proxy all `/clients/*` - this would break React Router!
+
+---
+
+#### 🌙 Dark Mode Implementation
+
+```tsx
+// Layout.tsx
+const [darkMode, setDarkMode] = useState(() => {
+  const saved = localStorage.getItem('darkMode');
+  return saved ? JSON.parse(saved) : true;  // Default: dark
+});
+
+useEffect(() => {
+  localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  document.documentElement.classList.toggle('dark', darkMode);
+}, [darkMode]);
+```
+
+---
+
+#### 🌐 i18n with react-i18next
+
+```typescript
+// src/i18n/index.ts
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import de from './locales/de.json';
+import en from './locales/en.json';
+
+i18n.use(initReactI18next).init({
+  resources: { de: { translation: de }, en: { translation: en } },
+  lng: localStorage.getItem('language') || 'de',
+  fallbackLng: 'en',
+});
+```
+
+**Usage in components:**
+```tsx
+import { useTranslation } from 'react-i18next';
+
+function MyComponent() {
+  const { t } = useTranslation();
+  return <h1>{t('clients.title')}</h1>;
+}
+```
+
+---
+
+### Changed
+
+#### CSRF-Exempt for HTMX Views
+
+React frontend sends AJAX requests to legacy HTMX views. Added `@csrf_exempt` decorator:
+
+```python
+# clients/views.py
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ClientConnectView(View):
+    """Create connection between two clients"""
+    ...
+
+@method_decorator(csrf_exempt, name="dispatch")
+class SendMessageView(View):
+    """Send message to a contact"""
+    ...
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ConnectionDeleteView(View):
+    """Delete a connection"""
+    ...
+```
+
+---
+
+#### TypeScript Type Corrections
+
+**Critical Fix: Client IDs are UUIDs (strings), not integers!**
+
+```typescript
+// WRONG (v0.1.8 assumption):
+interface SimplexClient {
+  id: number;  // ❌
+}
+messagesApi.list(parseInt(id), "sent")  // ❌
+
+// CORRECT (v0.1.9):
+interface SimplexClient {
+  id: string;  // UUID: "94a26ed4-eab2-42b9-b69b-3410bcfdb086"
+}
+messagesApi.list(id, "sent")  // ✓
+```
+
+**Other type fixes:**
+- `smp_server_ids: number[]` (not `string[]`)
+- `total_latency_ms: number | null` (not `number | undefined`)
+- `direction?: 'sent' | 'received'` (optional field)
+
+---
+
+#### API Response Handling
+
+REST API returns paginated responses:
+
+```json
+{
+  "count": 8,
+  "next": null,
+  "previous": null,
+  "results": [...]  // ← Actual data
+}
+```
+
+**Solution in API client:**
+```typescript
+// Transform paginated response to array
+.then(r => Array.isArray(r) ? r : r.results)
+```
+
+---
+
+### Fixed
+
+#### Vite Proxy Breaking React Routes
+
+**Problem:** Proxying all `/clients/*` to Django broke React Router client-side navigation.
+
+**Solution:** Use regex patterns for specific HTMX endpoints only:
+```typescript
+// ✓ Correct - specific paths
+'^/clients/[a-z0-9-]+/connect/$': { target: 'http://localhost:8000' }
+
+// ✗ Wrong - would break React Router
+'/clients': { target: 'http://localhost:8000' }
+```
+
+---
+
+#### Import Statement Position
+
+**Problem:** Imports were accidentally placed inside docstring in `clients/views.py`.
+
+**Solution:** Moved imports to line 23 after docstring closure.
+
+---
+
+### Technical Details
+
+**New Files:**
+```
+frontend/
+├── src/
+│   ├── api/client.ts
+│   ├── components/layout/Layout.tsx
+│   ├── components/clients/ClientStats.tsx
+│   ├── components/clients/ClientConnections.tsx
+│   ├── components/clients/ClientSidebar.tsx
+│   ├── components/clients/ClientMessages.tsx
+│   ├── pages/Dashboard.tsx
+│   ├── pages/Servers.tsx
+│   ├── pages/ServerDetail.tsx
+│   ├── pages/ServerForm.tsx
+│   ├── pages/Clients.tsx
+│   ├── pages/ClientDetail.tsx
+│   ├── pages/ClientForm.tsx
+│   ├── pages/Categories.tsx
+│   ├── pages/Tests.tsx
+│   ├── pages/Events.tsx
+│   ├── i18n/index.ts
+│   ├── i18n/locales/de.json
+│   ├── i18n/locales/en.json
+│   ├── App.tsx
+│   └── main.tsx
+├── vite.config.ts
+├── tailwind.config.js
+├── tsconfig.json
+├── postcss.config.js
+├── index.html
+└── package.json
+
+clients/api/
+├── views.py          # Added TestMessageViewSet
+└── urls.py           # Added messages router
+```
+
+**Modified Files:**
+```
+clients/views.py      # CSRF-exempt decorators, import fix
+clients/api/views.py  # TestMessageViewSet
+clients/api/urls.py   # messages/ endpoint
+```
+
+**New Dependencies (package.json):**
+```json
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.0",
+    "react-i18next": "^14.0.0",
+    "i18next": "^23.7.0",
+    "lucide-react": "^0.303.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0"
+  }
+}
+```
+
+---
+
+### Installation / Upgrade
+
+#### For New Installations
+
+1. Install Node.js 18+:
+```bash
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
+2. Install frontend dependencies:
+```bash
+cd ~/simplex-smp-monitor/frontend
+npm install
+```
+
+3. Start both servers:
+```bash
+# Terminal 1: Django
+python manage.py runserver 0.0.0.0:8000
+
+# Terminal 2: Vite
+cd frontend && npm run dev
+```
+
+4. Access React app at `http://YOUR_IP:3001`
+
+#### For Upgrades from v0.1.8
+
+1. Install Node.js 18+ (see above)
+2. Pull latest changes: `git pull`
+3. Install frontend: `cd frontend && npm install`
+4. Start both servers as shown above
+
+---
+
+### Deprecated
+
+#### Django Templates + HTMX + Alpine.js
+
+The legacy frontend is still accessible at `http://localhost:8000/` but is no longer actively developed.
+
+| Component | Status | Replacement |
+|-----------|--------|-------------|
+| Django Templates | Deprecated | React components |
+| HTMX | Deprecated | React + Fetch API |
+| Alpine.js | Deprecated | React hooks |
+| Alpine.js $store i18n | Deprecated | react-i18next |
+| static/js/i18n.js | Deprecated | src/i18n/index.ts |
+| static/js/lang/*.json | Deprecated | src/i18n/locales/*.json |
+
+---
+
+### Known Issues
+
+1. **WebSocket not integrated** - Real-time updates not yet in React (coming in v0.2.0)
+2. **Tests page placeholder** - Full functionality planned for v0.2.0
+3. **Events page placeholder** - Full functionality planned for v0.2.0
 
 ---
 
@@ -87,30 +614,30 @@ The core of the real-time system. Replaces the old `listen_events` management co
 **Architecture:**
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                    DJANGO + CHANNELS                              │
+│                    DJANGO + CHANNELS                             │
 ├──────────────────────────────────────────────────────────────────┤
-│                                                                   │
+│                                                                  │
 │   ┌─────────────────────────────────────────────────────────┐    │
-│   │              SimplexEventBridge                          │    │
-│   │   - Connects to ALL running containers                   │    │
-│   │   - Listens for SimpleX events                           │    │
-│   │   - Updates database                                     │    │
-│   │   - Pushes to Browser Group "clients_all"                │    │
+│   │              SimplexEventBridge                         │    │
+│   │   - Connects to ALL running containers                  │    │
+│   │   - Listens for SimpleX events                          │    │
+│   │   - Updates database                                    │    │
+│   │   - Pushes to Browser Group "clients_all"               │    │
 │   └─────────────────────────────────────────────────────────┘    │
-│                              │                                    │
-│                              ▼                                    │
+│                              │                                   │
+│                              ▼                                   │
 │   ┌─────────────────────────────────────────────────────────┐    │
-│   │              Channel Layer (Redis)                       │    │
+│   │              Channel Layer (Redis)                      │    │
 │   └─────────────────────────────────────────────────────────┘    │
-│                              │                                    │
-│                              ▼                                    │
+│                              │                                   │
+│                              ▼                                   │
 │   ┌─────────────────────────────────────────────────────────┐    │
-│   │              ClientUpdateConsumer                        │    │
-│   │   - Browser WebSocket endpoint                           │    │
-│   │   - Receives: client_status, message_status, stats       │    │
-│   │   - Sends JSON to frontend                               │    │
+│   │              ClientUpdateConsumer                       │    │
+│   │   - Browser WebSocket endpoint                          │    │
+│   │   - Receives: client_status, message_status, stats      │    │
+│   │   - Sends JSON to frontend                              │    │
 │   └─────────────────────────────────────────────────────────┘    │
-│                                                                   │
+│                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -646,6 +1173,7 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe SSD, Debian 12):
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 0.1.9-alpha | 2025-12-29 | **React SPA Migration**: React 18, TypeScript, Vite, Tailwind |
 | 0.1.8-alpha | 2025-12-27 | **Real-Time Infrastructure**: Redis, WebSocket, Event Bridge |
 | 0.1.7-alpha | 2025-12-27 | CLI Clients, Docker, Delivery Receipts |
 | 0.1.6-alpha | 2025-12-26 | Multi-type tests, i18n, APScheduler |
@@ -655,7 +1183,8 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe SSD, Debian 12):
 
 ---
 
-[Unreleased]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.8-alpha...HEAD
+[Unreleased]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.9-alpha...HEAD
+[0.1.9-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.8-alpha...v0.1.9-alpha
 [0.1.8-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.7-alpha...v0.1.8-alpha
 [0.1.7-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.6-alpha...v0.1.7-alpha
 [0.1.6-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.5-alpha...v0.1.6-alpha
