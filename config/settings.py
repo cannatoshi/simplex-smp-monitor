@@ -20,6 +20,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'channels',
     'django_htmx',
+    # REST API
+    'rest_framework',
+    'corsheaders',
+    # Apps
     'dashboard',
     'servers',
     'stresstests',
@@ -29,6 +33,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -74,7 +79,7 @@ DATABASES = {
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = []  # Disabled for dev
+AUTH_PASSWORD_VALIDATORS = []
 
 LANGUAGE_CODE = 'de-de'
 TIME_ZONE = 'Europe/Berlin'
@@ -90,7 +95,29 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SIMPLEX_CLI_PATH = os.environ.get('SIMPLEX_CLI_PATH', 'simplex-chat')
 SIMPLEX_CLI_BASE_PORT = int(os.environ.get('SIMPLEX_CLI_BASE_PORT', 5225))
 
-# Logging Configuration
+# =============================================================================
+# REST Framework
+# =============================================================================
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 50,
+    'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S%z',
+}
+
+# =============================================================================
+# CORS (für React auf Port 3000)
+# =============================================================================
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOW_CREDENTIALS = True
+
+# Logging
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -111,11 +138,6 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
-        },
-        'clients.services.event_bridge': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
         },
     },
 }

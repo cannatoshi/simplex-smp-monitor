@@ -21,6 +21,7 @@ from django.views.decorators.http import require_POST
 from django.db.models import Count, Avg, Q
 from django.utils import timezone
 
+from django.views.decorators.csrf import csrf_exempt
 from .models import SimplexClient, ClientConnection, TestMessage, DeliveryReceipt
 from .forms import SimplexClientForm, ClientConnectionForm, TestMessageForm, BatchTestForm
 from .services.docker_manager import get_docker_manager
@@ -401,6 +402,7 @@ class ConnectionCreateView(View):
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('clients:list')))
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class ConnectionDeleteView(View):
     """Löscht eine Verbindung - AJAX Version"""
     
@@ -444,6 +446,7 @@ class ConnectionDeleteView(View):
 
 # === Message Testing Views ===
 
+@method_decorator(csrf_exempt, name="dispatch")
 class SendMessageView(View):
     """
     Sendet eine Test-Nachricht - AJAX-kompatibel
@@ -688,9 +691,9 @@ class BulkStopView(View):
 
 
 # === SimpleX Connection & Messaging Views ===
-
 from .services.simplex_commands import get_simplex_service
 
+@method_decorator(csrf_exempt, name="dispatch")
 class ClientConnectView(View):
     """Verbindet zwei Clients miteinander - AJAX Version"""
     

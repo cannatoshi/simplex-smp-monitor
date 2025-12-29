@@ -16,3 +16,7 @@ pysocks>=1.7
 # Utilities
 python-dotenv>=1.0
 apscheduler>=3.10
+
+# REST API
+djangorestframework>=3.14
+django-cors-headers>=4.3
