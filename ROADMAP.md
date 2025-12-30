@@ -1,8 +1,8 @@
-# SimpleX SMP Monitor - Roadmap v2.1 for 2025/2026
+# SimpleX SMP Monitor - Roadmap v3.0 for 2025/2026
 
 ## 🎯 Vision
 
-**SimpleX SMP Monitor** is the world's first comprehensive security testing and infrastructure validation tool for SimpleX messaging infrastructure. It enables infrastructure operators / journalists, whistleblowers, NGOs, security researchers / to test their own SimpleX deployment with the same capabilities that external adversaries (including state-level actors) would have.
+**SimpleX SMP Monitor** is the world's first comprehensive security testing, infrastructure validation, and **enterprise-grade monitoring platform** for SimpleX messaging infrastructure. It enables infrastructure operators—journalists, whistleblowers, NGOs, security researchers—to test, monitor, and secure their SimpleX deployments with capabilities rivaling commercial enterprise solutions like Palantir.
 
 ### What Makes This Tool Unique
 
@@ -15,12 +15,65 @@
 | Metadata Exposure Reports | ❌ None | ✅ **World's First** |
 | Traffic Pattern Detection | ❌ None | ✅ Built-in |
 | Security Recommendations | ❌ None | ✅ Actionable Insights |
+| Private Tor Network Simulation | ❌ None | ✅ **World's First** |
+| Enterprise Graph Visualization | ❌ None | ✅ Palantir-Style |
+| Multi-Network Support (Tor + Lokinet) | ❌ None | ✅ **Planned** |
+| Deep Packet Inspection | ❌ None | ✅ Zeek + Suricata |
 
 ### The Core Insight
 
 > "Your security is only as good as your weakest link. But how do you know what an adversary can see?"
 
 This tool answers that question by providing **Adversary View Mode**—a simulation environment where you can see exactly what metadata and patterns are exposed, even when message content remains encrypted.
+
+---
+
+## 📊 Roadmap Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    SIMPLEX SMP MONITOR ROADMAP v3.0                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  PHASE 1: Foundation ✅                          PHASE 2: React Revolution  │
+│  ══════════════════════                          ══════════════════════════ │
+│  ✅ Django Backend                               ✅ Vite + React 18        │
+│  ✅ Docker Client Management                     ✅ TypeScript + Tailwind  │
+│  ✅ WebSocket Real-time                          ✅ i18n (DE/EN)           │
+│  ✅ Tor Hidden Service Support                   🔄 WebSocket Hooks        │
+│                                                                             │
+│  PHASE 3: Traffic Analysis        PHASE 4: Adversary View                   │
+│  ═════════════════════════        ═══════════════════════                   │
+│  📋 Live Traffic Monitor          📋 Timing Correlation                    │
+│  📋 Message Timeline              📋 Pattern Detection                     │
+│  📋 Latency Distribution          📋 Security Scoring                      │
+│  📋 Activity Heatmap              📋 Recommendations                       │
+│                                                                             │
+│  PHASE 5: Test Panel              PHASE 6: Monitoring                       │
+│  ═══════════════════              ═══════════════════                       │
+│  📋 Stress Tests                  📋 Grafana Integration                   │
+│  📋 Reliability Tests             📋 InfluxDB Time-Series                  │
+│  📋 Mesh Connections              📋 Alerting                              │
+│                                                                             │
+│  PHASE 7: Enterprise              PHASE 8: Lab Environment 🆕              │
+│  ═══════════════════              ═══════════════════════════               │
+│  📋 Multi-User                    📋 Docker SMP Server                     │
+│  📋 REST API Auth                 📋 Docker XFTP Server                    │
+│  📋 Production Deploy             📋 Full Packet Capture                   │
+│                                                                             │
+│  PHASE 9: Private Tor 🆕          PHASE 10: Enterprise Stack 🆕            │
+│  ═══════════════════════          ═════════════════════════════             │
+│  📋 Chutney Integration           📋 Zeek Protocol Analysis                │
+│  📋 Directory Authorities         📋 Suricata IDS/IPS                      │
+│  📋 3 Test Modi                   📋 Neo4j + Cytoscape.js                  │
+│                                                                             │
+│  PHASE 11: Multi-Network 🆕                                                 │
+│  ═══════════════════════════                                                │
+│  📋 Lokinet Support (.loki)                                                 │
+│  📋 Dual-Stack Servers                                                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -98,9 +151,6 @@ This phase transforms the application from a traditional server-rendered Django 
 │  │  ├── /api/v1/connections/                                 │  │
 │  │  └── /api/v1/categories/                                  │  │
 │  └───────────────────────────────────────────────────────────┘  │
-│                              │                                  │
-│                    SimplexEventBridge                           │
-│                              │                                  │
 └─────────────────────────────────────────────────────────────────┘
            │                                    │
            ▼                                    ▼
@@ -110,15 +160,11 @@ This phase transforms the application from a traditional server-rendered Django 
 └─────────────────────┘              └─────────────────────┘
 ```
 
----
-
-### 2.2 React Project Setup
-
-#### 2.2.1 Technology Stack
-- [x] **Vite** - Fast build tool (not Create React App)
+### 2.2 Technology Stack
+- [x] **Vite** - Fast build tool
 - [x] **React 18** - Latest React with concurrent features
 - [x] **TypeScript** - Type safety throughout
-- [x] **Tailwind CSS** - Utility-first styling
+- [x] **Tailwind CSS** - Utility-first styling (Neon Blue #88CED0, Cyan #22D3EE)
 - [x] **React Router v6** - Client-side routing
 - [x] **react-i18next** - Internationalization (DE/EN active)
 - [x] **Lucide React** - Icon library
@@ -126,7 +172,7 @@ This phase transforms the application from a traditional server-rendered Django 
 - [ ] **React Query** - Server state & caching
 - [ ] **Recharts** - Charts and visualizations
 
-#### 2.2.2 Project Structure
+### 2.3 Project Structure
 ```
 frontend/
 ├── src/
@@ -148,220 +194,57 @@ frontend/
 │   │   ├── Dashboard.tsx          # ✅ Migrated
 │   │   ├── Servers.tsx            # ✅ Migrated
 │   │   ├── ServerDetail.tsx       # ✅ Migrated
-│   │   ├── ServerForm.tsx         # ✅ Migrated
 │   │   ├── Clients.tsx            # ✅ Migrated
 │   │   ├── ClientDetail.tsx       # ✅ Migrated
-│   │   ├── ClientForm.tsx         # ✅ Migrated
 │   │   ├── Categories.tsx         # ✅ Migrated
-│   │   ├── Tests.tsx              # ⚠️ Placeholder only
-│   │   └── Events.tsx             # ⚠️ Placeholder only
+│   │   ├── Tests.tsx              # ⚠️ Placeholder
+│   │   └── Events.tsx             # ⚠️ Placeholder
 │   ├── i18n/
-│   │   ├── index.ts               # ✅ i18n configuration
 │   │   └── locales/
 │   │       ├── de.json            # ✅ German translations
 │   │       └── en.json            # ✅ English translations
-│   ├── App.tsx                    # ✅ Router configuration
-│   └── main.tsx                   # ✅ Entry point
-├── vite.config.ts                 # ✅ Vite + Proxy config
-├── tailwind.config.js             # ✅ Tailwind config
-├── tsconfig.json                  # ✅ TypeScript config
-└── package.json                   # ✅ Dependencies
+│   └── App.tsx                    # ✅ Router configuration
+└── package.json
 ```
 
-#### 2.2.3 Django REST API Endpoints
+### 2.4 API Endpoints
 
 **Servers API:** ✅ Complete
 ```
-GET    /api/v1/servers/              # List all servers
-POST   /api/v1/servers/              # Create server
-GET    /api/v1/servers/{id}/         # Get server details
-PUT    /api/v1/servers/{id}/         # Update server
-DELETE /api/v1/servers/{id}/         # Delete server
-POST   /api/v1/servers/{id}/test/    # Test server connection
+GET/POST   /api/v1/servers/
+GET/PUT/DELETE /api/v1/servers/{id}/
+POST       /api/v1/servers/{id}/test/
 ```
 
 **Clients API:** ✅ Complete
 ```
-GET    /api/v1/clients/              # List all clients
-POST   /api/v1/clients/              # Create client
-GET    /api/v1/clients/{slug}/       # Get client details
-PUT    /api/v1/clients/{slug}/       # Update client
-DELETE /api/v1/clients/{slug}/       # Delete client
-POST   /api/v1/clients/{slug}/start/ # Start container
-POST   /api/v1/clients/{slug}/stop/  # Stop container
-GET    /api/v1/clients/{slug}/logs/  # Get container logs
-GET    /api/v1/clients/{slug}/connections/  # Get connections
+GET/POST   /api/v1/clients/
+GET/PUT/DELETE /api/v1/clients/{slug}/
+POST       /api/v1/clients/{slug}/start/
+POST       /api/v1/clients/{slug}/stop/
+GET        /api/v1/clients/{slug}/logs/
+GET        /api/v1/clients/{slug}/connections/
 ```
 
-**Messages API:** ✅ Complete (NEW in v0.1.9)
+**Messages API:** ✅ Complete
 ```
-GET    /api/v1/messages/                     # List all messages
-GET    /api/v1/messages/?client={uuid}       # Filter by client
-GET    /api/v1/messages/?direction=sent      # Filter sent
-GET    /api/v1/messages/?direction=received  # Filter received
+GET        /api/v1/messages/
+GET        /api/v1/messages/?client={uuid}&direction=sent|received
 ```
 
-**Dashboard API:** ✅ Complete
-```
-GET    /api/v1/dashboard/stats/      # Dashboard statistics
-GET    /api/v1/dashboard/activity/   # Activity data
-GET    /api/v1/dashboard/latency/    # Latency data
-```
+**Dashboard/Categories/Connections API:** ✅ Complete
 
-**Categories API:** ✅ Complete
-```
-GET    /api/v1/categories/           # List categories
-```
-
-**Connections API:** ✅ Complete
-```
-GET    /api/v1/connections/          # List connections
-POST   /api/v1/connections/          # Create connection
-DELETE /api/v1/connections/{id}/     # Delete connection
-```
-
-**Tests API:** ❌ Needs React Integration
-```
-GET    /api/v1/tests/                # List test runs
-POST   /api/v1/tests/                # Create/start test
-GET    /api/v1/tests/{id}/           # Get test details
-POST   /api/v1/tests/{id}/stop/      # Stop running test
-GET    /api/v1/tests/{id}/results/   # Get test results
-```
-
-**Events API:** ❌ Needs React Integration
-```
-GET    /api/v1/events/               # List events
-GET    /api/v1/events/{id}/          # Get event details
-```
-
----
-
-### 2.3 Vite Proxy Configuration ✅
-
-```typescript
-// vite.config.ts - IMPLEMENTED
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 3001,
-    host: true,
-    proxy: {
-      '/api': { target: 'http://localhost:8000', changeOrigin: true },
-      '/clients/messages/send/': { target: 'http://localhost:8000', changeOrigin: true },
-      '/clients/connections/': { target: 'http://localhost:8000', changeOrigin: true },
-      '^/clients/[a-z0-9-]+/connect/$': { target: 'http://localhost:8000', changeOrigin: true },
-      '^/clients/[a-z0-9-]+/start/$': { target: 'http://localhost:8000', changeOrigin: true },
-      '^/clients/[a-z0-9-]+/stop/$': { target: 'http://localhost:8000', changeOrigin: true },
-      '^/clients/[a-z0-9-]+/restart/$': { target: 'http://localhost:8000', changeOrigin: true },
-      '/ws': { target: 'ws://localhost:8000', ws: true },
-    },
-  },
-})
-```
-
----
-
-### 2.4 Migration Progress
-
-#### ✅ v0.1.9 - Part 1: Core Pages (COMPLETED)
+### 2.5 Migration Progress
 
 | Task | Status |
 |------|--------|
-| Set up Vite + React project | ✅ Done |
-| Configure Tailwind CSS | ✅ Done |
-| Set up React Router | ✅ Done |
-| Create Layout component | ✅ Done |
-| Implement API service layer | ✅ Done |
-| Add dark/light mode toggle | ✅ Done |
-| Add language switcher (i18n) | ✅ Done |
-| CSRF-exempt for HTMX views | ✅ Done |
-| TestMessageViewSet API | ✅ Done |
-| Migrate Dashboard page | ✅ Done |
-| Migrate Servers list page | ✅ Done |
-| Migrate Server detail page | ✅ Done |
-| Migrate Server form page | ✅ Done |
-| Migrate Clients list page | ✅ Done |
-| Migrate Client detail page | ✅ Done |
-| Migrate Client form page | ✅ Done |
-| Migrate Categories page | ✅ Done |
-
-#### 🔄 v0.2.0 - Part 2: Tests, Events & WebSocket (TODO)
-
-| Task | Status |
-|------|--------|
-| Migrate Tests list page | ❌ Todo |
-| Migrate Test detail page | ❌ Todo |
-| Migrate Test form page | ❌ Todo |
-| Migrate Events list page | ❌ Todo |
-| Migrate Event detail page | ❌ Todo |
-| Create useWebSocket hook | ❌ Todo |
-| Integrate WebSocket in Clients | ❌ Todo |
-| Live status updates without refresh | ❌ Todo |
-| Add Zustand for state management | ❌ Todo |
-| Add React Query for caching | ❌ Todo |
-| Configure production build | ❌ Todo |
-| Update deployment scripts | ❌ Todo |
-| Remove legacy Django templates | ❌ Todo |
-
----
-
-### 2.5 WebSocket Integration (Planned for v0.2.0)
-
-```typescript
-// Planned: useWebSocket hook
-function useWebSocket(url: string) {
-  const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
-  const [lastMessage, setLastMessage] = useState<any>(null);
-  
-  useEffect(() => {
-    const ws = new WebSocket(url);
-    ws.onopen = () => setStatus('connected');
-    ws.onclose = () => {
-      setStatus('disconnected');
-      // Auto-reconnect after 3 seconds
-      setTimeout(() => reconnect(), 3000);
-    };
-    ws.onmessage = (e) => setLastMessage(JSON.parse(e.data));
-    return () => ws.close();
-  }, [url]);
-  
-  return { status, lastMessage };
-}
-
-// Usage in ClientDetail
-function ClientDetail() {
-  const { status, lastMessage } = useWebSocket('/ws/clients/');
-  
-  useEffect(() => {
-    if (lastMessage?.type === 'client_stats') {
-      // Update stats without page refresh
-      setStats(lastMessage.payload);
-    }
-  }, [lastMessage]);
-}
-```
-
----
-
-### 2.6 Development Workflow
-
-```bash
-# Development (two terminals)
-# Terminal 1: Django backend
-cd ~/simplex-smp-monitor
-source .venv/bin/activate
-python manage.py runserver 0.0.0.0:8000
-
-# Terminal 2: React frontend
-cd ~/simplex-smp-monitor/frontend
-npm run dev  # Vite dev server on :3001
-
-# Production build (planned)
-cd frontend/
-npm run build  # Creates dist/ folder
-# Then serve via Django or separate web server
-```
+| Vite + React project setup | ✅ Done |
+| Tailwind CSS + Neon Theme | ✅ Done |
+| i18n (German/English) | ✅ Done |
+| All Core Pages | ✅ Done |
+| WebSocket Hooks | ❌ Todo |
+| Tests & Events Pages | ❌ Todo |
+| Zustand + React Query | ❌ Todo |
 
 ---
 
@@ -371,32 +254,9 @@ npm run build  # Creates dist/ folder
 
 The Traffic Analysis Dashboard provides deep insights into message flow, timing patterns, and network behavior. This is the **legitimate operator's view**—full access to all data because you own the infrastructure.
 
-### 3.2 Traffic Data Model
+### 3.2 Dashboard Components
 
-```python
-# Django Model
-class TrafficEvent(models.Model):
-    timestamp = models.DateTimeField(auto_now_add=True)
-    client = models.ForeignKey(SimplexClient, on_delete=models.CASCADE)
-    direction = models.CharField(max_length=3, choices=[('in', 'In'), ('out', 'Out')])
-    event_type = models.CharField(max_length=20)  # 'message', 'ack', 'connection', etc.
-    payload_size = models.IntegerField()  # bytes
-    latency_ms = models.IntegerField(null=True)
-    correlation_id = models.CharField(max_length=64, null=True)  # Link send→receive
-    remote_contact = models.CharField(max_length=64, null=True)  # Anonymized contact ref
-    metadata = models.JSONField(default=dict)  # Additional event data
-
-    class Meta:
-        indexes = [
-            models.Index(fields=['timestamp']),
-            models.Index(fields=['client', 'timestamp']),
-            models.Index(fields=['correlation_id']),
-        ]
-```
-
-### 3.3 Dashboard Components
-
-#### 3.3.1 Live Traffic Monitor
+#### 3.2.1 Live Traffic Monitor
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │     Live Traffic                                    ● In  ● Out │
@@ -413,7 +273,7 @@ class TrafficEvent(models.Model):
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-#### 3.3.2 Message Timeline
+#### 3.2.2 Message Timeline
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │     Message Timeline                              Last 60 min   │
@@ -428,7 +288,7 @@ class TrafficEvent(models.Model):
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-#### 3.3.3 Activity Heatmap
+#### 3.2.3 Activity Heatmap
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │     Activity Heatmap                                            │
@@ -446,7 +306,7 @@ class TrafficEvent(models.Model):
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-#### 3.3.4 Latency Distribution
+#### 3.2.4 Latency Distribution
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │     Latency Distribution (ms)                                   │
@@ -464,7 +324,7 @@ class TrafficEvent(models.Model):
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-#### 3.3.5 Packet Size Analysis
+#### 3.2.5 Packet Size Analysis
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  📦 Packet Sizes                                                │
@@ -479,7 +339,7 @@ class TrafficEvent(models.Model):
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.4 Traffic Analysis Features
+### 3.3 Traffic Analysis Features
 
 | Feature | Description | Security Relevance |
 |---------|-------------|-------------------|
@@ -489,26 +349,6 @@ class TrafficEvent(models.Model):
 | **Latency Distribution** | Delivery time histogram | Network fingerprinting |
 | **Packet Size Analysis** | Size distribution | Content type inference |
 | **Flow Visualization** | Client-to-client flows | Relationship mapping |
-
-### 3.5 Data Collection
-
-```python
-# EventBridge extension for traffic collection
-class TrafficCollector:
-    async def on_message_event(self, client, event):
-        await TrafficEvent.objects.acreate(
-            client=client,
-            direction='out' if event['type'] == 'sent' else 'in',
-            event_type='message',
-            payload_size=len(event.get('content', '')),
-            latency_ms=event.get('latency'),
-            correlation_id=event.get('msg_id'),
-            metadata={
-                'status': event.get('status'),
-                'has_file': event.get('has_file', False),
-            }
-        )
-```
 
 ---
 
@@ -636,7 +476,7 @@ We CAN observe both endpoints = Level 4 simulation!
 │  │                                                             ││
 │  └─────────────────────────────────────────────────────────────┘│
 │                                                                 │
-│     HIGH CONFIDENCE CORRELATION DETECTED                        │
+│     ⚠️  HIGH CONFIDENCE CORRELATION DETECTED                    │
 │                                                                 │
 │  An adversary observing both endpoints can determine with       │
 │  94.7% confidence that Client A and Client B are communicating. │
@@ -648,7 +488,7 @@ We CAN observe both endpoints = Level 4 simulation!
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│    SECURITY RECOMMENDATIONS                                     │
+│    🛡️ SECURITY RECOMMENDATIONS                                  │
 │─────────────────────────────────────────────────────────────────│
 │                                                                 │
 │  Based on analysis, here are actionable improvements:           │
@@ -675,83 +515,12 @@ We CAN observe both endpoints = Level 4 simulation!
 │  Before: Correlation Probability 94.7%  ████████████████████░░  │
 │  After:  Correlation Probability 23.1%  █████░░░░░░░░░░░░░░░░░  │
 │                                                                 │
-│  [ Generate Full Report]    [ Export PDF]    [ Re-analyze]      │
+│  [📄 Generate Full Report]  [📥 Export PDF]  [🔄 Re-analyze]    │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.5 Technical Implementation
-
-#### 4.5.1 Timing Correlation Algorithm
-
-```python
-class TimingCorrelator:
-    """
-    Implements timing correlation attack simulation.
-    """
-    
-    def __init__(self, time_window_ms=5000):
-        self.time_window = time_window_ms
-        
-    async def analyze(self, client_a_id, client_b_id, duration_minutes=60):
-        cutoff = timezone.now() - timedelta(minutes=duration_minutes)
-        
-        sends = await TrafficEvent.objects.filter(
-            client_id=client_a_id,
-            direction='out',
-            timestamp__gte=cutoff
-        ).order_by('timestamp').values('timestamp', 'correlation_id')
-        
-        receives = await TrafficEvent.objects.filter(
-            client_id=client_b_id,
-            direction='in',
-            timestamp__gte=cutoff
-        ).order_by('timestamp').values('timestamp', 'correlation_id')
-        
-        correlations = []
-        for send in sends:
-            for recv in receives:
-                delta_ms = (recv['timestamp'] - send['timestamp']).total_seconds() * 1000
-                if 0 < delta_ms < self.time_window:
-                    probability = self._calculate_probability(delta_ms)
-                    correlations.append({
-                        'send_time': send['timestamp'],
-                        'recv_time': recv['timestamp'],
-                        'probability': probability,
-                    })
-        
-        return {
-            'correlations': correlations,
-            'overall_probability': self._aggregate_probability(correlations),
-        }
-```
-
-#### 4.5.2 Pattern Detection Engine
-
-```python
-class PatternDetector:
-    """
-    Detects patterns in communication that could identify users.
-    """
-    
-    async def detect_all_patterns(self, client_id, duration_hours=24):
-        events = await self._get_events(client_id, duration_hours)
-        patterns = []
-        
-        # Check for regular intervals
-        interval_pattern = self._detect_interval_pattern(events)
-        if interval_pattern:
-            patterns.append(interval_pattern)
-        
-        # Check for time-of-day patterns
-        tod_pattern = self._detect_time_of_day_pattern(events)
-        if tod_pattern:
-            patterns.append(tod_pattern)
-        
-        return patterns
-```
-
-### 4.6 Adversary View Modes
+### 4.5 Adversary View Modes
 
 | Mode | Description | Use Case |
 |------|-------------|----------|
@@ -778,6 +547,38 @@ The Test Panel allows operators to run comprehensive stress tests and reliabilit
 | **Mesh Connection** | Create full mesh between clients | Network testing |
 | **Bulk Operations** | Create/manage many clients at once | Scale testing |
 
+### 5.3 Test Configuration UI
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│     🧪 STRESS TEST CONFIGURATION                                │
+│─────────────────────────────────────────────────────────────────│
+│                                                                 │
+│  Test Type:     [Delivery Reliability ▼]                        │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  Participants                                            │   │
+│  │  ☑ Client 001 (Alice)                                   │   │
+│  │  ☑ Client 002 (Bob)                                     │   │
+│  │  ☑ Client 003 (Charlie)                                 │   │
+│  │  ☐ Client 004 (Diana)                                   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  Messages per client:  [100    ]                                │
+│  Interval (ms):        [500    ]                                │
+│  Timeout (s):          [30     ]                                │
+│  Include receipts:     [✓]                                      │
+│                                                                 │
+│  ────────────────────────────────────────────────────────────   │
+│                                                                 │
+│  Estimated Duration: ~2 minutes                                 │
+│  Total Messages: 600                                            │
+│                                                                 │
+│  [▶ Start Test]    [📋 Load Preset]    [💾 Save Preset]         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## 📈 Phase 6: Monitoring & Visualization (v0.4.0)
@@ -800,10 +601,12 @@ Pre-built dashboards for:
 
 ### 6.3 Alerting
 
-- Latency threshold alerts
-- Delivery failure alerts
-- Client offline alerts
-- Anomaly detection
+| Alert Type | Trigger | Action |
+|------------|---------|--------|
+| Latency Spike | P95 > 2s | Notification |
+| Delivery Failure | Rate > 5% | Notification + Log |
+| Client Offline | No heartbeat 5min | Notification |
+| Anomaly | ML-detected pattern | Review flag |
 
 ---
 
@@ -811,24 +614,401 @@ Pre-built dashboards for:
 
 ### 7.1 Multi-User Support
 
-- User authentication
-- Role-based access control
+- User authentication (Django auth + JWT)
+- Role-based access control (Admin, Operator, Viewer)
 - Audit logging
 - Per-user/team client ownership
 
-### 7.2 REST API
+### 7.2 REST API Authentication
 
-- Full API for all features
-- API authentication
+- API key management
 - Rate limiting
-- OpenAPI documentation
+- OpenAPI/Swagger documentation
+- Webhook support
 
 ### 7.3 Production Deployment
 
 - PostgreSQL support
 - Redis clustering
-- Kubernetes deployment
-- High availability
+- Docker Compose production config
+- Kubernetes manifests (optional)
+- High availability considerations
+
+---
+
+## 🆕 Phase 8: Lab Environment (v0.6.0)
+
+### 8.1 Overview
+
+Transform the monitoring server into a **complete SimpleX lab environment** where SMP/XFTP servers run alongside clients in Docker, enabling full packet capture and analysis without external dependencies.
+
+### 8.2 The Architecture Shift
+
+**Current Architecture:**
+```
+┌─────────────────────┐              ┌─────────────────────┐
+│  Monitoring Server  │◄────Tor────►│  Remote SMP Server  │
+│  (Clients only)     │              │  (External)         │
+└─────────────────────┘              └─────────────────────┘
+```
+
+**New Lab Architecture:**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    MONITORING SERVER (Lab Mode)                 │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              Docker Network (bridge)                     │   │
+│  │              simplex-monitor-network                     │   │
+│  │                                                          │   │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │   │
+│  │  │SMP Srv 1 │ │SMP Srv 2 │ │XFTP Srv  │ │SMP Srv 3 │   │   │
+│  │  │ :5223    │ │ :5224    │ │ :7225    │ │ :5226    │   │   │
+│  │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘   │   │
+│  │       │            │            │            │          │   │
+│  │       └────────────┴─────┬──────┴────────────┘          │   │
+│  │                          │                              │   │
+│  │            ┌─────────────▼─────────────┐                │   │
+│  │            │    Docker Bridge          │                │   │
+│  │            │    PACKET CAPTURE HERE 📡 │                │   │
+│  │            └─────────────┬─────────────┘                │   │
+│  │                          │                              │   │
+│  │  ┌──────────┐ ┌──────────┴─┐ ┌──────────┐              │   │
+│  │  │Client 001│ │Client 002  │ │Client 003│              │   │
+│  │  └──────────┘ └────────────┘ └──────────┘              │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  Django Backend + React Frontend + Analysis Tools       │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 8.3 Benefits of Lab Mode
+
+| Aspect | Remote over Tor | Local Lab Mode |
+|--------|-----------------|----------------|
+| **Latency** | 500ms - 5s | < 1ms ⚡ |
+| **Packet Capture** | Metrics only | **FULL TRAFFIC** 📡 |
+| **Analysis Depth** | Limited | **Everything visible** 🔬 |
+| **Debugging** | Difficult | Direct access |
+| **Stress Tests** | Tor-limited | **Full bandwidth** |
+| **Reproducibility** | Variable | **100% controlled** |
+| **Offline Testing** | ❌ No | ✅ Yes |
+
+### 8.4 Server Deployment Types
+
+| Type | Address Format | Use Case |
+|------|---------------|----------|
+| `docker_local` | `localhost:5223` | Lab testing |
+| `remote_tor` | `abc123.onion:5223` | Production Tor |
+| `remote_lokinet` | `abc123.loki:5223` | Production Lokinet |
+| `remote_clearnet` | `smp.example.com:5223` | Direct connection |
+
+### 8.5 Implementation Tasks
+
+- [ ] SMPServer Model with deployment_type
+- [ ] Docker Manager extension for SMP servers
+- [ ] API: `/api/v1/smp-servers/`
+- [ ] Frontend: Server deployment selector
+- [ ] Auto-extract server fingerprint
+- [ ] Connect clients to local servers
+- [ ] Docker network packet capture setup
+
+---
+
+## 🆕 Phase 9: Private Tor Network (v0.7.0)
+
+### 9.1 Overview
+
+Simulate a **complete Tor network locally** using Chutney, enabling realistic Tor testing without touching the public Tor network.
+
+### 9.2 What is Chutney?
+
+**Chutney** is the official Tor Project tool for creating private Tor test networks.
+
+**Resources:**
+- GitHub: https://github.com/torproject/chutney
+- GitLab (Official): https://gitlab.torproject.org/tpo/core/chutney
+
+### 9.3 Three Test Modes
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      TEST MODE SELECTOR                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ⚡ DIRECT MODE                                                 │
+│  ═══════════════                                                │
+│  No Tor, minimal latency (~1ms)                                 │
+│  Full packet visibility                                         │
+│  Best for: Development, debugging, stress tests                 │
+│                                                                 │
+│  🧪 PRIVATE TOR MODE                                            │
+│  ════════════════════                                           │
+│  Local Chutney network (~50-200ms)                              │
+│  Realistic Tor behavior                                         │
+│  Best for: Tor integration testing, timing analysis             │
+│                                                                 │
+│  🧅 PUBLIC TOR MODE                                             │
+│  ═══════════════════                                            │
+│  Real Tor network (~500ms-5s)                                   │
+│  Production-like conditions                                     │
+│  Best for: Final validation, real-world testing                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 9.4 Private Tor Network Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                PRIVATE TOR NETWORK (Chutney)                    │
+│                                                                 │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐                  │
+│  │ DirAuth 1  │ │ DirAuth 2  │ │ DirAuth 3  │                  │
+│  │ (Authority)│ │ (Authority)│ │ (Authority)│                  │
+│  └─────┬──────┘ └─────┬──────┘ └─────┬──────┘                  │
+│        │              │              │                          │
+│        └──────────────┼──────────────┘                          │
+│                       │                                         │
+│  ┌─────────┐ ┌────────▼────────┐ ┌─────────┐                   │
+│  │ Guard 1 │ │  Middle Relays  │ │ Guard 2 │                   │
+│  └────┬────┘ └────────┬────────┘ └────┬────┘                   │
+│       │               │               │                         │
+│       └───────────────┼───────────────┘                         │
+│                       │                                         │
+│            ┌──────────▼──────────┐                              │
+│            │     Exit Nodes      │                              │
+│            └──────────┬──────────┘                              │
+│                       │                                         │
+│  ┌────────────────────▼────────────────────┐                   │
+│  │         SMP Server (.onion local)       │                   │
+│  └─────────────────────────────────────────┘                   │
+│                                                                 │
+│  ⏱️ Circuit Build: ~2 seconds (vs 5-30s real Tor)              │
+│  📡 Full observability at every hop                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 9.5 Chutney Network Configurations
+
+| Config | Nodes | Description |
+|--------|-------|-------------|
+| `basic` | 3 Auth + 5 Relay + 2 Client | Minimal network |
+| `basic-025` | More relays | More stable |
+| `hs-025` | + Hidden Services | For .onion tests |
+| `bridges` | + Bridge nodes | Bridge testing |
+
+### 9.6 Implementation Tasks
+
+- [ ] Chutney installation documentation
+- [ ] Docker Tor node Dockerfiles (authority, relay, exit, client)
+- [ ] torrc templates for each node type
+- [ ] Django TestEnvironment model
+- [ ] API to start/stop private Tor network
+- [ ] Frontend: Mode selector component
+- [ ] Frontend: Private Tor status dashboard
+- [ ] Circuit visualization with stem
+- [ ] Latency comparison between modes
+
+---
+
+## 🆕 Phase 10: Enterprise Monitoring Stack (v0.8.0)
+
+### 10.1 Overview
+
+Deploy a **Palantir-grade monitoring infrastructure** with deep packet inspection, graph visualization, and threat intelligence integration.
+
+### 10.2 Full Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    MONITORING SERVER (64GB+ RAM recommended)            │
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                        React Frontend                            │   │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌────────────┐  │   │
+│  │  │ Cytoscape   │ │  Recharts   │ │ vis-timeline│ │  Grafana   │  │   │
+│  │  │ Graph       │ │  Charts     │ │  Forensics  │ │  Embeds    │  │   │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘ └────────────┘  │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                    │                                    │
+│                         WebSocket + REST API                            │
+│                                    │                                    │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                        Django Backend                            │   │
+│  │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌───────────────┐  │   │
+│  │  │  Channels  │ │  REST API  │ │   Celery   │ │  stem (Tor)   │  │   │
+│  │  │ WebSocket  │ │   Views    │ │   Tasks    │ │  Controller   │  │   │
+│  │  └────────────┘ └────────────┘ └────────────┘ └───────────────┘  │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                         Data Layer                               │   │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐  │   │
+│  │  │PostgreSQL│ │Timescale │ │  Neo4j   │ │   ELK/   │ │Promethe│  │   │
+│  │  │  + Redis │ │    DB    │ │  Graph   │ │   Loki   │ │   us   │  │   │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └────────┘  │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                    Security & Analysis Layer                     │   │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐  │   │
+│  │  │   Zeek   │ │ Suricata │ │  Arkime  │ │ ntopng   │ │  MISP  │  │   │
+│  │  │ Protocol │ │  IDS/IPS │ │  PCAP    │ │  Flows   │ │ Threat │  │   │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └────────┘  │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 10.3 Tool Stack
+
+#### 10.3.1 Network Traffic Analysis
+
+| Tool | RAM | Function | Python Integration |
+|------|-----|----------|-------------------|
+| **Zeek** | 2-8GB | Protocol analytics, 70+ log types | broker/WebSocket |
+| **Suricata** | 2-4GB | IDS/IPS, signature-based | EVE JSON + Redis |
+| **Arkime** | 30GB+ | Full packet capture & search | REST API |
+| **ntopng** | 2-4GB | Flow analysis, 450+ protocols | `pip install ntopng` |
+
+#### 10.3.2 Tor Integration
+
+| Tool | Library | Function |
+|------|---------|----------|
+| **stem** | `pip install stem` | Complete Tor Controller API |
+| **Onionoo** | REST API | Public relay metrics |
+| **OnionBalance** | Unix Socket | Hidden Service load balancing |
+
+#### 10.3.3 Observability Stack
+
+| Tool | RAM | Function |
+|------|-----|----------|
+| **Prometheus** | 2-4GB | Metrics collection & alerting |
+| **Grafana** | 500MB-1GB | Visualization & dashboards |
+| **Pushgateway** | 100MB | Push-based metrics over Tor |
+
+#### 10.3.4 Log Aggregation
+
+| Tool | RAM | Function |
+|------|-----|----------|
+| **Elasticsearch** | 16-32GB | Full-text search & analytics |
+| **Grafana Loki** | 500MB-2GB | Label-based log system (lighter) |
+| **Promtail** | 50MB | Log shipping with SOCKS support |
+
+#### 10.3.5 Graph Database & Visualization
+
+| Tool | RAM | Function |
+|------|-----|----------|
+| **Neo4j** | 8-16GB | Graph database, Cypher queries |
+| **Cytoscape.js** | - | Interactive graph visualization |
+| **Sigma.js** | - | Large-scale WebGL graphs (100K+ nodes) |
+
+#### 10.3.6 Threat Intelligence (Optional)
+
+| Tool | RAM | Library | Function |
+|------|-----|---------|----------|
+| **SpiderFoot** | 2-4GB | CLI | OSINT automation, 200+ modules |
+| **TheHive** | 4-8GB | `thehive4py` | Incident response |
+| **Cortex** | 2-4GB | `cortex4py` | Observable analyzers (80+) |
+| **MISP** | 4-8GB | `pymisp` | Threat intelligence sharing |
+| **OpenCTI** | 8-16GB | `pycti` | Cyber threat intelligence |
+
+### 10.4 Resource Requirements
+
+| Component | RAM |
+|-----------|-----|
+| Elasticsearch/OpenSearch | 30GB |
+| Neo4j | 8GB |
+| Prometheus + Grafana | 4GB |
+| Django/Celery | 4GB |
+| Zeek + Suricata | 8GB |
+| Arkime (optional) | 8GB+ |
+| **Total Recommended** | **64GB+** |
+
+### 10.5 Implementation Tasks
+
+- [ ] Zeek Docker setup + custom SimpleX scripts
+- [ ] Suricata Docker setup + custom rules
+- [ ] Neo4j Docker + graph schema design
+- [ ] Prometheus + Grafana + Pushgateway
+- [ ] Loki + Promtail log aggregation
+- [ ] stem Tor Controller integration
+- [ ] Cytoscape.js React component
+- [ ] Django Neo4j service layer
+- [ ] MISP/OpenCTI integration (optional)
+- [ ] SpiderFoot OSINT integration (optional)
+
+---
+
+## 🆕 Phase 11: Multi-Network Support (v0.9.0)
+
+### 11.1 Overview
+
+Extend support beyond Tor to include **Lokinet**, enabling operators to run SMP servers accessible via both `.onion` and `.loki` addresses.
+
+### 11.2 Network Comparison
+
+| | Tor | Lokinet |
+|---|---|---|
+| **Project** | Tor Project | Oxen (Session Messenger) |
+| **Routing** | Onion Routing | Onion Routing (LLARP) |
+| **Addresses** | .onion | .loki (SNApps) |
+| **Incentive** | Voluntary | Blockchain-based (OXEN) |
+| **Latency** | Higher | Reportedly lower |
+| **SOCKS Port** | 9050 | 1190 |
+
+### 11.3 Four Test Modes (Extended)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      TEST MODE SELECTOR v2                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ⚡ DIRECT MODE              ~1ms                               │
+│     No overlay network, full visibility                         │
+│                                                                 │
+│  🧪 PRIVATE TOR MODE         ~50-200ms                          │
+│     Local Chutney network                                       │
+│                                                                 │
+│  🧅 PUBLIC TOR MODE          ~500ms-5s                          │
+│     Real Tor network                                            │
+│                                                                 │
+│  🟣 LOKINET MODE             ~???ms (TBD)                       │
+│     Oxen network (.loki addresses)                              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 11.4 Dual-Stack Server Support
+
+Servers can be accessible via multiple networks simultaneously:
+
+| Server | .onion Address | .loki Address | Clearnet |
+|--------|---------------|---------------|----------|
+| SMP-001 | `abc123.onion` | `xyz789.loki` | - |
+| SMP-002 | `def456.onion` | - | `smp2.example.com` |
+| XFTP-001 | `ghi789.onion` | `uvw321.loki` | - |
+
+### 11.5 Implementation Tasks
+
+- [ ] Research Lokinet SOCKS proxy setup
+- [ ] Test SMP server accessibility via .loki
+- [ ] Extend SMPServer model for .loki addresses
+- [ ] Frontend: Network selector component
+- [ ] Latency comparison: Tor vs Lokinet
+- [ ] Documentation for dual-stack setup
+
+### 11.6 Community Reference
+
+> **GitHub Issue:** https://github.com/simplex-chat/simplex-chat/issues/1782
+
+The SimpleX team has indicated that .loki address support would be considered when:
+1. An Android app provides Lokinet as SOCKS proxy
+2. Server-side client makes servers available on .loki
+
+Our tool can help with #2 by providing tooling for server operators.
 
 ---
 
@@ -837,59 +1017,82 @@ Pre-built dashboards for:
 | Version | Target | Focus | Status |
 |---------|--------|-------|--------|
 | 0.1.8 | 2025-12-27 | Real-Time Infrastructure | ✅ Complete |
-| **0.1.9** | **2025-12-29** | **React Migration Part 1** (Core Pages) | ✅ **Complete** |
-| **0.2.0** | **2026-01-15** | **React Migration Part 2** (Tests, Events, WebSocket) | 🔄 **Next** |
+| 0.1.9 | 2025-12-29 | React Migration Part 1 | ✅ Complete |
+| 0.2.0 | 2026-01-15 | React Migration Part 2 | 🔄 Next |
 | 0.2.5 | 2026-02-01 | Traffic Analysis Dashboard | 📋 Planned |
-| 0.3.0 | 2026-02-15 | Adversary View (Security Audit) | 📋 Planned |
+| 0.3.0 | 2026-02-15 | Adversary View | 📋 Planned |
 | 0.3.5 | 2026-03-01 | Advanced Test Panel | 📋 Planned |
 | 0.4.0 | 2026-03-15 | Monitoring & Grafana | 📋 Planned |
 | 0.5.0 | 2026-04-01 | Enterprise Features | 📋 Planned |
-| 1.0.0 | 2026-05-01 | Production Ready | 📋 Future |
+| **0.6.0** | **2026-05-01** | **Lab Environment** 🆕 | 📋 Planned |
+| **0.7.0** | **2026-06-01** | **Private Tor Network** 🆕 | 📋 Planned |
+| **0.8.0** | **2026-07-01** | **Enterprise Stack** 🆕 | 📋 Planned |
+| **0.9.0** | **2026-08-01** | **Multi-Network (Lokinet)** 🆕 | 📋 Planned |
+| 1.0.0 | 2026-09-01 | Production Ready | 📋 Future |
 
 ---
 
-## 🛠️ Technology Stack (Current)
+## 🛠️ Technology Stack
 
-### Frontend (v0.1.9)
+### Frontend
 | Component | Technology | Status |
 |-----------|------------|--------|
-| Framework | React 18 + TypeScript | ✅ Implemented |
-| Build Tool | Vite 5.x | ✅ Implemented |
-| Styling | Tailwind CSS 3.x | ✅ Implemented |
-| Routing | React Router v6 | ✅ Implemented |
-| State | useState + Props | ✅ Implemented |
-| i18n | react-i18next | ✅ Implemented |
-| Icons | Lucide React | ✅ Implemented |
-| State Management | Zustand | 📋 Planned (v0.2.0) |
-| Server State | React Query | 📋 Planned (v0.2.0) |
-| WebSocket | Custom Hook | 📋 Planned (v0.2.0) |
-| Charts | Recharts | 📋 Planned (v0.2.5) |
+| Framework | React 18 + TypeScript | ✅ |
+| Build Tool | Vite 5.x | ✅ |
+| Styling | Tailwind CSS (Neon Blue #88CED0) | ✅ |
+| Routing | React Router v6 | ✅ |
+| i18n | react-i18next | ✅ |
+| Icons | Lucide React | ✅ |
+| State | Zustand | 📋 Planned |
+| Server State | React Query | 📋 Planned |
+| Charts | Recharts | 📋 Planned |
+| Graphs | Cytoscape.js | 📋 Phase 10 |
 
-### Backend (Stable)
+### Backend
 | Component | Technology | Status |
 |-----------|------------|--------|
-| Framework | Django 5.x | ✅ Stable |
-| API | Django REST Framework | ✅ Stable |
-| WebSocket | Django Channels | ✅ Stable |
-| Message Broker | Redis 7.x | ✅ Stable |
+| Framework | Django 5.x | ✅ |
+| API | Django REST Framework | ✅ |
+| WebSocket | Django Channels | ✅ |
+| Message Broker | Redis 7.x | ✅ |
 | Task Queue | Celery | 📋 Planned |
 | Database | SQLite → PostgreSQL | ✅ / 📋 |
-| Time-Series | InfluxDB | 📋 Planned (v0.4.0) |
+| Time-Series | TimescaleDB | 📋 Phase 10 |
+| Graph DB | Neo4j | 📋 Phase 10 |
+
+### Analysis Tools (Phase 10)
+| Component | Technology |
+|-----------|------------|
+| Protocol Analysis | Zeek |
+| IDS/IPS | Suricata |
+| Full PCAP | Arkime |
+| Flow Analysis | ntopng |
+| Tor Controller | stem |
+| Metrics | Prometheus + Grafana |
+| Logs | Grafana Loki / ELK |
+| Threat Intel | MISP, SpiderFoot |
 
 ### Infrastructure
 | Component | Technology | Status |
 |-----------|------------|--------|
-| Containers | Docker 24.x | ✅ Stable |
-| SimpleX CLI | simplex-chat in Docker | ✅ Stable |
-| Network | Tor hidden services | ✅ Stable |
-| Monitoring | Grafana | 📋 Planned (v0.4.0) |
+| Containers | Docker 24.x | ✅ |
+| SimpleX CLI | Docker containers | ✅ |
+| Network | Tor hidden services | ✅ |
+| Private Tor | Chutney | 📋 Phase 9 |
+| Multi-Network | Lokinet | 📋 Phase 11 |
 
-### Legacy (Deprecated)
-| Component | Technology | Status |
-|-----------|------------|--------|
-| Frontend | Django Templates | ⚠️ Deprecated |
-| Interactivity | HTMX + Alpine.js | ⚠️ Deprecated |
-| i18n | Alpine.js $store | ⚠️ Deprecated |
+---
+
+## ⚖️ Legal Notice
+
+This tool is designed for use on **your own infrastructure** only. See [LEGAL.md](LEGAL.md) for full legal information.
+
+**Key Points:**
+- ✅ Using these tools on own infrastructure is **legal** in Germany/EU
+- ✅ Operating Tor nodes is **legal** (BGH I ZR 64/17, 2018)
+- ✅ Private Tor network simulation is **legal**
+- ✅ Developing dual-use security tools is **legal** (BVerfG 2009)
+- ⚠️ Testing third-party systems requires **written authorization**
 
 ---
 
@@ -909,23 +1112,35 @@ Pre-built dashboards for:
 
 ---
 
+## 🎵 Project Anthem
+
+*"Neon Uptime v2.0 - Enterprise Edition"*
+
+> Zeek writes seventy log types, Suricata guards the gate  
+> Arkime captures every packet, nothing slips, nothing's late  
+> Neo4j mapping connections in gold  
+> Palantir vibes but the code is our own  
+> Open source power, and we're coming through  
+
+---
+
 ## 🤝 Contributing
 
 Priority areas for contribution:
 
 | Area | Difficulty | Impact | Version |
 |------|------------|--------|---------|
-| Tests Page (React) | Medium | High | v0.2.0 |
-| Events Page (React) | Medium | High | v0.2.0 |
 | WebSocket React Hooks | Medium | High | v0.2.0 |
+| Tests/Events Pages | Medium | High | v0.2.0 |
 | Traffic Visualization | Hard | Very High | v0.2.5 |
 | Timing Correlation Algorithm | Hard | Very High | v0.3.0 |
-| Pattern Detection Engine | Hard | Very High | v0.3.0 |
-| Grafana Dashboard Templates | Easy | Medium | v0.4.0 |
-| Documentation & Tutorials | Easy | High | Ongoing |
+| Docker SMP Server Integration | Medium | High | v0.6.0 |
+| Chutney Integration | Hard | Very High | v0.7.0 |
+| Neo4j Graph Integration | Hard | High | v0.8.0 |
+| Lokinet Research | Medium | Medium | v0.9.0 |
 
 ---
 
-*Last updated: 2025-12-29*
-*Version: Roadmap v2.1*
-*Author: cannatoshi*
+*Last updated: 30 December 2025*
+*Version: Roadmap v3.0*
+*Authors: cannatoshi* 💎🧅
