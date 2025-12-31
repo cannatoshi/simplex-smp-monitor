@@ -1,24 +1,25 @@
+"""
+SimpleX SMP Monitor - URL Configuration
+"""
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.http import JsonResponse
 import time
 
-# Inline health check (avoid core import issues)
+from core.spa import serve_react_spa
+
+
 def health_check(request):
-    return JsonResponse({
-        "status": "healthy",
-        "timestamp": time.time()
-    })
+    """Health check endpoint for Docker"""
+    return JsonResponse({"status": "healthy", "timestamp": time.time()})
+
 
 urlpatterns = [
+    # Admin
     path('admin/', admin.site.urls),
     
-    # Legacy HTMX Views
-    path('', include('dashboard.urls')),
-    path('servers/', include('servers.urls')),
-    path('tests/', include('stresstests.urls')),
-    path('events/', include('events.urls')),
-    path('clients/', include('clients.urls')),
+    # Health Check
+    path('api/health/', health_check, name='health_check'),
     
     # REST API v1
     path('api/v1/', include('servers.api.urls')),
@@ -26,6 +27,10 @@ urlpatterns = [
     path('api/v1/', include('events.api.urls')),
     path('api/v1/', include('clients.api.urls')),
     path('api/v1/dashboard/', include('dashboard.api.urls')),
-
-    path('api/health/', health_check, name='health_check'),
+    
+    # Legacy clients URLs (if needed)
+    path('clients/', include('clients.urls')),
+    
+    # React SPA - catch all other routes
+    re_path(r'^.*$', serve_react_spa, name='spa'),
 ]

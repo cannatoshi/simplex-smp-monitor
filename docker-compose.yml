@@ -3,7 +3,7 @@
 # ============================================
 
 services:
-  # 🌐 Nginx (Reverse Proxy + React Frontend)
+  # 🌐 Nginx (Reverse Proxy)
   nginx:
     image: nginx:alpine
     container_name: simplex-monitor-nginx
@@ -12,18 +12,17 @@ services:
       - "${APP_PORT:-8080}:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./static/dist:/usr/share/nginx/html:ro
     depends_on:
       - app
     networks:
       - simplex-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ["CMD", "curl", "-f", "http://localhost/nginx-health"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # 🐍 Django Backend (API Only)
+  # 🐍 Django Backend (API + React SPA)
   app:
     build:
       context: .

@@ -34,6 +34,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -154,3 +155,13 @@ LOGGING = {
         },
     },
 }
+
+# ============================================
+# Whitenoise - Serve Static Files in Production
+# ============================================
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Add dist folder to static files dirs
+STATICFILES_DIRS = [
+    BASE_DIR / 'static' / 'dist',
+]
