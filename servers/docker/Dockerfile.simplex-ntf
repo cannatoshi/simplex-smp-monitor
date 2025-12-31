@@ -1,0 +1,54 @@
+# ============================================
+# SimpleX NTF Server - Docker Image
+# ============================================
+# Push Notification Server for maximum privacy
+# No more metadata leaking to SimpleX!
+# ============================================
+
+FROM debian:bookworm-slim
+
+LABEL maintainer="SimpleX SMP Monitor"
+LABEL description="SimpleX Notification Server for private push notifications"
+LABEL version="1.0"
+
+# Install dependencies (including libpq for PostgreSQL)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    netcat-openbsd \
+    openssl \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download SimpleX NTF Server binary
+RUN curl -sSL https://github.com/simplex-chat/simplexmq/releases/latest/download/ntf-server-ubuntu-22_04-x86-64 \
+    -o /usr/local/bin/ntf-server \
+    && chmod +x /usr/local/bin/ntf-server
+
+# Create data directories (correct path for ntf-server)
+RUN mkdir -p /etc/opt/simplex-notifications /var/opt/simplex-notifications /var/log/simplex-notifications \
+    && chmod 755 /etc/opt/simplex-notifications /var/opt/simplex-notifications /var/log/simplex-notifications
+
+# Create non-root user
+RUN useradd -r -s /bin/false -d /var/opt/simplex-notifications simplex \
+    && chown -R simplex:simplex /etc/opt/simplex-notifications /var/opt/simplex-notifications /var/log/simplex-notifications
+
+# Copy entrypoint
+COPY docker/ntf-entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
+
+# Expose NTF port
+EXPOSE 443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD nc -z localhost 443 || exit 1
+
+# Volume for persistent data
+VOLUME ["/var/opt/simplex-notifications", "/etc/opt/simplex-notifications"]
+
+USER simplex
+WORKDIR /var/opt/simplex-notifications
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["ntf-server", "start"]

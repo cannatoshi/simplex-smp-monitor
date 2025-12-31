@@ -150,6 +150,61 @@ services:
     networks:
       - simplex-network
 
+  # ============================================
+  # 🔧 Build-Only Images (SimpleX Infrastructure)
+  # ============================================
+  # These images are built but not started by default.
+  # Use: docker compose build simplex-cli simplex-smp simplex-xftp simplex-ntf
+  # ============================================
+
+  # 📱 SimpleX CLI Client
+  simplex-cli:
+    build:
+      context: ./clients
+      dockerfile: docker/Dockerfile.simplex-cli
+    image: simplex-cli:latest
+    profiles:
+      - build-only
+    command: ["echo", "CLI Client image built"]
+    networks:
+      - simplex-network
+
+  # 📡 SimpleX SMP Server (Messaging)
+  simplex-smp:
+    build:
+      context: ./servers
+      dockerfile: docker/Dockerfile.simplex-smp
+    image: simplex-smp:latest
+    profiles:
+      - build-only
+    command: ["echo", "SMP Server image built"]
+    networks:
+      - simplex-network
+
+  # 📁 SimpleX XFTP Server (File Transfer)
+  simplex-xftp:
+    build:
+      context: ./servers
+      dockerfile: docker/Dockerfile.simplex-xftp
+    image: simplex-xftp:latest
+    profiles:
+      - build-only
+    command: ["echo", "XFTP Server image built"]
+    networks:
+      - simplex-network
+
+  # 🔔 SimpleX NTF Server (Push Notifications)
+  simplex-ntf:
+    build:
+      context: ./servers
+      dockerfile: docker/Dockerfile.simplex-ntf
+    image: simplex-ntf:latest
+    profiles:
+      - build-only
+    command: ["echo", "NTF Server image built"]
+    networks:
+      - simplex-network
+
 volumes:
   app_data:
     name: simplex-monitor-app-data
