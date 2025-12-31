@@ -1,10 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { simplexClientsApi, SimplexClient, ClientConnection, messagesApi, TestMessage } from '../api/client';
 import ClientStats from '../components/clients/ClientStats';
 import ClientConnections from '../components/clients/ClientConnections';
 import ClientSidebar from '../components/clients/ClientSidebar';
 import ClientMessages from '../components/clients/ClientMessages';
+
+// Neon Blue
+const neonBlue = '#88CED0';
+const neonGlow = '0 0 8px rgba(136, 206, 208, 0.4)';
+// Cyan für Status-Punkte
+const cyan = '#22D3EE';
 
 // CSRF Token aus Cookie holen
 function getCsrfToken(): string {
@@ -18,6 +25,7 @@ function getCsrfToken(): string {
 }
 
 export default function ClientDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
@@ -30,6 +38,14 @@ export default function ClientDetail() {
   const [sentMessages, setSentMessages] = useState<TestMessage[]>([]);
   const [receivedMessages, setReceivedMessages] = useState<TestMessage[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // Neon Button Style
+  const neonButtonStyle = {
+    backgroundColor: 'rgb(30, 41, 59)',
+    color: neonBlue,
+    border: `1px solid ${neonBlue}`,
+    boxShadow: neonGlow
+  };
 
   useEffect(() => {
     fetchAll();
@@ -131,7 +147,7 @@ export default function ClientDetail() {
   };
 
   const handleDelete = async () => {
-    if (!client || !confirm(`${client.name} wirklich löschen?`)) return;
+    if (!client || !confirm(`${client.name} ${t('clients.deleteConfirm')}`)) return;
     setActionLoading('delete');
     try {
       await simplexClientsApi.delete(client.id);
@@ -141,7 +157,6 @@ export default function ClientDetail() {
     }
   };
 
-  // Verbindung über HTMX View mit CSRF Token
   const handleConnect = async (targetSlug: string) => {
     if (!client) return;
     try {
@@ -157,7 +172,6 @@ export default function ClientDetail() {
         body: formData
       });
       
-      // Check if response is JSON
       const contentType = response.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         throw new Error('Server returned non-JSON response');
@@ -174,11 +188,10 @@ export default function ClientDetail() {
       fetchAllClients();
     } catch (err) {
       console.error('Error creating connection:', err);
-      alert('Fehler beim Verbinden: ' + (err instanceof Error ? err.message : 'Unbekannt'));
+      alert(`${t('clients.connectError')}: ` + (err instanceof Error ? err.message : 'Unknown'));
     }
   };
 
-  // Verbindung löschen
   const handleDeleteConnection = async (connectionId: string) => {
     try {
       const response = await fetch(`/clients/connections/${connectionId}/delete/`, {
@@ -205,7 +218,6 @@ export default function ClientDetail() {
     }
   };
 
-  // Nachricht senden
   const handleSendMessage = async (contactName: string, message: string) => {
     if (!client) return;
     
@@ -239,7 +251,10 @@ export default function ClientDetail() {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-24">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+        <div 
+          className="animate-spin rounded-full h-12 w-12 border-b-2"
+          style={{ borderColor: neonBlue }}
+        ></div>
       </div>
     );
   }
@@ -247,8 +262,8 @@ export default function ClientDetail() {
   if (!client) {
     return (
       <div className="text-center py-24">
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Client nicht gefunden</h2>
-        <Link to="/clients" className="text-cyan-400 hover:text-cyan-300">← Zurück</Link>
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">{t('clients.clientNotFound')}</h2>
+        <Link to="/clients" style={{ color: neonBlue }} className="hover:opacity-80">← {t('common.back')}</Link>
       </div>
     );
   }
@@ -260,18 +275,25 @@ export default function ClientDetail() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div>
-          <Link to="/clients" className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-white text-sm flex items-center gap-1 mb-2">
+          <Link 
+            to="/clients" 
+            className="text-sm flex items-center gap-1 mb-2 hover:opacity-80 transition-opacity"
+            style={{ color: neonBlue }}
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
             </svg>
-            Alle Clients
+            {t('clients.allClients')}
           </Link>
           <div className="flex items-center gap-3">
             <div className="relative">
               {client.status === 'running' ? (
                 <>
-                  <div className="w-4 h-4 bg-emerald-500 rounded-full"></div>
-                  <div className="absolute inset-0 w-4 h-4 bg-emerald-500 rounded-full animate-ping opacity-75"></div>
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: cyan }}></div>
+                  <div 
+                    className="absolute inset-0 w-4 h-4 rounded-full animate-ping opacity-75"
+                    style={{ backgroundColor: cyan }}
+                  ></div>
                 </>
               ) : client.status === 'error' ? (
                 <div className="w-4 h-4 bg-red-500 rounded-full"></div>
@@ -292,45 +314,64 @@ export default function ClientDetail() {
         <div className="flex flex-wrap gap-2">
           {client.status === 'running' ? (
             <>
-              <button onClick={() => handleAction('stop')} disabled={!!actionLoading}
-                className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium inline-flex items-center gap-1.5">
+              <button 
+                onClick={() => handleAction('stop')} 
+                disabled={!!actionLoading}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50 hover:opacity-90 transition-opacity"
+                style={neonButtonStyle}
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
                 </svg>
-                Stoppen
+                {t('clients.stop')}
               </button>
-              <button onClick={() => handleAction('restart')} disabled={!!actionLoading}
-                className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium inline-flex items-center gap-1.5">
+              <button 
+                onClick={() => handleAction('restart')} 
+                disabled={!!actionLoading}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50 hover:opacity-90 transition-opacity"
+                style={neonButtonStyle}
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
-                Neustart
+                {t('clients.restart')}
               </button>
             </>
           ) : (
-            <button onClick={() => handleAction('start')} disabled={!!actionLoading}
-              className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium inline-flex items-center gap-1.5">
+            <button 
+              onClick={() => handleAction('start')} 
+              disabled={!!actionLoading}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50 hover:opacity-90 transition-opacity"
+              style={neonButtonStyle}
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
-              Starten
+              {t('clients.start')}
             </button>
           )}
-          <Link to={`/clients/${id}/edit`}
-            className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium inline-flex items-center gap-1.5">
+          <Link 
+            to={`/clients/${id}/edit`}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+            style={neonButtonStyle}
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
             </svg>
-            Bearbeiten
+            {t('common.edit')}
           </Link>
-          <button onClick={handleDelete} disabled={!!actionLoading}
-            className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium inline-flex items-center gap-1.5">
+          <button 
+            onClick={handleDelete} 
+            disabled={!!actionLoading}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50 hover:opacity-90 transition-opacity"
+            style={neonButtonStyle}
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
             </svg>
-            Löschen
+            {t('common.delete')}
           </button>
         </div>
       </div>
@@ -338,7 +379,7 @@ export default function ClientDetail() {
       {/* Error Display */}
       {client.last_error && (
         <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-red-400">
-          <strong>Fehler:</strong> {client.last_error}
+          <strong>{t('status.error')}:</strong> {client.last_error}
         </div>
       )}
 
@@ -360,13 +401,21 @@ export default function ClientDetail() {
           {/* Container Logs */}
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Container Logs</h2>
-              <button onClick={fetchLogs} className="text-sm text-cyan-600 dark:text-cyan-400 hover:text-cyan-500">
-                Aktualisieren
+              <h2 className="text-lg font-semibold" style={{ color: neonBlue }}>{t('clients.containerLogs')}</h2>
+              <button 
+                onClick={fetchLogs} 
+                className="text-sm hover:opacity-80 transition-opacity"
+                style={{ color: neonBlue }}
+              >
+                {t('common.refresh')}
               </button>
             </div>
-            <div className="p-4 font-mono text-xs text-slate-300 overflow-auto max-h-64 bg-slate-950">
-              {logs ? <pre className="whitespace-pre-wrap">{logs}</pre> : <p className="text-slate-500">Keine Logs verfügbar</p>}
+            <div className="p-4 font-mono text-xs overflow-auto max-h-64 bg-slate-950">
+              {logs ? (
+                <pre className="whitespace-pre-wrap" style={{ color: '#22D3EE' }}>{logs}</pre>
+              ) : (
+                <p className="text-slate-500">{t('clients.noLogs')}</p>
+              )}
               <div ref={logsEndRef} />
             </div>
           </div>
@@ -386,16 +435,30 @@ export default function ClientDetail() {
       </div>
 
       {/* Grafana Info */}
-      <div className="bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-xl p-4 flex items-start space-x-3">
-        <svg className="w-6 h-6 text-cyan-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div 
+        className="rounded-xl p-4 flex items-start space-x-3"
+        style={{ 
+          backgroundColor: 'rgba(136, 206, 208, 0.1)',
+          border: `1px solid rgba(136, 206, 208, 0.3)`
+        }}
+      >
+        <svg className="w-6 h-6 flex-shrink-0" style={{ color: neonBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         <div>
-          <p className="font-medium text-cyan-900 dark:text-cyan-300">Grafana Dashboard</p>
-          <p className="text-sm text-cyan-700 dark:text-cyan-400">
-            Metrics werden nach InfluxDB geschrieben. Öffne{' '}
-            <a href="http://localhost:3000" target="_blank" rel="noreferrer" className="underline hover:no-underline">Grafana (localhost:3000)</a>
-            {' '}für detaillierte Visualisierungen.
+          <p className="font-medium" style={{ color: neonBlue }}>{t('clients.grafanaDashboard')}</p>
+          <p className="text-sm" style={{ color: neonBlue, opacity: 0.8 }}>
+            {t('clients.grafanaInfo')}{' '}
+            <a 
+              href="http://localhost:3000" 
+              target="_blank" 
+              rel="noreferrer" 
+              className="underline hover:no-underline"
+              style={{ color: neonBlue }}
+            >
+              {t('clients.grafanaLink')}
+            </a>
+            {' '}{t('clients.grafanaVisualization')}
           </p>
         </div>
       </div>

@@ -14,6 +14,9 @@ export default function Clients() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  // Neon Blue
+  const neonBlue = '#88CED0';
+
   const filteredClients = statusFilter === 'all' 
     ? clients 
     : clients.filter(c => c.status === statusFilter);
@@ -94,22 +97,14 @@ export default function Clients() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('clients.title')}</h1>
+          <h1 className="text-2xl font-bold" style={{ color: neonBlue }}>{t('clients.title')}</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">{t('clients.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Link
-            to="/clients/test-panel"
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-            {t('common.testPanel')}
-          </Link>
-          <Link
             to="/clients/new"
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-slate-800 border rounded-lg transition-colors flex items-center gap-2 hover:bg-slate-700"
+            style={{ borderColor: neonBlue, color: neonBlue }}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
@@ -119,32 +114,32 @@ export default function Clients() {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - ALLE ZAHLEN IN NEON BLUE */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
           <div className="text-slate-600 dark:text-slate-400 text-sm">{t('common.total')}</div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white">{stats?.total || 0}</div>
+          <div className="text-2xl font-bold" style={{ color: neonBlue }}>{stats?.total || 0}</div>
         </div>
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
           <div className="text-slate-600 dark:text-slate-400 text-sm">{t('common.active')}</div>
-          <div className="text-2xl font-bold text-cyan-400">{stats?.running || 0}</div>
+          <div className="text-2xl font-bold" style={{ color: neonBlue }}>{stats?.running || 0}</div>
         </div>
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
           <div className="text-slate-600 dark:text-slate-400 text-sm">{t('status.stopped')}</div>
-          <div className="text-2xl font-bold text-slate-600 dark:text-slate-400">{stats?.stopped || 0}</div>
+          <div className="text-2xl font-bold" style={{ color: neonBlue }}>{stats?.stopped || 0}</div>
         </div>
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
           <div className="text-slate-600 dark:text-slate-400 text-sm">{t('status.error')}</div>
-          <div className="text-2xl font-bold text-red-400">{stats?.error || 0}</div>
+          <div className="text-2xl font-bold" style={{ color: neonBlue }}>{stats?.error || 0}</div>
         </div>
       </div>
 
-      {/* Message Stats */}
+      {/* Message Stats - ZAHLEN IN NEON BLUE */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between">
           <div>
             <div className="text-slate-600 dark:text-slate-400 text-sm">{t('clients.messagesSent')}</div>
-            <div className="text-xl font-bold text-cyan-400">↑ {stats?.total_messages_sent || 0}</div>
+            <div className="text-xl font-bold" style={{ color: neonBlue }}>↑ {stats?.total_messages_sent || 0}</div>
           </div>
           <svg className="w-8 h-8 text-cyan-500/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
@@ -153,26 +148,27 @@ export default function Clients() {
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between">
           <div>
             <div className="text-slate-600 dark:text-slate-400 text-sm">{t('clients.messagesReceived')}</div>
-            <div className="text-xl font-bold text-primary-400">↓ {stats?.total_messages_received || 0}</div>
+            <div className="text-xl font-bold" style={{ color: neonBlue }}>↓ {stats?.total_messages_received || 0}</div>
           </div>
-          <svg className="w-8 h-8 text-primary-500/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-8 h-8" style={{ color: `${neonBlue}30` }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
           </svg>
         </div>
       </div>
 
-      {/* Filter */}
+      {/* Filter - Neon Blue Style */}
       <div className="flex items-center gap-2">
         <span className="text-slate-600 dark:text-slate-400 text-sm">{t('common.filter')}:</span>
         {['all', 'running', 'stopped', 'error'].map(filter => (
           <button
             key={filter}
             onClick={() => setStatusFilter(filter)}
-            className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+            className={`px-3 py-1 rounded-lg text-sm transition-colors border ${
               statusFilter === filter
-                ? 'bg-primary-600 text-white'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-slate-800 border-[#88CED0]'
+                : 'bg-slate-100 dark:bg-slate-800 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
+            style={statusFilter === filter ? { color: neonBlue, borderColor: neonBlue } : {}}
           >
             {filter === 'all' ? t('common.all') : filter === 'running' ? t('common.active') : filter === 'stopped' ? t('status.stopped') : t('status.error')}
           </button>
@@ -182,7 +178,7 @@ export default function Clients() {
       {/* Client Grid */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: neonBlue }}></div>
         </div>
       ) : filteredClients.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-12 text-center">
@@ -193,7 +189,8 @@ export default function Clients() {
           <p className="text-slate-600 dark:text-slate-400 mb-6">{t('clients.createFirst')}</p>
           <Link
             to="/clients/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 border rounded-lg transition-colors hover:bg-slate-700"
+            style={{ borderColor: neonBlue, color: neonBlue }}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
@@ -221,7 +218,7 @@ export default function Clients() {
                     )}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-white">{client.name}</h3>
+                    <h3 className="font-semibold" style={{ color: neonBlue }}>{client.name}</h3>
                     <p className="text-xs text-slate-500">{client.slug}</p>
                   </div>
                 </div>
@@ -247,15 +244,15 @@ export default function Clients() {
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600 dark:text-slate-400">{t('clients.messages')}</span>
                   <span className="text-slate-900 dark:text-white">
-                    <span className="text-cyan-400">↑{client.messages_sent}</span>
+                    <span style={{ color: neonBlue }}>↑{client.messages_sent}</span>
                     <span className="text-slate-400 mx-1">/</span>
-                    <span className="text-primary-400">↓{client.messages_received}</span>
+                    <span style={{ color: neonBlue }}>↓{client.messages_received}</span>
                   </span>
                 </div>
                 {client.uptime_display && (
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600 dark:text-slate-400">{t('servers.uptime')}</span>
-                    <span className="text-primary-400">{client.uptime_display}</span>
+                    <span style={{ color: neonBlue }}>{client.uptime_display}</span>
                   </div>
                 )}
                 {client.use_tor && (
@@ -270,17 +267,17 @@ export default function Clients() {
                   <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
                     <div className="flex justify-between text-xs text-slate-500 mb-1">
                       <span>{t('clients.successRate')}</span>
-                      <span className={client.delivery_success_rate >= 90 ? 'text-cyan-400' : client.delivery_success_rate >= 70 ? 'text-amber-400' : 'text-red-400'}>
+                      <span style={{ color: neonBlue }}>
                         {client.delivery_success_rate.toFixed(1)}%
                       </span>
                     </div>
                     <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div 
-                        className={`h-full rounded-full transition-all ${
-                          client.delivery_success_rate >= 90 ? 'bg-cyan-500' : 
-                          client.delivery_success_rate >= 70 ? 'bg-amber-500' : 'bg-red-500'
-                        }`}
-                        style={{ width: `${client.delivery_success_rate}%` }}
+                        className="h-full rounded-full transition-all"
+                        style={{ 
+                          width: `${client.delivery_success_rate}%`,
+                          backgroundColor: '#22D3EE'
+                        }}
                       ></div>
                     </div>
                   </div>
@@ -291,7 +288,8 @@ export default function Clients() {
               <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-between">
                 <Link
                   to={`/clients/${client.id}`}
-                  className="text-primary-400 hover:text-primary-300 text-sm flex items-center gap-1"
+                  className="text-sm flex items-center gap-1 hover:opacity-80 transition-opacity"
+                  style={{ color: neonBlue }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -334,7 +332,8 @@ export default function Clients() {
                       ) : (
                         <button
                           onClick={() => handleStart(client)}
-                          className="p-1.5 text-cyan-400 hover:bg-cyan-500/20 rounded transition-colors"
+                          className="p-1.5 hover:bg-cyan-500/20 rounded transition-colors"
+                          style={{ color: neonBlue }}
                           title={t('clients.start')}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -367,7 +366,7 @@ export default function Clients() {
           {t('clients.nextFreePorts')}:{' '}
           {stats.available_ports.map((port, i) => (
             <span key={port}>
-              <span className="font-mono text-slate-600 dark:text-slate-400">{port}</span>
+              <span className="font-mono" style={{ color: neonBlue }}>{port}</span>
               {i < stats.available_ports.length - 1 && ', '}
             </span>
           ))}

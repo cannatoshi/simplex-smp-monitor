@@ -4,6 +4,10 @@ import { Link } from 'react-router-dom';
 import { useServers, useCategories } from '../hooks/useApi';
 import { serversApi, Server, Category } from '../api/client';
 
+// Neon Blue
+const neonBlue = '#88CED0';
+const neonGlow = '0 0 8px rgba(136, 206, 208, 0.4)';
+
 export default function Servers() {
   const { t } = useTranslation();
   const [categoryFilter, setCategoryFilter] = useState<number | null>(null);
@@ -19,6 +23,14 @@ export default function Servers() {
 
   const categories = categoriesData || [];
   const servers = localServers || (serversData as any)?.results || [];
+
+  // Neon Button Style
+  const neonButtonStyle = {
+    backgroundColor: 'rgb(30, 41, 59)',
+    color: neonBlue,
+    border: `1px solid ${neonBlue}`,
+    boxShadow: neonGlow
+  };
 
   // Drag and Drop handlers
   const handleDragStart = (e: React.DragEvent, serverId: number) => {
@@ -132,17 +144,25 @@ export default function Servers() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
+      {/* Header - TITEL IN NEON BLUE */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-white">{t('servers.subtitle')}</h1>
+        <h1 className="text-2xl font-bold" style={{ color: neonBlue }}>{t('servers.subtitle')}</h1>
         <div className="flex items-center space-x-3">
-          <Link to="/servers/categories" className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg transition-colors font-medium text-sm inline-flex items-center space-x-2">
+          <Link 
+            to="/servers/categories" 
+            className="px-4 py-2 rounded-lg transition-colors font-medium text-sm inline-flex items-center space-x-2 hover:opacity-90"
+            style={neonButtonStyle}
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
             </svg>
             <span>{t('common.category')}</span>
           </Link>
-          <Link to="/servers/new" className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm inline-flex items-center space-x-2">
+          <Link 
+            to="/servers/new" 
+            className="px-4 py-2 rounded-lg transition-colors font-medium text-sm inline-flex items-center space-x-2 hover:opacity-90"
+            style={neonButtonStyle}
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
             </svg>
@@ -178,7 +198,13 @@ export default function Servers() {
             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: activeCategory.color }}></span>
             <span className="text-slate-300">Zeige Server in <strong>{activeCategory.name}</strong></span>
           </div>
-          <button onClick={() => { setCategoryFilter(null); setLocalServers(null); }} className="text-sm text-primary-400 hover:underline">Filter aufheben</button>
+          <button 
+            onClick={() => { setCategoryFilter(null); setLocalServers(null); }} 
+            className="text-sm hover:underline"
+            style={{ color: neonBlue }}
+          >
+            Filter aufheben
+          </button>
         </div>
       )}
 
@@ -230,11 +256,18 @@ export default function Servers() {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => handleToggleActive(server)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:bg-slate-800 transition-colors" title="Toggle Active">
+                {/* Active Toggle - NEON BLUE statt primary */}
+                <button onClick={() => handleToggleActive(server)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Active">
                   {server.is_active ? (
                     <span className="flex h-3 w-3 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary-500"></span>
+                      <span 
+                        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                        style={{ backgroundColor: neonBlue }}
+                      ></span>
+                      <span 
+                        className="relative inline-flex rounded-full h-3 w-3"
+                        style={{ backgroundColor: neonBlue }}
+                      ></span>
                     </span>
                   ) : (
                     <span className="h-3 w-3 rounded-full bg-slate-600 block"></span>
@@ -273,9 +306,16 @@ export default function Servers() {
               <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
+                    {/* Online Status - NEON BLUE */}
                     {server.last_status === 'online' ? (
                       <>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-900/30 text-primary-400">
+                        <span 
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                          style={{ 
+                            backgroundColor: 'rgba(136, 206, 208, 0.2)',
+                            color: neonBlue
+                          }}
+                        >
                           <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
                           Online
                         </span>
@@ -291,8 +331,13 @@ export default function Servers() {
                     )}
                     {server.last_check && <span className="text-xs text-slate-600 dark:text-slate-400">{timeAgo(server.last_check)}</span>}
                   </div>
-                  <button onClick={() => handleQuickTest(server)} disabled={testingServer === server.id}
-                    className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-primary-400 hover:bg-primary-900/20 transition-colors disabled:opacity-50" title="Test Connection">
+                  <button 
+                    onClick={() => handleQuickTest(server)} 
+                    disabled={testingServer === server.id}
+                    className="p-1.5 rounded-lg transition-colors disabled:opacity-50 hover:opacity-80"
+                    style={{ color: neonBlue }}
+                    title="Test Connection"
+                  >
                     {testingServer === server.id ? (
                       <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                     ) : (
@@ -301,10 +346,22 @@ export default function Servers() {
                   </button>
                 </div>
                 
-                {/* Actions */}
+                {/* Actions - Details in NEON BLUE */}
                 <div className="flex items-center justify-end space-x-3 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 text-sm">
-                  <Link to={`/servers/${server.id}`} className="text-slate-500 dark:text-slate-500 hover:text-primary-400 transition-colors">Details</Link>
-                  <Link to={`/servers/${server.id}/edit`} className="text-slate-500 dark:text-slate-500 hover:text-primary-400 transition-colors">Edit</Link>
+                  <Link 
+                    to={`/servers/${server.id}`} 
+                    className="transition-colors hover:opacity-80"
+                    style={{ color: neonBlue }}
+                  >
+                    Details
+                  </Link>
+                  <Link 
+                    to={`/servers/${server.id}/edit`} 
+                    className="transition-colors hover:opacity-80"
+                    style={{ color: neonBlue }}
+                  >
+                    Edit
+                  </Link>
                   <button onClick={() => handleDelete(server)} className="text-red-500 hover:text-red-400 transition-colors">Delete</button>
                 </div>
               </div>
@@ -321,7 +378,11 @@ export default function Servers() {
           </svg>
           <h3 className="text-xl font-semibold text-white mb-2">{t('servers.noServers')}</h3>
           <p className="text-slate-600 dark:text-slate-400 mb-4">{t('servers.addFirstServer')}</p>
-          <Link to="/servers/new" className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors font-medium inline-block">
+          <Link 
+            to="/servers/new" 
+            className="px-6 py-2 rounded-lg transition-colors font-medium inline-block hover:opacity-90"
+            style={neonButtonStyle}
+          >
             {t('servers.addServer')}
           </Link>
         </div>

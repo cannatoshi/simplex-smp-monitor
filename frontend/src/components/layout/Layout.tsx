@@ -1,17 +1,43 @@
 import { useState, useEffect } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LANGUAGES, LanguageCode } from '../../i18n/config';
+import Sidebar from './Sidebar';
 
 export default function Layout() {
-  const { t, i18n } = useTranslation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
+  const { t } = useTranslation();
+  const location = useLocation();
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved !== null ? JSON.parse(saved) : true;
   });
 
+  // Footer Animation State
+  const [footerIndex, setFooterIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const footerItems = [
+    t('footer.copyright'),
+    'i(N) cod(E) w(E) trus(T)',
+    `Version ${t('footer.version')}`,
+  ];
+
+  // Neon Blue
+  const neonBlue = '#88CED0';
+
+  // Footer Rotation alle 10 Sekunden
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setFooterIndex((prev) => (prev + 1) % footerItems.length);
+        setIsAnimating(false);
+      }, 300);
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [footerItems.length]);
+
+  // Dark Mode Effect
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
     if (darkMode) {
@@ -21,160 +47,150 @@ export default function Layout() {
     }
   }, [darkMode]);
 
+  // Top Navigation Items
   const navItems = [
     { to: '/dashboard', label: t('nav.dashboard') },
     { to: '/servers', label: t('nav.servers') },
     { to: '/clients', label: t('nav.clients') },
-    { to: '/tests', label: t('nav.tests') },
+    { to: '/diagnostics', label: t('nav.diagnostics') },
+    { to: '/traffic', label: t('nav.traffic') },
+    { to: '/forensics', label: t('nav.forensics') },
+    { to: '/metrics', label: t('nav.metrics') },
+    { to: '/tor-status', label: t('nav.torStatus') },
     { to: '/events', label: t('nav.events') },
   ];
 
-  const currentLang = LANGUAGES[i18n.language as LanguageCode] || LANGUAGES.en;
+  const isActive = (path: string) => {
+    if (path === '/dashboard') return location.pathname === '/dashboard' || location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-white">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <span className="text-2xl">🔍</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-white">SimpleX SMP Monitor</span>
-              <span className="px-2 py-0.5 text-xs font-medium bg-cyan-500/20 text-cyan-500 rounded-full">● Live</span>
-            </div>
+      {/* Left Sidebar */}
+      <Sidebar darkMode={darkMode} setDarkMode={setDarkMode} />
 
-            {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center space-x-1">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
-
-            {/* Right Side */}
-            <div className="flex items-center space-x-3">
-              {/* Language Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setLangOpen(!langOpen)}
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors inline-flex items-center space-x-1"
-                >
-                  <span>{currentLang.name}</span>
-                  <svg
-                    className={`w-3 h-3 ml-1 transition-transform ${langOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {langOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-lg bg-white dark:bg-slate-800 shadow-lg ring-1 ring-black ring-opacity-5 z-50">
-                    {Object.entries(LANGUAGES).map(([code, meta]) => (
-                      <button
-                        key={code}
-                        onClick={() => {
-                          i18n.changeLanguage(code);
-                          setLangOpen(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-between transition-colors ${
-                          i18n.language === code ? 'bg-primary-50 dark:bg-primary-900/30' : ''
-                        }`}
-                      >
-                        <span className="text-slate-700 dark:text-slate-300">{meta.name}</span>
-                        {i18n.language === code && (
-                          <span className="text-primary-500 text-xs">✓</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Dark Mode Toggle */}
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+      {/* Main Area */}
+      <div className="ml-16 flex flex-col min-h-screen">
+        {/* Top Toolbar */}
+        <header className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
+          <div className="h-full px-6 flex items-center justify-between">
+            {/* Left: Logo & Live Status - NEON BLUE */}
+            <div className="flex items-center gap-3">
+              {/* Logo Text - NEON BLUE */}
+              <span 
+                className="text-lg font-bold"
+                style={{ color: neonBlue }}
               >
-                {darkMode ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
-                )}
-              </button>
+                SimpleX SMP Monitor
+              </span>
               
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Nav */}
-          {mobileMenuOpen && (
-            <nav className="md:hidden py-4 border-t border-slate-200 dark:border-slate-800">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`
-                  }
+              {/* LIVE Badge - NEON BLUE */}
+              <div className="flex items-center gap-2 px-2 py-1">
+                <div className="relative w-10 h-1 bg-slate-700/50 rounded-full overflow-hidden">
+                  <div 
+                    className="absolute inset-y-0 left-0 rounded-full"
+                    style={{ 
+                      width: '100%',
+                      backgroundColor: neonBlue,
+                      boxShadow: `0 0 6px ${neonBlue}`
+                    }}
+                  />
+                  <div 
+                    className="absolute inset-y-0 w-3 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full"
+                    style={{
+                      animation: 'scan 1.5s ease-in-out infinite'
+                    }}
+                  />
+                </div>
+                <span 
+                  className="text-xs font-semibold tracking-wider"
+                  style={{ 
+                    color: neonBlue,
+                    textShadow: `0 0 6px rgba(136, 206, 208, 0.6)`
+                  }}
                 >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
-          )}
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Outlet />
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-500">
-            <span>{t('footer.copyright')}</span>
-            <div className="flex items-center space-x-4">
-              <span>i(N) cod(E) w(E) trus(T)</span>
-              <span>›</span>
-              <span>{t('footer.version')}</span>
+                  LIVE
+                </span>
+              </div>
             </div>
+
+            {/* Right: Navigation Menu - NEON BLUE */}
+            <nav className="flex items-center">
+              {navItems.map((item, index) => {
+                const active = isActive(item.to);
+                const isLast = index === navItems.length - 1;
+                return (
+                  <div key={item.to} className="flex items-center">
+                    <NavLink
+                      to={item.to}
+                      className="relative group px-3 py-2"
+                    >
+                      <span 
+                        className="text-sm font-medium transition-colors"
+                        style={{ 
+                          color: active ? neonBlue : undefined,
+                          opacity: active ? 1 : 0.6
+                        }}
+                      >
+                        <span className={active ? '' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'}>
+                          {!active && item.label}
+                        </span>
+                        {active && item.label}
+                      </span>
+                      
+                      {/* Unterstrich-Effekt - NEON BLUE */}
+                      <div 
+                        className={`absolute bottom-0 left-2 right-2 h-0.5 rounded-full transition-all duration-300 ${
+                          active 
+                            ? 'opacity-100 scale-x-100' 
+                            : 'opacity-0 scale-x-0 group-hover:opacity-50 group-hover:scale-x-100'
+                        }`} 
+                        style={{ 
+                          backgroundColor: neonBlue,
+                          transformOrigin: 'center' 
+                        }} 
+                      />
+                    </NavLink>
+                    
+                    {/* Horizontaler Trennstrich */}
+                    {!isLast && (
+                      <div className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
           </div>
-        </div>
-      </footer>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 p-6 overflow-auto">
+          <Outlet />
+        </main>
+
+        {/* Footer - NEON BLUE */}
+        <footer className="h-12 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end px-6 overflow-hidden">
+          <div 
+            className={`text-xs font-mono transition-all duration-300 ease-in-out ${
+              isAnimating 
+                ? 'translate-x-8 opacity-0' 
+                : 'translate-x-0 opacity-100'
+            }`}
+            style={{ color: neonBlue }}
+          >
+            {footerItems[footerIndex]}
+          </div>
+        </footer>
+      </div>
+
+      {/* Global Styles */}
+      <style>{`
+        @keyframes scan {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(400%); }
+        }
+      `}</style>
     </div>
   );
 }
