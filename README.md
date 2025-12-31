@@ -1786,5 +1786,11 @@ pip install channels-redis
 ---
 
 <p align="center">
+  <sub><strong>Disclaimer:</strong> This project is not affiliated with, endorsed by, or officially connected with SimpleX Chat Ltd.</sub><br>
+  <sub>"SimpleX" is a trademark of SimpleX Chat Ltd. See <a href="TRADEMARK.md">TRADEMARK.md</a> for details.</sub><br>
+  <sub>Built with love for the SimpleX ecosystem. Official collaboration? We're open!</sub>
+</p>
+
+<p align="center">
   <sub>i(N) cod(E) w(E) trus(T)</sub>
 </p>
