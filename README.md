@@ -12,6 +12,7 @@
 [![Redis](https://img.shields.io/badge/Redis-7.x-DC382D.svg)](https://redis.io/)
 [![Maintenance](https://img.shields.io/badge/Maintained-Actively-success.svg)](https://github.com/cannatoshi/simplex-smp-monitor/commits/main)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](#contributing)
+[![Legal](https://img.shields.io/badge/Legal-See%20LEGAL.md-lightgrey.svg)](LEGAL.md)
 
 A web-based monitoring dashboard and stress testing suite for self-hosted SimpleX SMP/XFTP relay infrastructure. Built for operators who need visibility into their private messaging servers.
 
@@ -19,6 +20,11 @@ A web-based monitoring dashboard and stress testing suite for self-hosted Simple
 > **Status:** Active Development  
 > **Tested on:** Debian 12, Ubuntu 24.04, Raspberry Pi OS (64-bit)  
 > **Companion to:** [SimpleX Private Infrastructure Tutorial](https://github.com/cannatoshi/simplex-smp-xftp-via-tor-on-rpi-hardened)
+
+### Dashboard
+![Dashboard](screenshots/dashboard_beta.png)
+
+*Real-time infrastructure overview with server stats, activity charts, latency metrics, and system diagnostics preview*
 
 ---
 
@@ -247,14 +253,19 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 ## Screenshots
 
 ### Server List
-![Server List](screenshots/serverlist.png)
+![Server List](screenshots/servers_list.png)
 
-*Dashboard showing server cards with status indicators, latency metrics, and quick actions*
+*Server management grid with status indicators, latency metrics, categories, and quick actions*
 
-### Server Monitoring Detail
-![Server Monitoring](screenshots/server_monitoring.png)
+### Client List
+![Client List](screenshots/client_list.png)
 
-*Detailed monitoring view with live countdown, test results table, and Grafana integration*
+*Docker-based CLI client overview with real-time status, message statistics, Tor badges, and container controls*
+
+### Client Detail
+![Client Detail](screenshots/client_detail.png)
+
+*Client management dashboard with WebSocket messaging, connection handling, delivery tracking, and SMP server status*
 
 ---
 
@@ -1591,6 +1602,15 @@ See [LICENSE](LICENSE) for the full license text.
 This software is provided "AS IS" without warranty of any kind. The authors are not responsible for any damages or issues arising from its use.
 
 This tool is intended for monitoring your **own** infrastructure. Do not use it to test servers you do not own or have explicit permission to test.
+
+> **Note:** This project is **not affiliated with or endorsed by SimpleX Chat Ltd**.  
+> "SimpleX" is a trademark of SimpleX Chat Ltd. See [TRADEMARK.md](TRADEMARK.md) for details.
+
+For complete legal information, see:
+- [LEGAL.md](LEGAL.md) - Legal documentation overview
+- [TRADEMARK.md](TRADEMARK.md) - Trademark information
+- [DISCLAIMER.md](DISCLAIMER.md) - Full liability disclaimer
+- [TESTING_POLICY.md](TESTING_POLICY.md) - Testing guidelines
 
 ---
 
