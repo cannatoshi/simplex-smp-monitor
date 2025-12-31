@@ -1,33 +1,173 @@
-version: '3.8'
+# ============================================
+# SimpleX SMP Monitor - Docker Compose
+# ============================================
 
 services:
-  influxdb:
-    image: influxdb:1.8
-    container_name: simplex-influxdb
+  # 🌐 Nginx (Reverse Proxy + React Frontend)
+  nginx:
+    image: nginx:alpine
+    container_name: simplex-monitor-nginx
     restart: unless-stopped
     ports:
-      - "8086:8086"
+      - "${APP_PORT:-8080}:80"
     volumes:
-      - influxdb_data:/var/lib/influxdb
-    environment:
-      - INFLUXDB_DB=simplex_monitor
-      - INFLUXDB_ADMIN_USER=admin
-      - INFLUXDB_ADMIN_PASSWORD=simplex123
-      - INFLUXDB_HTTP_AUTH_ENABLED=false
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./static/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - app
+    networks:
+      - simplex-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # 🐍 Django Backend (API Only)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: simplex-monitor-app
+    restart: unless-stopped
+    environment:
+      - DEBUG=${DEBUG:-False}
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production-use-long-random-string}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,nginx}
+      - DATABASE_URL=postgres://${POSTGRES_USER:-simplex}:${POSTGRES_PASSWORD:-simplex123}@postgres:5432/${POSTGRES_DB:-simplex_monitor}
+      - REDIS_URL=redis://redis:6379/0
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:-simplex-monitor-token}
+      - INFLUXDB_ORG=${INFLUXDB_ORG:-simplex}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET:-metrics}
+      - TOR_SOCKS_HOST=tor
+      - TOR_SOCKS_PORT=9050
+      - DJANGO_SUPERUSER_USERNAME=${ADMIN_USER:-admin}
+      - DJANGO_SUPERUSER_PASSWORD=${ADMIN_PASSWORD:-simplex123}
+      - DJANGO_SUPERUSER_EMAIL=${ADMIN_EMAIL:-admin@localhost}
+    volumes:
+      - app_data:/app/data
+      - app_media:/app/media
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - simplex-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 🗄️ PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: simplex-monitor-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-simplex}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-simplex123}
+      - POSTGRES_DB=${POSTGRES_DB:-simplex_monitor}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - simplex-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-simplex} -d ${POSTGRES_DB:-simplex_monitor}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ⚡ Redis (Cache & Channels)
+  redis:
+    image: redis:7-alpine
+    container_name: simplex-monitor-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - simplex-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 📊 InfluxDB (Metrics Storage)
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: simplex-monitor-influxdb
+    restart: unless-stopped
+    ports:
+      - "${INFLUXDB_PORT:-8086}:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_USER:-admin}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_PASSWORD:-simplex123}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG:-simplex}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET:-metrics}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN:-simplex-monitor-token}
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+    networks:
+      - simplex-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 📈 Grafana (Dashboards)
   grafana:
     image: grafana/grafana:latest
-    container_name: simplex-grafana
+    container_name: simplex-monitor-grafana
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT:-3002}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-simplex123}
+      - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=simplex123
     depends_on:
       - influxdb
+    networks:
+      - simplex-network
+
+  # 🧅 Tor Proxy (for .onion testing)
+  tor:
+    image: dperson/torproxy:latest
+    container_name: simplex-monitor-tor
+    restart: unless-stopped
+    environment:
+      - TOR_NewCircuitPeriod=120
+    networks:
+      - simplex-network
 
 volumes:
+  app_data:
+    name: simplex-monitor-app-data
+  app_media:
+    name: simplex-monitor-app-media
+  postgres_data:
+    name: simplex-monitor-postgres
+  redis_data:
+    name: simplex-monitor-redis
   influxdb_data:
+    name: simplex-monitor-influxdb-data
+  influxdb_config:
+    name: simplex-monitor-influxdb-config
   grafana_data:
+    name: simplex-monitor-grafana
+
+networks:
+  simplex-network:
+    name: simplex-monitor-network
+    driver: bridge

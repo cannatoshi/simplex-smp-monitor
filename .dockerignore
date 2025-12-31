@@ -1,0 +1,58 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.venv
+venv
+.env
+*.egg-info
+
+# Node
+node_modules
+.npm
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Build artifacts
+*.log
+.DS_Store
+Thumbs.db
+
+# Test & Coverage
+.coverage
+htmlcov
+.pytest_cache
+.tox
+
+# Docker (don't include in image)
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Local database (fresh install should be empty)
+db.sqlite3
+*.sqlite3
+
+# Frontend build (rebuilt in Docker)
+static/dist
+frontend/dist
+
+# Documentation
+*.md
+!README.md
+docs/
+screenshots/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
