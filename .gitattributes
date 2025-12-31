@@ -1,0 +1,11 @@
+# Auto detect text files and normalize
+* text=auto
+
+# Force Unix line endings for shell scripts
+*.sh text eol=lf
+
+# Force Unix line endings for config files
+*.conf text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf
