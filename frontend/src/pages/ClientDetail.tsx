@@ -141,6 +141,7 @@ export default function ClientDetail() {
       else if (action === 'stop') await simplexClientsApi.stop(client.id);
       else await simplexClientsApi.restart(client.id);
       fetchClient();
+    fetchMessages();
     } finally {
       setActionLoading(null);
     }
@@ -246,6 +247,7 @@ export default function ClientDetail() {
     }
     
     fetchClient();
+    fetchMessages();
   };
 
   if (loading) {
