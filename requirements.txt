@@ -1,54 +1,33 @@
-aiofiles==25.1.0
-APScheduler==3.11.2
-asgiref==3.11.0
-async-timeout==5.0.1
-attrs==25.4.0
-autobahn==25.12.2
-Automat==25.4.16
-cbor2>=5.8.0
-certifi==2025.11.12
-cffi==2.0.0
-channels==4.3.2
-channels_redis==4.3.0
-charset-normalizer==3.4.4
-constantly==23.10.4
-cryptography==46.0.3
-daphne==4.2.1
+# Django Core
 Django>=6.0,<7.0
-django-cors-headers==4.9.0
-django-htmx==1.27.0
-djangorestframework==3.16.1
-docker==7.1.0
-hyperlink==21.0.0
-idna==3.11
-Incremental==24.11.0
-influxdb==5.3.2
-influxdb-client==1.49.0
-msgpack==1.1.2
-packaging==25.0
-psutil==7.2.0
-py-ubjson==0.16.1
-pyasn1==0.6.1
-pyasn1_modules==0.4.2
-pycparser==2.23
-pyOpenSSL==25.3.0
-PySocks==1.7.1
-python-dateutil==2.9.0.post0
-python-dotenv==1.2.1
-pytz==2025.2
-reactivex==4.1.0
-redis==7.1.0
-requests==2.32.5
-service-identity==24.2.0
-six==1.17.0
-sqlparse==0.5.5
-Twisted==25.5.0
-txaio==25.12.2
-typing_extensions==4.15.0
-tzlocal==5.3.1
-ujson==5.11.0
-urllib3==2.6.2
-websockets==15.0.1
-zope.interface==8.1.1
+djangorestframework
+django-cors-headers
+django-htmx
 dj-database-url
 whitenoise
+
+# WebSocket/Realtime
+channels
+channels_redis
+daphne
+redis
+
+# Background Tasks
+APScheduler
+
+# Docker Integration  
+docker
+
+# Database/Metrics
+influxdb
+influxdb-client
+
+# Utils
+python-dotenv
+requests
+psutil
+aiofiles
+websockets
+
+# Tor/SOCKS Support
+PySocks
