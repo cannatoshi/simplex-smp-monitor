@@ -23,6 +23,412 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.10-alpha] - 2026-01-01
+
+### 🐳 MAJOR FEATURE: Docker One-Click Deployment
+
+This release introduces **complete Docker containerization** for cross-platform deployment and provides **pre-built SimpleX server images** for self-hosted infrastructure testing.
+
+---
+
+### ✨ Highlights
+
+- **Docker Compose Stack** - Complete application deployment in one command
+- **Cross-Platform** - Works identically on Windows 11, Linux, and Mac
+- **Three Installation Methods** - Clone, wget pre-built images, or GHCR pull
+- **SimpleX Server Images** - Pre-built SMP, XFTP, NTF server Docker images (v6.4.4.1)
+- **Production Compose** - `docker-compose.prod.yml` for standalone deployment
+- **CRLF Fix** - Windows line ending compatibility via `.gitattributes`
+- **Nginx Reverse Proxy** - Simplified architecture for production
+- **Whitenoise Integration** - Django serves React SPA directly
+
+---
+
+### Added
+
+#### 🆕 Complete Docker Stack
+
+Three deployment methods for the SimpleX SMP Monitor System:
+
+**Method 1: Clone & Run (Recommended for Development)**
+```bash
+git clone https://github.com/cannatoshi/simplex-smp-monitor.git
+cd simplex-smp-monitor
+docker compose up -d
+```
+
+**Method 2: Download Pre-Built Images (Fastest for Production)**
+```bash
+mkdir simplex-smp-monitor && cd simplex-smp-monitor
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-app.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-nginx.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+docker load < simplex-smp-monitor-app.tar.gz
+docker load < simplex-smp-monitor-nginx.tar.gz
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Method 3: Pull from GitHub Container Registry (Best for CI/CD)**
+```bash
+mkdir simplex-smp-monitor && cd simplex-smp-monitor
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10 simplex-smp-monitor-app:latest
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10 simplex-smp-monitor-nginx:latest
+docker compose -f docker-compose.prod.yml up -d
+```
+
+---
+
+#### 🐳 Docker Stack Components
+
+| Service | Image | Port | Purpose |
+|---------|-------|------|---------|
+| **nginx** | simplex-smp-monitor-nginx | 8080 | Reverse proxy, static files |
+| **app** | simplex-smp-monitor-app | 8000 | Django + React SPA |
+| **postgres** | postgres:15-alpine | 5432 | Database |
+| **redis** | redis:7-alpine | 6379 | Channel layer, caching |
+| **influxdb** | influxdb:2.7-alpine | 8086 | Metrics storage |
+| **grafana** | grafana/grafana | 3002 | Dashboards |
+| **tor** | dperson/torproxy | 9050 | Tor SOCKS proxy |
+
+---
+
+#### 🆕 SimpleX Server Docker Images (Optional)
+
+Pre-built Docker images for complete SimpleX self-hosting:
+
+> **Note:** These are OPTIONAL. The Monitor can monitor ANY SimpleX servers, including official ones or your own installations.
+
+| Image | Version | Size | Purpose |
+|-------|---------|------|---------|
+| `simplex-smp:latest` | v6.4.4.1 | ~136MB | SMP messaging server |
+| `simplex-xftp:latest` | v6.4.4.1 | ~136MB | XFTP file transfer server |
+| `simplex-ntf:latest` | v6.4.4.1 | ~140MB | Push notification server (iOS) |
+| `simplex-cli:latest` | latest | ~237MB | CLI client for testing |
+
+**Installation Method A: Build from Source**
+```bash
+cd simplex-smp-monitor
+docker compose build simplex-cli simplex-smp simplex-xftp simplex-ntf
+```
+
+**Installation Method B: Download from GitHub Releases**
+```bash
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-docker.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-xftp-docker.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-ntf-docker.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-cli-docker.tar.gz
+docker load < simplex-smp-docker.tar.gz
+docker load < simplex-xftp-docker.tar.gz
+docker load < simplex-ntf-docker.tar.gz
+docker load < simplex-cli-docker.tar.gz
+```
+
+**Installation Method C: Pull from GHCR**
+```bash
+docker pull ghcr.io/cannatoshi/simplex-smp:v0.1.10
+docker pull ghcr.io/cannatoshi/simplex-xftp:v0.1.10
+docker pull ghcr.io/cannatoshi/simplex-ntf:v0.1.10
+docker pull ghcr.io/cannatoshi/simplex-cli:v0.1.10
+docker tag ghcr.io/cannatoshi/simplex-smp:v0.1.10 simplex-smp:latest
+docker tag ghcr.io/cannatoshi/simplex-xftp:v0.1.10 simplex-xftp:latest
+docker tag ghcr.io/cannatoshi/simplex-ntf:v0.1.10 simplex-ntf:latest
+docker tag ghcr.io/cannatoshi/simplex-cli:v0.1.10 simplex-cli:latest
+```
+
+**Running Your Own SimpleX Servers:**
+```bash
+# SMP Server (Messaging)
+docker run -d --name my-smp \
+  -p 5223:5223 \
+  -v smp-data:/var/opt/simplex \
+  -v smp-config:/etc/opt/simplex \
+  simplex-smp:latest
+
+# XFTP Server (File Transfer)
+docker run -d --name my-xftp \
+  -p 443:443 \
+  -v xftp-data:/var/opt/simplex-xftp \
+  -v xftp-config:/etc/opt/simplex-xftp \
+  simplex-xftp:latest
+
+# NTF Server (iOS Push Notifications)
+docker run -d --name my-ntf \
+  -p 444:443 \
+  -v ntf-data:/var/opt/simplex-notifications \
+  -v ntf-config:/etc/opt/simplex-notifications \
+  simplex-ntf:latest
+```
+
+---
+
+#### 🆕 Production Compose File (`docker-compose.prod.yml`)
+
+Standalone compose file for pre-built image deployment:
+
+```yaml
+# Works without source code - only needs the pre-built images
+# Usage:
+#   docker load < simplex-smp-monitor-app.tar.gz
+#   docker load < simplex-smp-monitor-nginx.tar.gz
+#   docker compose -f docker-compose.prod.yml up -d
+
+services:
+  nginx:
+    image: simplex-smp-monitor-nginx:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
+    # ...
+
+  app:
+    image: simplex-smp-monitor-app:latest
+    # No build: directive - uses pre-built image
+    # ...
+```
+
+---
+
+#### 🆕 Windows Line Ending Fix (`.gitattributes`)
+
+Enforces LF line endings for shell scripts to prevent Docker build failures on Windows:
+
+```gitattributes
+# Force LF line endings for scripts (required for Docker on Windows)
+*.sh text eol=lf
+entrypoint.sh text eol=lf
+**/entrypoint.sh text eol=lf
+clients/docker/entrypoint.sh text eol=lf
+servers/docker/*.sh text eol=lf
+```
+
+**Fix for existing Windows clones:**
+```powershell
+# Option 1: Configure Git before cloning
+git config --global core.autocrlf false
+git clone https://github.com/cannatoshi/simplex-smp-monitor.git
+
+# Option 2: Fix existing clone
+cd simplex-smp-monitor
+git rm -rf --cached .
+git reset --hard HEAD
+```
+
+---
+
+#### 🆕 Nginx Reverse Proxy Configuration (`nginx.conf`)
+
+Production-ready Nginx configuration:
+
+```nginx
+upstream django {
+    server app:8000;
+}
+
+server {
+    listen 80;
+    server_name _;
+    client_max_body_size 100M;
+
+    location /static/ {
+        alias /app/staticfiles/;
+    }
+
+    location /media/ {
+        alias /app/media/;
+    }
+
+    location / {
+        proxy_pass http://django;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+---
+
+#### 🆕 Whitenoise Integration
+
+Django now serves the React SPA directly via Whitenoise:
+
+```python
+# config/settings.py
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # NEW
+    # ...
+]
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+```
+
+**New Dependency:**
+```bash
+pip install whitenoise
+```
+
+---
+
+### Technical Details
+
+**New Files:**
+```
+docker-compose.yml              # Complete Docker stack
+docker-compose.prod.yml         # Production standalone (no source needed)
+Dockerfile                      # Django app image
+nginx.conf                      # Nginx configuration
+.gitattributes                  # Line ending enforcement
+
+servers/docker/
+├── Dockerfile.simplex-smp      # SMP server image
+├── Dockerfile.simplex-xftp     # XFTP server image
+├── Dockerfile.simplex-ntf      # NTF server image
+├── smp-entrypoint.sh           # SMP entrypoint script
+├── xftp-entrypoint.sh          # XFTP entrypoint script
+└── ntf-entrypoint.sh           # NTF entrypoint script
+```
+
+**Modified Files:**
+```
+config/settings.py              # Whitenoise, PostgreSQL for Docker
+requirements.txt                # Added whitenoise, psycopg2-binary
+README.md                       # Docker installation documentation
+ROADMAP.md                      # Updated with Docker milestone
+```
+
+---
+
+### GitHub Release Assets
+
+**SimpleX SMP Monitor System (Main Application):**
+
+| Asset | Architecture | Size | Description |
+|-------|--------------|------|-------------|
+| `simplex-smp-monitor-app.tar.gz` | x86_64 | ~300MB | Django + React application |
+| `simplex-smp-monitor-nginx.tar.gz` | x86_64 | ~10MB | Nginx reverse proxy |
+| `docker-compose.prod.yml` | - | ~3KB | Production compose file |
+| `simplex-smp-monitor-app-arm64.tar.gz` | ARM64 | ~280MB | ARM64 build (Raspberry Pi) |
+| `simplex-smp-monitor-nginx-arm64.tar.gz` | ARM64 | ~10MB | ARM64 Nginx |
+
+**GHCR Images:**
+```
+ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10
+ghcr.io/cannatoshi/simplex-smp-monitor-app:latest
+ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10
+ghcr.io/cannatoshi/simplex-smp-monitor-nginx:latest
+```
+
+**SimpleX Server Images (Optional):**
+
+| Asset | Architecture | Size | Description |
+|-------|--------------|------|-------------|
+| `simplex-smp-docker.tar.gz` | x86_64 | ~50MB | SMP messaging server |
+| `simplex-xftp-docker.tar.gz` | x86_64 | ~50MB | XFTP file transfer |
+| `simplex-ntf-docker.tar.gz` | x86_64 | ~52MB | NTF push notifications |
+| `simplex-cli-docker.tar.gz` | x86_64 | ~85MB | CLI client |
+| `*-arm64.tar.gz` | ARM64 | varies | ARM64 builds |
+
+**GHCR Images:**
+```
+ghcr.io/cannatoshi/simplex-smp:v0.1.10
+ghcr.io/cannatoshi/simplex-xftp:v0.1.10
+ghcr.io/cannatoshi/simplex-ntf:v0.1.10
+ghcr.io/cannatoshi/simplex-cli:v0.1.10
+```
+
+---
+
+### Installation / Upgrade
+
+#### For New Installations (Docker - Recommended)
+
+**Method 1: Clone & Run**
+```bash
+git clone https://github.com/cannatoshi/simplex-smp-monitor.git
+cd simplex-smp-monitor
+docker compose up -d
+```
+
+**Method 2: wget Pre-Built Images**
+```bash
+mkdir simplex-smp-monitor && cd simplex-smp-monitor
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-app.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-nginx.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+docker load < simplex-smp-monitor-app.tar.gz
+docker load < simplex-smp-monitor-nginx.tar.gz
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Method 3: GHCR Pull**
+```bash
+mkdir simplex-smp-monitor && cd simplex-smp-monitor
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10 simplex-smp-monitor-app:latest
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10 simplex-smp-monitor-nginx:latest
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Access Points:**
+| Interface | URL | Credentials |
+|-----------|-----|-------------|
+| Web App | http://localhost:8080 | admin / simplex123 |
+| Grafana | http://localhost:3002 | admin / simplex123 |
+| InfluxDB | http://localhost:8086 | admin / simplex123 |
+
+#### For Upgrades from v0.1.9
+
+**If using Docker (recommended):**
+```bash
+cd simplex-smp-monitor
+docker compose down
+git pull
+docker compose build --no-cache app
+docker compose up -d
+```
+
+**If using manual installation:**
+```bash
+cd ~/simplex-smp-monitor
+git pull
+source .venv/bin/activate
+pip install whitenoise
+python manage.py collectstatic --noinput
+```
+
+#### Windows-Specific Notes
+
+If you encounter "standard_init_linux.go:228: exec user process caused: no such file or directory":
+
+```powershell
+# Fix line endings
+git config --global core.autocrlf false
+cd simplex-smp-monitor
+git rm -rf --cached .
+git reset --hard HEAD
+docker compose build --no-cache
+```
+
+---
+
+### Known Issues
+
+1. **ARM64 images** - Not yet tested on Raspberry Pi (coming soon)
+2. **GHCR authentication** - May require `docker login ghcr.io` for private repos
+
+---
+
 ## [0.1.9-alpha] - 2025-12-29
 
 ### 🚀 MAJOR FEATURE: React SPA Migration
@@ -1173,6 +1579,7 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe SSD, Debian 12):
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 0.1.10-alpha | 2026-01-01 | **Docker One-Click Deployment**: Docker Compose, SimpleX Server Images |
 | 0.1.9-alpha | 2025-12-29 | **React SPA Migration**: React 18, TypeScript, Vite, Tailwind |
 | 0.1.8-alpha | 2025-12-27 | **Real-Time Infrastructure**: Redis, WebSocket, Event Bridge |
 | 0.1.7-alpha | 2025-12-27 | CLI Clients, Docker, Delivery Receipts |
@@ -1183,7 +1590,8 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe SSD, Debian 12):
 
 ---
 
-[Unreleased]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.9-alpha...HEAD
+[Unreleased]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.10-alpha...HEAD
+[0.1.10-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.9-alpha...v0.1.10-alpha
 [0.1.9-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.8-alpha...v0.1.9-alpha
 [0.1.8-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.7-alpha...v0.1.8-alpha
 [0.1.7-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.6-alpha...v0.1.7-alpha
