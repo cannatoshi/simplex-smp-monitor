@@ -7,6 +7,7 @@
 [![Django](https://img.shields.io/badge/Django-5.x-092E20.svg)](https://www.djangoproject.com/)
 [![React](https://img.shields.io/badge/React-18.x-61DAFB.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg)](https://www.typescriptlang.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 [![Status](https://img.shields.io/badge/Status-Alpha-orange.svg)](#status)
 [![Tor](https://img.shields.io/badge/Tor-Supported-7D4698.svg)](https://www.torproject.org/)
 [![Redis](https://img.shields.io/badge/Redis-7.x-DC382D.svg)](https://redis.io/)
@@ -16,9 +17,9 @@
 
 A web-based monitoring dashboard and stress testing suite for self-hosted SimpleX SMP/XFTP relay infrastructure. Built for operators who need visibility into their private messaging servers.
 
-> **Version:** 0.1.9-alpha (29. December 2025)  
+> **Version:** 0.1.10-alpha (01. January 2026)  
 > **Status:** Active Development  
-> **Tested on:** Debian 12, Ubuntu 24.04, Raspberry Pi OS (64-bit)  
+> **Tested on:** Debian 12, Ubuntu 24.04, Raspberry Pi OS (64-bit), Windows 11  
 > **Companion to:** [SimpleX Private Infrastructure Tutorial](https://github.com/cannatoshi/simplex-smp-xftp-via-tor-on-rpi-hardened)
 
 ### Dashboard
@@ -33,8 +34,84 @@ A web-based monitoring dashboard and stress testing suite for self-hosted Simple
 > This project is in active development. Core features work, but expect rough edges.
 > Not recommended for production use without thorough testing.
 > 
-> ✅ **What works:** Server management, multi-type testing, Tor support, i18n system, CLI Clients with Delivery Receipts, Real-Time WebSocket Infrastructure, Redis Channel Layer, Auto-Start Event Bridge, **🆕 React SPA Frontend**  
+> ✅ **What works:** Server management, multi-type testing, Tor support, i18n system, CLI Clients with Delivery Receipts, Real-Time WebSocket Infrastructure, Redis Channel Layer, Auto-Start Event Bridge, React SPA Frontend, **🆕 Docker One-Click Deployment**, **🆕 SimpleX Server Docker Images**  
 > 🚧 **In progress:** Test Panel (React), Traffic Analysis Dashboard, Adversary View
+
+---
+
+## 🐳 What's New in v0.1.10 - Docker One-Click Deployment
+
+This release introduces **complete Docker containerization** for cross-platform deployment:
+
+### Quick Start (Docker - Recommended)
+
+**Option A: Clone & Run**
+```bash
+git clone https://github.com/cannatoshi/simplex-smp-monitor.git
+cd simplex-smp-monitor
+docker compose up -d
+```
+
+**Option B: Download Pre-Built Images**
+```bash
+mkdir simplex-smp-monitor && cd simplex-smp-monitor
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-app.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-nginx.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+docker load < simplex-smp-monitor-app.tar.gz
+docker load < simplex-smp-monitor-nginx.tar.gz
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Option C: Pull from GitHub Container Registry**
+```bash
+mkdir simplex-smp-monitor && cd simplex-smp-monitor
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10 simplex-smp-monitor-app:latest
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10 simplex-smp-monitor-nginx:latest
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Access the application:**
+| Interface | URL | Credentials |
+|-----------|-----|-------------|
+| Web App | http://localhost:8080 | admin / simplex123 |
+| Grafana | http://localhost:3002 | admin / simplex123 |
+| InfluxDB | http://localhost:8086 | admin / simplex123 |
+
+> **That's it!** The entire stack (Django, React, PostgreSQL, Redis, InfluxDB, Grafana, Tor) is now running.
+
+### Docker Stack Components
+
+| Service | Image | Port | Purpose |
+|---------|-------|------|---------|
+| **nginx** | simplex-smp-monitor-nginx | 8080 | Reverse proxy |
+| **app** | simplex-smp-monitor-app | 8000 | Backend + React SPA |
+| **postgres** | postgres:15-alpine | 5432 | Database |
+| **redis** | redis:7-alpine | 6379 | Channel layer |
+| **influxdb** | influxdb:2.7-alpine | 8086 | Metrics storage |
+| **grafana** | grafana/grafana | 3002 | Dashboards |
+| **tor** | dperson/torproxy | 9050 | Tor SOCKS proxy |
+
+### SimpleX Server Docker Images (Optional)
+
+Pre-built Docker images for complete SimpleX self-hosting:
+
+| Image | Version | Size | Purpose |
+|-------|---------|------|---------|
+| `simplex-smp:latest` | v6.4.4.1 | ~136MB | SMP messaging server |
+| `simplex-xftp:latest` | v6.4.4.1 | ~136MB | XFTP file transfer server |
+| `simplex-ntf:latest` | v6.4.4.1 | ~140MB | Push notification server (iOS) |
+| `simplex-cli:latest` | latest | ~237MB | CLI client for testing |
+
+```bash
+# Build SimpleX server images (optional)
+docker compose build simplex-cli simplex-smp simplex-xftp simplex-ntf
+```
+
+For detailed Docker installation instructions, see [Docker Installation](#docker-installation-new-in-v0110).
 
 ---
 
@@ -109,40 +186,43 @@ http://localhost:8000/api/v1/   # Django REST API
 4. [Architecture](#architecture)
 
 ### Installation
-5. [Prerequisites](#prerequisites)
-6. [Install System Dependencies](#1-install-system-dependencies)
-7. [Install Tor](#2-install-tor)
-8. [Install Docker](#3-install-docker)
-9. [Setup Redis](#4-setup-redis)
-10. [Clone Repository](#5-clone-repository)
-11. [Setup Python Environment](#6-setup-python-environment)
-12. [Setup React Frontend](#7-setup-react-frontend-new-in-v019)
-13. [Initialize Database](#8-initialize-database)
-14. [Start the Servers](#9-start-the-servers)
-15. [Setup CLI Clients](#10-setup-cli-clients)
+5. [Docker Installation (NEW in v0.1.10)](#docker-installation-new-in-v0110)
+6. [SimpleX Server Docker Images (NEW in v0.1.10)](#simplex-server-docker-images-new-in-v0110)
+7. [Manual Installation](#manual-installation)
+8. [Prerequisites](#prerequisites)
+9. [Install System Dependencies](#1-install-system-dependencies)
+10. [Install Tor](#2-install-tor)
+11. [Install Docker](#3-install-docker)
+12. [Setup Redis](#4-setup-redis)
+13. [Clone Repository](#5-clone-repository)
+14. [Setup Python Environment](#6-setup-python-environment)
+15. [Setup React Frontend](#7-setup-react-frontend-new-in-v019)
+16. [Initialize Database](#8-initialize-database)
+17. [Start the Servers](#9-start-the-servers)
+18. [Setup CLI Clients](#10-setup-cli-clients)
 
 ### Configuration
-16. [Tor Configuration](#tor-configuration)
-17. [Redis Configuration](#redis-configuration)
-18. [Vite Proxy Configuration](#vite-proxy-configuration-new-in-v019)
-19. [Environment Variables](#environment-variables)
-20. [Monitoring Stack (Optional)](#monitoring-stack-optional)
+19. [Tor Configuration](#tor-configuration)
+20. [Redis Configuration](#redis-configuration)
+21. [Vite Proxy Configuration](#vite-proxy-configuration-new-in-v019)
+22. [Environment Variables](#environment-variables)
+23. [Monitoring Stack (Optional)](#monitoring-stack-optional)
 
 ### Usage
-21. [Adding Servers](#adding-servers)
-22. [Connection Testing](#connection-testing)
-23. [Multi-Type Testing](#multi-type-testing)
-24. [SimpleX CLI Clients - Complete Guide](#simplex-cli-clients---complete-guide)
+24. [Adding Servers](#adding-servers)
+25. [Connection Testing](#connection-testing)
+26. [Multi-Type Testing](#multi-type-testing)
+27. [SimpleX CLI Clients - Complete Guide](#simplex-cli-clients---complete-guide)
 
 ### Development
-25. [Project Structure](#project-structure)
-26. [Tech Stack](#tech-stack)
-27. [Roadmap](#roadmap)
-28. [Troubleshooting](#troubleshooting)
-29. [Contributing](#contributing)
-30. [Related Projects](#related-projects)
-31. [License](#license)
-32. [Changelog](#changelog)
+28. [Project Structure](#project-structure)
+29. [Tech Stack](#tech-stack)
+30. [Roadmap](#roadmap)
+31. [Troubleshooting](#troubleshooting)
+32. [Contributing](#contributing)
+33. [Related Projects](#related-projects)
+34. [License](#license)
+35. [Changelog](#changelog)
 
 ---
 
@@ -171,15 +251,40 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 | "Do messages reach the recipient?"               | CLI Clients with ✓/✓✓ delivery tracking         |
 | "I want instant feedback without page reloads"   | Real-time WebSocket updates                      |
 | "Managing the Event Listener is annoying"        | Auto-starts with Django                          |
-| "I want a modern, responsive UI"                 | **React SPA with TypeScript** *(NEW in v0.1.9)*  |
+| "I want a modern, responsive UI"                 | **React SPA with TypeScript** *(v0.1.9)*         |
+| "Deployment is complicated"                      | **Docker one-click deployment** *(NEW v0.1.10)*  |
+| "I want my own SimpleX servers"                  | **Pre-built Docker images** *(NEW v0.1.10)*      |
 
 ---
 
 ## Features
 
-### ✅ Implemented (v0.1.9-alpha)
+### ✅ Implemented (v0.1.10-alpha)
 
-#### 🆕 React SPA Frontend (NEW - Major Feature)
+#### 🆕 Docker One-Click Deployment (NEW in v0.1.10 - Major Feature)
+
+| Feature                     | Description                                                   |
+|-----------------------------|---------------------------------------------------------------|
+| **Docker Compose Stack**    | Complete application deployment in one command                |
+| **Cross-Platform**          | Works identically on Windows 11, Linux, and Mac               |
+| **Three Install Methods**   | Clone repo, wget pre-built images, or GHCR pull               |
+| **SimpleX Server Images**   | Pre-built SMP, XFTP, NTF server Docker images                 |
+| **Auto-Configuration**      | All services configure on first start                         |
+| **Persistent Volumes**      | Data survives container restarts                              |
+| **Production Compose**      | `docker-compose.prod.yml` for standalone deployment           |
+
+#### 🆕 SimpleX Server Docker Images (NEW in v0.1.10)
+
+| Feature                     | Description                                                   |
+|-----------------------------|---------------------------------------------------------------|
+| **SMP Server Image**        | `simplex-smp:latest` - Messaging server (v6.4.4.1)            |
+| **XFTP Server Image**       | `simplex-xftp:latest` - File transfer server (v6.4.4.1)       |
+| **NTF Server Image**        | `simplex-ntf:latest` - Push notifications for iOS (v6.4.4.1)  |
+| **CLI Client Image**        | `simplex-cli:latest` - CLI client for testing                 |
+| **Dual Installation**       | Build from source OR download pre-built images                |
+| **GHCR Registry**           | Pull images from GitHub Container Registry                    |
+
+#### 🎨 React SPA Frontend (v0.1.9)
 
 | Feature                     | Description                                                   |
 |-----------------------------|---------------------------------------------------------------|
@@ -246,7 +351,6 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 | **25 Language Support** | Full i18n for AR, ZH, JA, KO, RU, and 20 more |
 | **Alerting** | Email/Webhook notifications on failures |
 | **Multi-Node Support** | Monitor servers across multiple hosts |
-| **Docker Deployment** | One-command setup |
 
 ---
 
@@ -273,7 +377,15 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                    REACT SPA (Browser - Port 3001)                      │
+│                    DOCKER COMPOSE STACK (v0.1.10)                       │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  NGINX (:8080) → APP (:8000) → PostgreSQL, Redis, InfluxDB, Tor  │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    REACT SPA (Browser - Port 3001 Dev / 8080 Prod)      │
 │  ┌──────────────────────────────────────────────────────────────────┐   │
 │  │  React 18 + TypeScript + Tailwind CSS                            │   │
 │  │  - Dashboard, Servers, Clients, Categories pages                 │   │
@@ -336,7 +448,322 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 
 ---
 
-## Prerequisites
+## Docker Installation (NEW in v0.1.10)
+
+The recommended way to deploy SimpleX SMP Monitor is using Docker. This works on **Windows 11, Linux, and Mac**.
+
+### Prerequisites (Docker)
+
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| **Docker** | 24.x+ | Docker Desktop (Windows/Mac) or Docker Engine (Linux) |
+| **Docker Compose** | 2.x+ | Included in Docker Desktop |
+| **Git** | Any | Only for Method 1 (clone) |
+
+### Method 1: Clone Repository (Recommended for Development)
+
+Best for: Developers, contributors, customization
+
+```bash
+# Clone and start
+git clone https://github.com/cannatoshi/simplex-smp-monitor.git
+cd simplex-smp-monitor
+docker compose up -d
+
+# Verify all services are running
+docker compose ps
+
+# View logs
+docker compose logs -f app
+```
+
+### Method 2: Download Pre-Built Images (Fastest)
+
+Best for: Quick deployment, production use, offline installation
+
+```bash
+# Create a directory
+mkdir simplex-smp-monitor && cd simplex-smp-monitor
+
+# Download from GitHub Releases
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-app.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-nginx.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+
+# Load images into Docker
+docker load < simplex-smp-monitor-app.tar.gz
+docker load < simplex-smp-monitor-nginx.tar.gz
+
+# Start the stack
+docker compose -f docker-compose.prod.yml up -d
+
+# Verify
+docker compose -f docker-compose.prod.yml ps
+```
+
+**Available Downloads:**
+
+| File | Size | Description |
+|------|------|-------------|
+| `simplex-smp-monitor-app.tar.gz` | ~300MB | Django + React application |
+| `simplex-smp-monitor-nginx.tar.gz` | ~10MB | Nginx reverse proxy config |
+| `docker-compose.prod.yml` | ~3KB | Production compose file |
+
+### Method 3: Pull from GitHub Container Registry
+
+Best for: CI/CD pipelines, always latest version
+
+```bash
+# Create a directory
+mkdir simplex-smp-monitor && cd simplex-smp-monitor
+
+# Download docker-compose file
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+
+# Pull images from GHCR
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10
+
+# Tag for docker-compose compatibility
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10 simplex-smp-monitor-app:latest
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10 simplex-smp-monitor-nginx:latest
+
+# Start the stack
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**GHCR Images:**
+```
+ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10
+ghcr.io/cannatoshi/simplex-smp-monitor-app:latest
+
+ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10
+ghcr.io/cannatoshi/simplex-smp-monitor-nginx:latest
+```
+
+### Docker Access Points
+
+| Interface | URL | Credentials |
+|-----------|-----|-------------|
+| **Web App** | http://localhost:8080 | admin / simplex123 |
+| **Grafana** | http://localhost:3002 | admin / simplex123 |
+| **InfluxDB** | http://localhost:8086 | admin / simplex123 |
+| **Django Admin** | http://localhost:8080/admin/ | admin / simplex123 |
+
+### Docker Commands Reference
+
+```bash
+# Start all services
+docker compose up -d
+
+# Stop all services
+docker compose down
+
+# Stop and remove all data (fresh start)
+docker compose down -v
+
+# View logs
+docker compose logs -f              # All services
+docker compose logs -f app          # Django app only
+docker compose logs -f nginx        # Nginx only
+
+# Rebuild after code changes (Method 1 only)
+docker compose build --no-cache app
+docker compose up -d
+
+# Check service health
+docker compose ps
+
+# Enter container shell
+docker compose exec app bash
+docker compose exec postgres psql -U simplex -d simplex_monitor
+```
+
+### Upgrading Docker Installation
+
+**Method 1 (Clone):**
+```bash
+cd simplex-smp-monitor
+docker compose down
+git pull
+docker compose build --no-cache app
+docker compose up -d
+```
+
+**Method 2 (wget):**
+```bash
+cd simplex-smp-monitor
+docker compose -f docker-compose.prod.yml down
+
+# Download new images
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/simplex-smp-monitor-app.tar.gz
+docker load < simplex-smp-monitor-app.tar.gz
+
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**Method 3 (GHCR):**
+```bash
+cd simplex-smp-monitor
+docker compose -f docker-compose.prod.yml down
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-app:latest
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-app:latest simplex-smp-monitor-app:latest
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### Windows-Specific Notes (Docker)
+
+If you encounter line-ending issues on Windows:
+
+```powershell
+# Option 1: Configure Git before cloning
+git config --global core.autocrlf false
+git clone https://github.com/cannatoshi/simplex-smp-monitor.git
+
+# Option 2: Fix existing clone
+cd simplex-smp-monitor
+git rm -rf --cached .
+git reset --hard HEAD
+```
+
+### Docker Troubleshooting
+
+**Services not starting:**
+```bash
+docker compose logs app
+docker compose logs postgres
+```
+
+**Port conflicts:**
+```bash
+# Change ports in .env file or docker-compose.yml
+APP_PORT=8081      # Default: 8080
+GRAFANA_PORT=3003  # Default: 3002
+```
+
+**Rebuild everything:**
+```bash
+docker compose down -v
+docker compose build --no-cache
+docker compose up -d
+```
+
+---
+
+## SimpleX Server Docker Images (NEW in v0.1.10)
+
+In addition to the monitoring system, we provide **pre-built SimpleX server images** for complete self-hosting.
+
+> **Note:** These are OPTIONAL. You can use SimpleX SMP Monitor to monitor ANY SimpleX servers, including the official ones or your own installations. These images are for users who want to self-host SimpleX servers in Docker.
+
+### Available SimpleX Server Images
+
+| Image | Version | Size | Purpose |
+|-------|---------|------|---------|
+| `simplex-smp:latest` | v6.4.4.1 | ~136MB | SMP messaging server |
+| `simplex-xftp:latest` | v6.4.4.1 | ~136MB | XFTP file transfer server |
+| `simplex-ntf:latest` | v6.4.4.1 | ~140MB | Push notification server (iOS) |
+| `simplex-cli:latest` | latest | ~237MB | CLI client for testing |
+
+### SimpleX Server Installation Method A: Build from Source
+
+```bash
+# From the cloned repository
+cd simplex-smp-monitor
+docker compose build simplex-cli simplex-smp simplex-xftp simplex-ntf
+
+# Verify images
+docker images | grep simplex
+```
+
+### SimpleX Server Installation Method B: Download from GitHub Releases
+
+```bash
+# Download images
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-docker.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-xftp-docker.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-ntf-docker.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-cli-docker.tar.gz
+
+# Load into Docker
+docker load < simplex-smp-docker.tar.gz
+docker load < simplex-xftp-docker.tar.gz
+docker load < simplex-ntf-docker.tar.gz
+docker load < simplex-cli-docker.tar.gz
+
+# Verify
+docker images | grep simplex
+```
+
+### SimpleX Server Installation Method C: Pull from GHCR
+
+```bash
+# Pull from GitHub Container Registry
+docker pull ghcr.io/cannatoshi/simplex-smp:v0.1.10
+docker pull ghcr.io/cannatoshi/simplex-xftp:v0.1.10
+docker pull ghcr.io/cannatoshi/simplex-ntf:v0.1.10
+docker pull ghcr.io/cannatoshi/simplex-cli:v0.1.10
+
+# Tag for local use
+docker tag ghcr.io/cannatoshi/simplex-smp:v0.1.10 simplex-smp:latest
+docker tag ghcr.io/cannatoshi/simplex-xftp:v0.1.10 simplex-xftp:latest
+docker tag ghcr.io/cannatoshi/simplex-ntf:v0.1.10 simplex-ntf:latest
+docker tag ghcr.io/cannatoshi/simplex-cli:v0.1.10 simplex-cli:latest
+```
+
+### Running Your Own SimpleX Servers
+
+**SMP Server (Messaging):**
+```bash
+docker run -d --name my-smp \
+  -p 5223:5223 \
+  -v smp-data:/var/opt/simplex \
+  -v smp-config:/etc/opt/simplex \
+  simplex-smp:latest
+
+# View server address and fingerprint
+docker logs my-smp | grep "Server address"
+# Output: smp://FINGERPRINT@YOUR_IP:5223
+```
+
+**XFTP Server (File Transfer):**
+```bash
+docker run -d --name my-xftp \
+  -p 443:443 \
+  -v xftp-data:/var/opt/simplex-xftp \
+  -v xftp-config:/etc/opt/simplex-xftp \
+  simplex-xftp:latest
+
+# View server address
+docker logs my-xftp | grep "Server address"
+```
+
+**NTF Server (iOS Push Notifications):**
+```bash
+docker run -d --name my-ntf \
+  -p 444:443 \
+  -v ntf-data:/var/opt/simplex-notifications \
+  -v ntf-config:/etc/opt/simplex-notifications \
+  simplex-ntf:latest
+```
+
+> **Note:** NTF server is only needed for iOS. Android uses foreground service and doesn't require a push notification server.
+
+### Privacy Levels with Self-Hosted Servers
+
+| Setup | Privacy Level | What's Hidden |
+|-------|---------------|---------------|
+| SMP only | Good | Message content + routing |
+| SMP + XFTP | Better | + File transfers |
+| SMP + XFTP + NTF | Maximum | + Push notification metadata (iOS) |
+
+---
+
+## Manual Installation
+
+For development or when Docker is not available.
+
+### Prerequisites
 
 | Requirement | Version | Notes                                     |
 |-------------|---------|-------------------------------------------|
@@ -349,8 +776,6 @@ This tool provides a **single dashboard** to monitor, test, and analyze your Sim
 | **Redis**   | 7.x     | For real-time WebSocket communication     |
 
 ---
-
-## Installation
 
 ### 1. Install System Dependencies
 
@@ -669,6 +1094,13 @@ The application uses these default Tor settings:
 | SOCKS5 Port | `9050`       |
 | Timeout     | `30 seconds` |
 
+### Docker vs Manual Installation
+
+| Environment | Tor Host |
+|-------------|----------|
+| Docker Compose | `tor` (service name) |
+| Manual Installation | `127.0.0.1` |
+
 ### Custom Tor SOCKS Proxy
 
 If your Tor runs on a different port or host, edit `servers/views.py`:
@@ -707,6 +1139,13 @@ CHANNEL_LAYERS = {
     },
 }
 ```
+
+### Docker vs Manual Installation
+
+| Environment | Redis Host |
+|-------------|------------|
+| Docker Compose | `redis` (service name) |
+| Manual Installation | `127.0.0.1` |
 
 ### Remote Redis
 
@@ -817,7 +1256,7 @@ DEBUG=False
 SECRET_KEY=your-super-secret-key-here
 ALLOWED_HOSTS=your-domain.com,localhost,127.0.0.1
 
-# Database (optional, defaults to SQLite)
+# Database (optional, defaults to SQLite for manual install)
 DATABASE_URL=postgres://user:pass@localhost/simplex_monitor
 
 # Redis
@@ -836,6 +1275,16 @@ TOR_SOCKS_PORT=9050
 
 # Docker (for CLI Clients)
 DOCKER_HOST=unix:///var/run/docker.sock
+
+# Docker Compose specific (NEW in v0.1.10)
+APP_PORT=8080
+GRAFANA_PORT=3002
+INFLUXDB_PORT=8086
+POSTGRES_USER=simplex
+POSTGRES_PASSWORD=simplex123
+POSTGRES_DB=simplex_monitor
+ADMIN_USER=admin
+ADMIN_PASSWORD=simplex123
 ```
 
 ---
@@ -971,7 +1420,7 @@ Each client runs in isolation with its own identity, contacts, and message histo
 
 ### Step 1: Navigate to Clients
 
-1. Open your browser and go to `http://YOUR_IP:3001` (React App)
+1. Open your browser and go to `http://YOUR_IP:3001` (React App) or `http://YOUR_IP:8080` (Docker)
 2. Click **Clients** in the navigation bar
 3. You'll see the client list (empty initially)
 
@@ -1249,6 +1698,13 @@ simplex-smp-monitor/
 │   │   ├── serializers.py
 │   │   └── urls.py
 │   ├── urls.py
+│   ├── docker/                 # 🆕 SimpleX server Dockerfiles (NEW in v0.1.10)
+│   │   ├── Dockerfile.simplex-smp
+│   │   ├── Dockerfile.simplex-xftp
+│   │   ├── Dockerfile.simplex-ntf
+│   │   ├── smp-entrypoint.sh
+│   │   ├── xftp-entrypoint.sh
+│   │   └── ntf-entrypoint.sh
 │   └── templatetags/           # Custom template filters
 │       └── server_tags.py
 ├── stresstests/                # Multi-type testing app
@@ -1265,7 +1721,7 @@ simplex-smp-monitor/
 │   ├── consumers.py            # WebSocket Consumers
 │   ├── routing.py              # WebSocket URLs
 │   ├── apps.py                 # Auto-start Event Bridge
-│   ├── api/                    # 🆕 REST API endpoints (v0.1.9)
+│   ├── api/                    # REST API endpoints (v0.1.9)
 │   │   ├── views.py            # SimplexClientViewSet, TestMessageViewSet
 │   │   ├── serializers.py
 │   │   └── urls.py
@@ -1288,7 +1744,7 @@ simplex-smp-monitor/
 │   ├── models.py
 │   ├── views.py
 │   └── urls.py
-├── frontend/                   # 🆕 React SPA (NEW in v0.1.9)
+├── frontend/                   # React SPA (v0.1.9)
 │   ├── src/
 │   │   ├── api/
 │   │   │   └── client.ts       # Centralized API client
@@ -1347,7 +1803,11 @@ simplex-smp-monitor/
 │   ├── install_telegraf_rpi.sh
 │   └── start_dev.sh
 ├── screenshots/                # Documentation images
-├── docker-compose.yml          # InfluxDB + Grafana + Redis stack
+├── docker-compose.yml          # 🆕 Complete Docker stack (NEW in v0.1.10)
+├── docker-compose.prod.yml     # 🆕 Production compose file (NEW in v0.1.10)
+├── Dockerfile                  # 🆕 Django app image (NEW in v0.1.10)
+├── nginx.conf                  # 🆕 Nginx configuration (NEW in v0.1.10)
+├── .gitattributes              # 🆕 Line ending enforcement (NEW in v0.1.10)
 ├── requirements.txt
 ├── manage.py
 ├── LICENSE                     # AGPL-3.0
@@ -1362,21 +1822,23 @@ simplex-smp-monitor/
 
 | Layer              | Technology                                   |
 |--------------------|----------------------------------------------|
-| **Frontend**       | **React 18 + TypeScript** *(NEW in v0.1.9)*  |
-| **Build Tool**     | **Vite 5.x** *(NEW in v0.1.9)*               |
-| **Styling**        | **Tailwind CSS 3.x** *(NEW in v0.1.9)*       |
-| **Routing**        | **React Router v6** *(NEW in v0.1.9)*        |
-| **i18n**           | **react-i18next** *(NEW in v0.1.9)*          |
-| **Icons**          | **Lucide React** *(NEW in v0.1.9)*           |
+| **Frontend**       | **React 18 + TypeScript** *(v0.1.9)*         |
+| **Build Tool**     | **Vite 5.x** *(v0.1.9)*                      |
+| **Styling**        | **Tailwind CSS 3.x** *(v0.1.9)*              |
+| **Routing**        | **React Router v6** *(v0.1.9)*               |
+| **i18n**           | **react-i18next** *(v0.1.9)*                 |
+| **Icons**          | **Lucide React** *(v0.1.9)*                  |
 | **Backend**        | Django 5.x, Django REST Framework            |
 | **Real-Time**      | Django Channels, Redis 7.x, WebSockets       |
-| **Database**       | SQLite (dev), PostgreSQL (prod)              |
+| **Database**       | SQLite (dev), PostgreSQL (prod/Docker)       |
 | **Time-Series**    | InfluxDB 2.x                                 |
 | **Visualization**  | Grafana                                      |
 | **Metrics Agent**  | Telegraf                                     |
 | **ASGI Server**    | Daphne                                       |
 | **Tor Proxy**      | PySocks                                      |
-| **Containers**     | Docker 24.x (CLI Clients + Redis)            |
+| **Containers**     | Docker 24.x                                  |
+| **Orchestration**  | **Docker Compose** *(NEW in v0.1.10)*        |
+| **Reverse Proxy**  | **Nginx** *(NEW in v0.1.10)*                 |
 | **Scheduler**      | APScheduler                                  |
 
 ### Legacy (Still Available)
@@ -1391,6 +1853,16 @@ simplex-smp-monitor/
 ---
 
 ## Roadmap
+
+### ✅ v0.1.10 - Docker One-Click Deployment (COMPLETED)
+- [x] Docker Compose stack for complete deployment
+- [x] Cross-platform support (Windows, Linux, Mac)
+- [x] Three installation methods (Clone, wget, GHCR)
+- [x] SimpleX Server Docker images (SMP, XFTP, NTF)
+- [x] Production compose file (docker-compose.prod.yml)
+- [x] CRLF line ending fixes for Windows
+- [x] Nginx reverse proxy configuration
+- [x] Django serves React via Whitenoise
 
 ### ✅ v0.1.9 - React SPA Migration (COMPLETED)
 - [x] React 18 + TypeScript setup with Vite
@@ -1427,11 +1899,10 @@ simplex-smp-monitor/
 - [ ] Risk assessment scoring
 
 ### v0.4.0 - Production Ready
-- [ ] PostgreSQL support
-- [ ] Docker Compose deployment
 - [ ] Kubernetes manifests
 - [ ] Security hardening
 - [ ] API documentation
+- [ ] Helm charts
 
 ### Future
 - [ ] 25 language support
@@ -1443,7 +1914,20 @@ simplex-smp-monitor/
 
 ## Troubleshooting
 
-### React App Not Loading
+### Docker Services Not Starting
+
+```bash
+# Check logs
+docker compose logs app
+docker compose logs postgres
+docker compose logs nginx
+
+# Check if ports are in use
+ss -tlnp | grep 8080
+ss -tlnp | grep 5432
+```
+
+### React App Not Loading (Manual Installation)
 
 ```bash
 # Check if Vite is running
@@ -1481,7 +1965,10 @@ class ClientConnectView(View):
 ### Redis Not Running
 
 ```bash
-# Check if container exists
+# Docker installation
+docker compose logs redis
+
+# Manual installation
 docker ps -a | grep redis
 
 # Start if stopped
@@ -1539,6 +2026,17 @@ npm run build
 # - Check interface types match API responses
 # - Ensure all imports are correct
 # - Check for missing dependencies
+```
+
+### Windows Line Ending Issues
+
+```powershell
+# Fix before cloning
+git config --global core.autocrlf false
+
+# Fix existing clone
+git rm -rf --cached .
+git reset --hard HEAD
 ```
 
 ### Debug Mode
@@ -1615,6 +2113,56 @@ For complete legal information, see:
 ---
 
 ## Changelog
+
+### v0.1.10-alpha (2026-01-01)
+
+**🆕 MAJOR FEATURE: Docker One-Click Deployment**
+
+Complete Docker containerization for cross-platform deployment:
+
+- **Docker Compose Stack** - Complete application in one command
+- **Cross-Platform** - Works on Windows 11, Linux, Mac
+- **Three Installation Methods**:
+  - Clone & Run (`git clone` + `docker compose up -d`)
+  - Download Pre-Built Images (wget from GitHub Releases)
+  - Pull from GHCR (GitHub Container Registry)
+- **SimpleX Server Images** - Pre-built Docker images:
+  - `simplex-smp:latest` (v6.4.4.1) - SMP messaging server
+  - `simplex-xftp:latest` (v6.4.4.1) - XFTP file transfer server
+  - `simplex-ntf:latest` (v6.4.4.1) - NTF push notification server (iOS)
+  - `simplex-cli:latest` - CLI client for testing
+- **Production Compose** - `docker-compose.prod.yml` for standalone deployment
+- **CRLF Fix** - Windows line ending compatibility via `.gitattributes`
+- **Nginx Reverse Proxy** - Simplified architecture
+- **Whitenoise Integration** - Django serves React SPA directly
+
+**New Files:**
+```
+docker-compose.yml              # Complete Docker stack
+docker-compose.prod.yml         # Production standalone
+Dockerfile                      # Django app image
+nginx.conf                      # Nginx configuration
+.gitattributes                  # Line ending enforcement
+servers/docker/
+├── Dockerfile.simplex-smp
+├── Dockerfile.simplex-xftp
+├── Dockerfile.simplex-ntf
+├── smp-entrypoint.sh
+├── xftp-entrypoint.sh
+└── ntf-entrypoint.sh
+```
+
+**Upgrade from v0.1.9:**
+```bash
+# If using Docker (recommended)
+git pull
+docker compose up -d
+
+# If using manual installation
+git pull
+pip install whitenoise
+python manage.py collectstatic
+```
 
 ### v0.1.9-alpha (2025-12-29)
 
