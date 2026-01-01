@@ -1,6 +1,6 @@
 /**
  * SimpleX SMP Monitor - Live WebSocket Updates
- * v0.1.8
+ * v0.1.8-security
  */
 
 class ClientsWebSocket {
@@ -17,6 +17,13 @@ class ClientsWebSocket {
         
         this.connect();
         this._startUptimeTimer();
+    }
+
+    // SECURITY: HTML escape to prevent XSS
+    _escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
     
     _buildUrl() {
@@ -233,6 +240,7 @@ class ClientsWebSocket {
             const latencyCell = row.querySelector('.msg-latency') || row.querySelector('.message-latency');
             
             if (statusCell) {
+                // SECURITY: _statusIcon returns safe predefined HTML only
                 statusCell.innerHTML = this._statusIcon(data.status);
             }
             
@@ -247,8 +255,10 @@ class ClientsWebSocket {
     }
     
     _handleNewMessage(data) {
-        // Toast notification
-        this._showToast(`📨 ${data.sender}: ${data.content}`);
+        // SECURITY: Escape user content before displaying
+        const safeSender = this._escapeHtml(data.sender || 'Unknown');
+        const safeContent = this._escapeHtml(data.content || '');
+        this._showToast(`📨 ${safeSender}: ${safeContent}`);
         
         // Optional: Tabelle aktualisieren via HTMX
         const messagesTable = document.getElementById('messages-table');
@@ -268,6 +278,7 @@ class ClientsWebSocket {
     }
     
     _statusIcon(status) {
+        // SECURITY: Only predefined safe HTML, no user input
         const icons = {
             'pending': '<span class="text-gray-400 animate-pulse">⏳</span>',
             'sending': '<span class="text-gray-400 animate-pulse">⏳</span>',
@@ -275,18 +286,29 @@ class ClientsWebSocket {
             'delivered': '<span class="text-green-400 font-bold" title="Zugestellt">✓✓</span>',
             'failed': '<span class="text-red-400" title="Fehlgeschlagen">✗</span>',
         };
-        return icons[status] || status;
+        return icons[status] || this._escapeHtml(status);
     }
     
     _showToast(message) {
         const toast = document.createElement('div');
         toast.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in max-w-sm';
-        toast.innerHTML = `
-            <div class="flex items-start gap-3">
-                <span class="text-lg">📨</span>
-                <div class="flex-1 text-sm">${message}</div>
-            </div>
-        `;
+        
+        // SECURITY: Build DOM safely without innerHTML for user content
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-start gap-3';
+        
+        const icon = document.createElement('span');
+        icon.className = 'text-lg';
+        icon.textContent = '📨';
+        
+        const content = document.createElement('div');
+        content.className = 'flex-1 text-sm';
+        content.textContent = message;
+        
+        wrapper.appendChild(icon);
+        wrapper.appendChild(content);
+        toast.appendChild(wrapper);
+        
         document.body.appendChild(toast);
         
         setTimeout(() => {
