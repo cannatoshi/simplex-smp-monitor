@@ -1,4 +1,4 @@
-# SimpleX SMP Monitor - Roadmap v3.1 for 2025/2026
+# SimpleX SMP Monitor - Roadmap v3.2 for 2025/2026
 
 ## 🎯 Vision
 
@@ -34,7 +34,7 @@ This tool answers that question by providing **Adversary View Mode**—a simulat
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    SIMPLEX SMP MONITOR ROADMAP v3.1                         │
+│                    SIMPLEX SMP MONITOR ROADMAP v3.2                         │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  PHASE 1: Foundation ✅                          PHASE 2: React Revolution  │
@@ -94,7 +94,7 @@ This tool answers that question by providing **Adversary View Mode**—a simulat
 - Real-time event infrastructure (Redis + EventBridge)
 - Basic web UI with Django templates
 
-### 1.7: Docker One-Click Deployment ✅ (NEW in v0.1.10)
+### 1.7: Docker One-Click Deployment ✅
 *Completed in v0.1.10*
 
 - **Docker Compose Stack** - Complete application deployment in one command
@@ -1044,7 +1044,8 @@ Our tool can help with #2 by providing tooling for server operators.
 |---------|--------|-------|--------|
 | 0.1.8 | 2025-12-27 | Real-Time Infrastructure | ✅ Complete |
 | 0.1.9 | 2025-12-29 | React Migration Part 1 | ✅ Complete |
-| **0.1.10** | **2026-01-01** | **Docker One-Click Deployment** 🆕 | **✅ Complete** |
+| 0.1.10 | 2026-01-01 | Docker One-Click Deployment | ✅ Complete |
+| **0.1.11** | **2026-01-01** | **Security & Community Health** 🆕 | **✅ Complete** |
 | 0.2.0 | 2026-01-15 | React Migration Part 2 | 🔄 Next |
 | 0.2.5 | 2026-02-01 | Traffic Analysis Dashboard | 📋 Planned |
 | 0.3.0 | 2026-02-15 | Adversary View | 📋 Planned |
@@ -1190,5 +1191,5 @@ Priority areas for contribution:
 ---
 
 *Last updated: 01 January 2026*
-*Version: Roadmap v3.1*
+*Version: Roadmap v3.2*
 *Authors: cannatoshi* 💎🧅

@@ -1,7 +1,7 @@
 # ============================================
 # SimpleX SMP Monitor - Production Compose
 # ============================================
-# Version: 0.1.10-alpha
+# Version: 0.1.11-alpha
 #
 # For pre-built Docker images - NO SOURCE CODE REQUIRED!
 #
@@ -10,9 +10,9 @@
 # ============================================
 #
 #   mkdir simplex-smp-monitor && cd simplex-smp-monitor
-#   wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-app.tar.gz
-#   wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-nginx.tar.gz
-#   wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+#   wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/simplex-smp-monitor-app.tar.gz
+#   wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/simplex-smp-monitor-nginx.tar.gz
+#   wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/docker-compose.prod.yml
 #   docker load < simplex-smp-monitor-app.tar.gz
 #   docker load < simplex-smp-monitor-nginx.tar.gz
 #   docker compose -f docker-compose.prod.yml up -d
@@ -22,11 +22,11 @@
 # ============================================
 #
 #   mkdir simplex-smp-monitor && cd simplex-smp-monitor
-#   wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
-#   docker pull ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10
-#   docker pull ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10
-#   docker tag ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10 simplex-smp-monitor-app:latest
-#   docker tag ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10 simplex-smp-monitor-nginx:latest
+#   wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/docker-compose.prod.yml
+#   docker pull ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.11
+#   docker pull ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.11
+#   docker tag ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.11 simplex-smp-monitor-app:latest
+#   docker tag ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.11 simplex-smp-monitor-nginx:latest
 #   docker compose -f docker-compose.prod.yml up -d
 #
 # ============================================

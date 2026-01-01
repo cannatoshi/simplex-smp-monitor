@@ -17,7 +17,7 @@
 
 A web-based monitoring dashboard and stress testing suite for self-hosted SimpleX SMP/XFTP relay infrastructure. Built for operators who need visibility into their private messaging servers.
 
-> **Version:** 0.1.10-alpha (01. January 2026)  
+> **Version:** 0.1.11-alpha (01. January 2026)  
 > **Status:** Active Development  
 > **Tested on:** Debian 12, Ubuntu 24.04, Raspberry Pi OS (64-bit), Windows 11  
 > **Companion to:** [SimpleX Private Infrastructure Tutorial](https://github.com/cannatoshi/simplex-smp-xftp-via-tor-on-rpi-hardened)
@@ -39,6 +39,46 @@ A web-based monitoring dashboard and stress testing suite for self-hosted Simple
 
 ---
 
+## 🔒 What's New in v0.1.11 - Security & Community Health Update
+
+This release focuses on **security hardening** and **community health**:
+
+### Security Fixes (25 vulnerabilities resolved)
+- **CVE-2024-26130**: cbor2 infinite loop vulnerability → Updated to 5.6.5
+- **XSS Prevention**: 18 potential cross-site scripting issues fixed
+- **Information Exposure**: 3 instances of sensitive data exposure fixed
+- **URL Redirect**: 3 open redirect vulnerabilities fixed
+
+### Community Health Files
+- `SECURITY.md` - Vulnerability reporting guidelines
+- `CONTRIBUTING.md` - Contribution guidelines
+- `CODE_OF_CONDUCT.md` - Community standards
+- `GOVERNANCE.md` - Project governance
+- `SUPPORT.md` - Support channels
+- `DEVELOPMENT.md` - Development setup guide
+- Issue and PR templates for GitHub
+
+### GitHub Security Features Enabled
+- Private Vulnerability Reporting (PVR)
+- Dependabot alerts and updates
+- CodeQL code scanning
+- Secret scanning
+
+### Upgrade from v0.1.10
+```bash
+# Docker users
+docker compose down
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/simplex-smp-monitor-app.tar.gz
+docker load < simplex-smp-monitor-app.tar.gz
+docker compose -f docker-compose.prod.yml up -d
+
+# Manual installation
+git pull
+pip install -r requirements.txt
+```
+
+---
+
 ## 🐳 What's New in v0.1.10 - Docker One-Click Deployment
 
 This release introduces **complete Docker containerization** for cross-platform deployment:
@@ -55,9 +95,9 @@ docker compose up -d
 **Option B: Download Pre-Built Images**
 ```bash
 mkdir simplex-smp-monitor && cd simplex-smp-monitor
-wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-app.tar.gz
-wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-nginx.tar.gz
-wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/simplex-smp-monitor-app.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/simplex-smp-monitor-nginx.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/docker-compose.prod.yml
 docker load < simplex-smp-monitor-app.tar.gz
 docker load < simplex-smp-monitor-nginx.tar.gz
 docker compose -f docker-compose.prod.yml up -d
@@ -66,11 +106,11 @@ docker compose -f docker-compose.prod.yml up -d
 **Option C: Pull from GitHub Container Registry**
 ```bash
 mkdir simplex-smp-monitor && cd simplex-smp-monitor
-wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
-docker pull ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10
-docker pull ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10
-docker tag ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10 simplex-smp-monitor-app:latest
-docker tag ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10 simplex-smp-monitor-nginx:latest
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/docker-compose.prod.yml
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.11
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.11
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.11 simplex-smp-monitor-app:latest
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.11 simplex-smp-monitor-nginx:latest
 docker compose -f docker-compose.prod.yml up -d
 ```
 
@@ -486,9 +526,9 @@ Best for: Quick deployment, production use, offline installation
 mkdir simplex-smp-monitor && cd simplex-smp-monitor
 
 # Download from GitHub Releases
-wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-app.tar.gz
-wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/simplex-smp-monitor-nginx.tar.gz
-wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/simplex-smp-monitor-app.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/simplex-smp-monitor-nginx.tar.gz
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/docker-compose.prod.yml
 
 # Load images into Docker
 docker load < simplex-smp-monitor-app.tar.gz
@@ -518,15 +558,15 @@ Best for: CI/CD pipelines, always latest version
 mkdir simplex-smp-monitor && cd simplex-smp-monitor
 
 # Download docker-compose file
-wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.10-alpha/docker-compose.prod.yml
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/docker-compose.prod.yml
 
 # Pull images from GHCR
-docker pull ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10
-docker pull ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.11
+docker pull ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.11
 
 # Tag for docker-compose compatibility
-docker tag ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10 simplex-smp-monitor-app:latest
-docker tag ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10 simplex-smp-monitor-nginx:latest
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.11 simplex-smp-monitor-app:latest
+docker tag ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.11 simplex-smp-monitor-nginx:latest
 
 # Start the stack
 docker compose -f docker-compose.prod.yml up -d
@@ -534,10 +574,10 @@ docker compose -f docker-compose.prod.yml up -d
 
 **GHCR Images:**
 ```
-ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.10
+ghcr.io/cannatoshi/simplex-smp-monitor-app:v0.1.11
 ghcr.io/cannatoshi/simplex-smp-monitor-app:latest
 
-ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.10
+ghcr.io/cannatoshi/simplex-smp-monitor-nginx:v0.1.11
 ghcr.io/cannatoshi/simplex-smp-monitor-nginx:latest
 ```
 
@@ -2113,6 +2153,33 @@ For complete legal information, see:
 ---
 
 ## Changelog
+
+### v0.1.11-alpha (2026-01-01)
+
+**🔒 Security & Community Health Update**
+
+Security hardening and community infrastructure:
+
+- **25 Security Vulnerabilities Fixed**:
+  - CVE-2024-26130 (cbor2 infinite loop) → Updated to 5.6.5
+  - 18 XSS prevention fixes
+  - 3 information exposure fixes
+  - 3 URL redirect fixes
+- **10 Community Health Files** added:
+  - SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md
+  - GOVERNANCE.md, SUPPORT.md, DEVELOPMENT.md
+  - Issue and PR templates
+- **GitHub Security Features** enabled:
+  - Private Vulnerability Reporting
+  - Dependabot, CodeQL, Secret scanning
+- **Dependencies updated** to latest secure versions
+
+**Upgrade from v0.1.10:**
+```bash
+docker compose down
+docker load < simplex-smp-monitor-app.tar.gz
+docker compose -f docker-compose.prod.yml up -d
+```
 
 ### v0.1.10-alpha (2026-01-01)
 

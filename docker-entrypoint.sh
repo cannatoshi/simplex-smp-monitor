@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-echo "  SimpleX SMP Monitor v0.1.10"
+echo "  SimpleX SMP Monitor v0.1.11"
 echo "============================================"
 echo "  SimpleX SMP Monitor - Docker Startup"
 echo "============================================"

@@ -23,6 +23,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.11-alpha] - 2026-01-01
+
+### 🔒 Security & Community Health Update
+
+This release focuses on security hardening and establishing community infrastructure for the project.
+
+---
+
+### ✨ Highlights
+
+- **25 Security Vulnerabilities Fixed** - CVE patches, XSS prevention, information exposure fixes
+- **10 Community Health Files** - Complete GitHub community standards
+- **GitHub Security Features** - Private vulnerability reporting, Dependabot, CodeQL, secret scanning
+
+---
+
+### Security Fixes
+
+| Category | Count | Details |
+|----------|-------|---------|
+| **CVE Patches** | 1 | CVE-2024-26130 (cbor2 infinite loop) → Updated to 5.6.5 |
+| **XSS Prevention** | 18 | Cross-site scripting vulnerabilities fixed |
+| **Information Exposure** | 3 | Sensitive data exposure issues resolved |
+| **URL Redirect** | 3 | Open redirect vulnerabilities patched |
+
+**Dependency Updates:**
+- `cbor2`: 5.4.6 → 5.6.5 (CVE-2024-26130)
+- All frontend dependencies updated to latest secure versions
+
+---
+
+### Added
+
+#### 🆕 Community Health Files
+
+Complete set of GitHub community standards:
+
+| File | Purpose |
+|------|---------|
+| `SECURITY.md` | Vulnerability reporting guidelines |
+| `CONTRIBUTING.md` | Contribution guidelines |
+| `CODE_OF_CONDUCT.md` | Community standards (Contributor Covenant) |
+| `GOVERNANCE.md` | Project governance structure |
+| `SUPPORT.md` | Support channels and resources |
+| `DEVELOPMENT.md` | Development environment setup |
+| `.github/ISSUE_TEMPLATE/bug_report.md` | Bug report template |
+| `.github/ISSUE_TEMPLATE/feature_request.md` | Feature request template |
+| `.github/PULL_REQUEST_TEMPLATE.md` | PR template |
+| `.github/FUNDING.yml` | Sponsorship configuration |
+
+#### 🆕 GitHub Security Features Enabled
+
+- **Private Vulnerability Reporting (PVR)** - Secure vulnerability disclosure
+- **Dependabot Alerts** - Automated dependency vulnerability detection
+- **Dependabot Security Updates** - Automatic security patch PRs
+- **CodeQL Code Scanning** - Static analysis for security issues
+- **Secret Scanning** - Detect accidentally committed secrets
+
+---
+
+### Installation / Upgrade
+
+#### Docker Users (Recommended)
+```bash
+cd simplex-smp-monitor
+docker compose down
+wget https://github.com/cannatoshi/simplex-smp-monitor/releases/download/v0.1.11-alpha/simplex-smp-monitor-app.tar.gz
+docker load < simplex-smp-monitor-app.tar.gz
+docker compose -f docker-compose.prod.yml up -d
+```
+
+#### Manual Installation
+```bash
+cd ~/simplex-smp-monitor
+git pull
+source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py collectstatic --noinput
+```
+
+---
+
 ## [0.1.10-alpha] - 2026-01-01
 
 ### 🐳 MAJOR FEATURE: Docker One-Click Deployment
@@ -1579,6 +1661,7 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe SSD, Debian 12):
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 0.1.11-alpha | 2026-01-01 | **Security & Community Health**: 25 CVE/XSS fixes, 10 community files |
 | 0.1.10-alpha | 2026-01-01 | **Docker One-Click Deployment**: Docker Compose, SimpleX Server Images |
 | 0.1.9-alpha | 2025-12-29 | **React SPA Migration**: React 18, TypeScript, Vite, Tailwind |
 | 0.1.8-alpha | 2025-12-27 | **Real-Time Infrastructure**: Redis, WebSocket, Event Bridge |
@@ -1590,7 +1673,8 @@ Tested on **Raspberry Pi 5** (8GB RAM, 128GB NVMe SSD, Debian 12):
 
 ---
 
-[Unreleased]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.10-alpha...HEAD
+[Unreleased]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.11-alpha...HEAD
+[0.1.11-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.10-alpha...v0.1.11-alpha
 [0.1.10-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.9-alpha...v0.1.10-alpha
 [0.1.9-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.8-alpha...v0.1.9-alpha
 [0.1.8-alpha]: https://github.com/cannatoshi/simplex-smp-monitor/compare/v0.1.7-alpha...v0.1.8-alpha
