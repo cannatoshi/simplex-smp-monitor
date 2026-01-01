@@ -121,4 +121,4 @@ Bei markenrechtlichen Bedenken: [GitHub Issues](https://github.com/cannatoshi/si
 
 ---
 
-*Last updated: December 2025*
+*Last updated: January 2026*
