@@ -364,14 +364,14 @@ class ClientLogsView(View):
     def get(self, request, slug):
         client = get_object_or_404(SimplexClient, slug=slug)
         tail = int(request.GET.get('tail', 50))
-        
-        docker_manager = get_docker_manager()
-        logs = docker_manager.get_container_logs(client, tail=tail)
-        
-        return JsonResponse({
-            'logs': logs,
-            'status': client.status
-        })
+            
+        try:
+            docker_manager = get_docker_manager()
+            logs = docker_manager.get_container_logs(client, tail=tail)
+            return JsonResponse({'logs': logs, 'status': client.status})
+        except Exception:
+            logger.exception(f'Failed to get logs for {client.name}')
+            return JsonResponse({'logs': '[Error fetching logs]', 'status': client.status})
 
 
 # === Connection Views ===
