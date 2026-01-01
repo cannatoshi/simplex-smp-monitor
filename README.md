@@ -3,7 +3,7 @@
 ## Real-Time Server Monitoring & Stress Testing for SimpleX Infrastructure
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Python](https://img.shields.io/badge/Python-3.11+-3776ab.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.12+-3776ab.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-5.x-092E20.svg)](https://www.djangoproject.com/)
 [![React](https://img.shields.io/badge/React-18.x-61DAFB.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg)](https://www.typescriptlang.org/)
@@ -767,9 +767,9 @@ For development or when Docker is not available.
 
 | Requirement | Version | Notes                                     |
 |-------------|---------|-------------------------------------------|
-| **Python**  | 3.11+   | With pip and venv                         |
-| **Node.js** | 18+     | **NEW in v0.1.9** - For React frontend    |
-| **npm**     | 9+      | **NEW in v0.1.9** - Package manager       |
+| **Python**  | 3.12+   | With pip and venv                         |
+| **Node.js** | 24+     | For React frontend                        |
+| **npm**     | 10+     | Package manager                           |
 | **Tor**     | Latest  | For .onion server testing                 |
 | **Git**     | Any     | For cloning repository                    |
 | **Docker**  | 24.x+   | For CLI Clients, Redis, InfluxDB/Grafana  |
@@ -784,15 +784,15 @@ For development or when Docker is not available.
 sudo apt update
 sudo apt install -y python3 python3-pip python3-venv git curl
 
-# NEW in v0.1.9: Install Node.js 18+
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+# Install Node.js 24+
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt install -y nodejs
 ```
 
 **Verify Node.js installation:**
 ```bash
-node --version   # Should be v18.x or higher
-npm --version    # Should be v9.x or higher
+node --version   # Should be v24.x or higher
+npm --version    # Should be v10.x or higher
 ```
 
 **Raspberry Pi OS:**
@@ -800,8 +800,8 @@ npm --version    # Should be v9.x or higher
 sudo apt update
 sudo apt install -y python3 python3-pip python3-venv git curl
 
-# Install Node.js via NodeSource
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+# Install Node.js 24+ via NodeSource
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt install -y nodejs
 ```
 
