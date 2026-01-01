@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: '/static/',  // Production: serve from /static/ path
+  base: mode === 'production' ? '/static/' : '/',
   server: {
     port: 3001,
     host: true,
@@ -12,7 +12,6 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
-      // Nur spezifische HTMX Endpoints - NICHT alle /clients/*
       '/clients/messages/send/': {
         target: 'http://localhost:8000',
         changeOrigin: true,
@@ -21,7 +20,6 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
-      // Connect URLs mit slug pattern
       '^/clients/[a-z0-9-]+/connect/$': {
         target: 'http://localhost:8000',
         changeOrigin: true,
@@ -48,4 +46,4 @@ export default defineConfig({
     outDir: '../static/dist',
     emptyOutDir: true,
   },
-})
+}))
