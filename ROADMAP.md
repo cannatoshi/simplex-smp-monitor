@@ -1,4 +1,4 @@
-# SimpleX SMP Monitor - Roadmap v3.0 for 2025/2026
+# SimpleX SMP Monitor - Roadmap v3.1 for 2025/2026
 
 ## 🎯 Vision
 
@@ -19,6 +19,8 @@
 | Enterprise Graph Visualization | ❌ None | ✅ Palantir-Style |
 | Multi-Network Support (Tor + Lokinet) | ❌ None | ✅ **Planned** |
 | Deep Packet Inspection | ❌ None | ✅ Zeek + Suricata |
+| Docker One-Click Deployment | ❌ None | ✅ **NEW in v0.1.10** |
+| Pre-Built SimpleX Server Images | ❌ None | ✅ **NEW in v0.1.10** |
 
 ### The Core Insight
 
@@ -32,7 +34,7 @@ This tool answers that question by providing **Adversary View Mode**—a simulat
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    SIMPLEX SMP MONITOR ROADMAP v3.0                         │
+│                    SIMPLEX SMP MONITOR ROADMAP v3.1                         │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  PHASE 1: Foundation ✅                          PHASE 2: React Revolution  │
@@ -41,6 +43,7 @@ This tool answers that question by providing **Adversary View Mode**—a simulat
 │  ✅ Docker Client Management                     ✅ TypeScript + Tailwind  │
 │  ✅ WebSocket Real-time                          ✅ i18n (DE/EN)           │
 │  ✅ Tor Hidden Service Support                   🔄 WebSocket Hooks        │
+│  ✅ Docker One-Click Deployment 🆕                                         │
 │                                                                             │
 │  PHASE 3: Traffic Analysis        PHASE 4: Adversary View                   │
 │  ═════════════════════════        ═══════════════════════                   │
@@ -55,11 +58,12 @@ This tool answers that question by providing **Adversary View Mode**—a simulat
 │  📋 Reliability Tests             📋 InfluxDB Time-Series                  │
 │  📋 Mesh Connections              📋 Alerting                              │
 │                                                                             │
-│  PHASE 7: Enterprise              PHASE 8: Lab Environment 🆕              │
+│  PHASE 7: Enterprise              PHASE 8: Lab Environment 🔄               │
 │  ═══════════════════              ═══════════════════════════               │
-│  📋 Multi-User                    📋 Docker SMP Server                     │
-│  📋 REST API Auth                 📋 Docker XFTP Server                    │
-│  📋 Production Deploy             📋 Full Packet Capture                   │
+│  📋 Multi-User                    ✅ Docker SMP Server Images 🆕           │
+│  📋 REST API Auth                 ✅ Docker XFTP Server Images 🆕          │
+│  📋 Production Deploy             ✅ Docker NTF Server Images 🆕           │
+│                                   📋 Full Packet Capture                    │
 │                                                                             │
 │  PHASE 9: Private Tor 🆕          PHASE 10: Enterprise Stack 🆕            │
 │  ═══════════════════════          ═════════════════════════════             │
@@ -90,12 +94,27 @@ This tool answers that question by providing **Adversary View Mode**—a simulat
 - Real-time event infrastructure (Redis + EventBridge)
 - Basic web UI with Django templates
 
-**Stack (v0.1.8):**
+### 1.7: Docker One-Click Deployment ✅ (NEW in v0.1.10)
+*Completed in v0.1.10*
+
+- **Docker Compose Stack** - Complete application deployment in one command
+- **Cross-Platform** - Works on Windows 11, Linux, Mac
+- **Three Installation Methods**:
+  - Clone & Run (`git clone` + `docker compose up -d`)
+  - Download Pre-Built Images (wget from GitHub Releases)
+  - Pull from GHCR (GitHub Container Registry)
+- **Production Compose** - `docker-compose.prod.yml` for standalone deployment
+- **CRLF Fix** - Windows line ending compatibility via `.gitattributes`
+- **Nginx Reverse Proxy** - Simplified production architecture
+- **Whitenoise Integration** - Django serves React SPA directly
+
+**Stack (v0.1.10):**
 ```
-Frontend: Django Templates + HTMX + Alpine.js
-Backend:  Django + Channels + Redis
+Frontend: React 18 + TypeScript + Tailwind CSS (Vite 5.x)
+Backend:  Django + Channels + Redis + PostgreSQL
 Clients:  Docker containers (simplex-chat CLI)
 Network:  Tor hidden services (.onion)
+Deploy:   Docker Compose (one-click)
 ```
 
 ---
@@ -242,6 +261,7 @@ GET        /api/v1/messages/?client={uuid}&direction=sent|received
 | Tailwind CSS + Neon Theme | ✅ Done |
 | i18n (German/English) | ✅ Done |
 | All Core Pages | ✅ Done |
+| Docker Compose Stack | ✅ Done (v0.1.10) |
 | WebSocket Hooks | ❌ Todo |
 | Tests & Events Pages | ❌ Todo |
 | Zustand + React Query | ❌ Todo |
@@ -515,7 +535,7 @@ We CAN observe both endpoints = Level 4 simulation!
 │  Before: Correlation Probability 94.7%  ████████████████████░░  │
 │  After:  Correlation Probability 23.1%  █████░░░░░░░░░░░░░░░░░  │
 │                                                                 │
-│  [📄 Generate Full Report]  [📥 Export PDF]  [🔄 Re-analyze]    │
+│  [📄 Generate Full Report]  [📥 Export PDF]  [🔄 Re-analyze]   │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -556,13 +576,13 @@ The Test Panel allows operators to run comprehensive stress tests and reliabilit
 │                                                                 │
 │  Test Type:     [Delivery Reliability ▼]                        │
 │                                                                 │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │  Participants                                            │   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  Participants                                           │    │
 │  │  ☑ Client 001 (Alice)                                   │   │
 │  │  ☑ Client 002 (Bob)                                     │   │
 │  │  ☑ Client 003 (Charlie)                                 │   │
 │  │  ☐ Client 004 (Diana)                                   │   │
-│  └─────────────────────────────────────────────────────────┘   │
+│  └─────────────────────────────────────────────────────────┘    │
 │                                                                 │
 │  Messages per client:  [100    ]                                │
 │  Interval (ms):        [500    ]                                │
@@ -574,7 +594,7 @@ The Test Panel allows operators to run comprehensive stress tests and reliabilit
 │  Estimated Duration: ~2 minutes                                 │
 │  Total Messages: 600                                            │
 │                                                                 │
-│  [▶ Start Test]    [📋 Load Preset]    [💾 Save Preset]         │
+│  [▶ Start Test]    [📋 Load Preset]    [💾 Save Preset]        │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -628,15 +648,15 @@ Pre-built dashboards for:
 
 ### 7.3 Production Deployment
 
-- PostgreSQL support
+- PostgreSQL support ✅ (Added in v0.1.10)
 - Redis clustering
-- Docker Compose production config
+- Docker Compose production config ✅ (Added in v0.1.10)
 - Kubernetes manifests (optional)
 - High availability considerations
 
 ---
 
-## 🆕 Phase 8: Lab Environment (v0.6.0)
+## 🔄 Phase 8: Lab Environment (v0.6.0) - PARTIALLY COMPLETE
 
 ### 8.1 Overview
 
@@ -657,14 +677,14 @@ Transform the monitoring server into a **complete SimpleX lab environment** wher
 ┌─────────────────────────────────────────────────────────────────┐
 │                    MONITORING SERVER (Lab Mode)                 │
 │                                                                 │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              Docker Network (bridge)                     │   │
-│  │              simplex-monitor-network                     │   │
-│  │                                                          │   │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │   │
-│  │  │SMP Srv 1 │ │SMP Srv 2 │ │XFTP Srv  │ │SMP Srv 3 │   │   │
-│  │  │ :5223    │ │ :5224    │ │ :7225    │ │ :5226    │   │   │
-│  │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘   │   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │              Docker Network (bridge)                    │    │
+│  │              simplex-monitor-network                    │    │
+│  │                                                         │    │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐    │   │
+│  │  │SMP Srv 1 │ │SMP Srv 2 │ │XFTP Srv  │ │SMP Srv 3 │    │   │
+│  │  │ :5223    │ │ :5224    │ │ :7225    │ │ :5226    │    │   │
+│  │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘    │   │
 │  │       │            │            │            │          │   │
 │  │       └────────────┴─────┬──────┴────────────┘          │   │
 │  │                          │                              │   │
@@ -673,15 +693,15 @@ Transform the monitoring server into a **complete SimpleX lab environment** wher
 │  │            │    PACKET CAPTURE HERE 📡 │                │   │
 │  │            └─────────────┬─────────────┘                │   │
 │  │                          │                              │   │
-│  │  ┌──────────┐ ┌──────────┴─┐ ┌──────────┐              │   │
-│  │  │Client 001│ │Client 002  │ │Client 003│              │   │
-│  │  └──────────┘ └────────────┘ └──────────┘              │   │
+│  │  ┌──────────┐ ┌──────────┴─┐ ┌──────────┐               │   │
+│  │  │Client 001│ │Client 002  │ │Client 003│               │   │
+│  │  └──────────┘ └────────────┘ └──────────┘               │   │
 │  └─────────────────────────────────────────────────────────┘   │
-│                                                                 │
+│                                                                │
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │  Django Backend + React Frontend + Analysis Tools       │   │
 │  └─────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ### 8.3 Benefits of Lab Mode
@@ -705,8 +725,14 @@ Transform the monitoring server into a **complete SimpleX lab environment** wher
 | `remote_lokinet` | `abc123.loki:5223` | Production Lokinet |
 | `remote_clearnet` | `smp.example.com:5223` | Direct connection |
 
-### 8.5 Implementation Tasks
+### 8.5 Implementation Progress (NEW in v0.1.10)
 
+- [x] Docker SMP Server image (`simplex-smp:latest` v6.4.4.1)
+- [x] Docker XFTP Server image (`simplex-xftp:latest` v6.4.4.1)
+- [x] Docker NTF Server image (`simplex-ntf:latest` v6.4.4.1)
+- [x] Dockerfiles with proper entrypoints
+- [x] Docker Compose integration
+- [x] Three installation methods (Build, wget, GHCR)
 - [ ] SMPServer Model with deployment_type
 - [ ] Docker Manager extension for SMP servers
 - [ ] API: `/api/v1/smp-servers/`
@@ -765,16 +791,16 @@ Simulate a **complete Tor network locally** using Chutney, enabling realistic To
 ┌─────────────────────────────────────────────────────────────────┐
 │                PRIVATE TOR NETWORK (Chutney)                    │
 │                                                                 │
-│  ┌────────────┐ ┌────────────┐ ┌────────────┐                  │
-│  │ DirAuth 1  │ │ DirAuth 2  │ │ DirAuth 3  │                  │
-│  │ (Authority)│ │ (Authority)│ │ (Authority)│                  │
-│  └─────┬──────┘ └─────┬──────┘ └─────┬──────┘                  │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐                   │
+│  │ DirAuth 1  │ │ DirAuth 2  │ │ DirAuth 3  │                   │
+│  │ (Authority)│ │ (Authority)│ │ (Authority)│                   │
+│  └─────┬──────┘ └─────┬──────┘ └─────┬──────┘                   │
 │        │              │              │                          │
 │        └──────────────┼──────────────┘                          │
 │                       │                                         │
-│  ┌─────────┐ ┌────────▼────────┐ ┌─────────┐                   │
-│  │ Guard 1 │ │  Middle Relays  │ │ Guard 2 │                   │
-│  └────┬────┘ └────────┬────────┘ └────┬────┘                   │
+│  ┌─────────┐ ┌────────▼────────┐ ┌─────────┐                    │
+│  │ Guard 1 │ │  Middle Relays  │ │ Guard 2 │                    │
+│  └────┬────┘ └────────┬────────┘ └────┬────┘                    │
 │       │               │               │                         │
 │       └───────────────┼───────────────┘                         │
 │                       │                                         │
@@ -782,12 +808,12 @@ Simulate a **complete Tor network locally** using Chutney, enabling realistic To
 │            │     Exit Nodes      │                              │
 │            └──────────┬──────────┘                              │
 │                       │                                         │
-│  ┌────────────────────▼────────────────────┐                   │
-│  │         SMP Server (.onion local)       │                   │
-│  └─────────────────────────────────────────┘                   │
+│  ┌────────────────────▼────────────────────┐                    │
+│  │         SMP Server (.onion local)       │                    │
+│  └─────────────────────────────────────────┘                    │
 │                                                                 │
-│  ⏱️ Circuit Build: ~2 seconds (vs 5-30s real Tor)              │
-│  📡 Full observability at every hop                            │
+│  ⏱️ Circuit Build: ~2 seconds (vs 5-30s real Tor)               │
+│  📡 Full observability at every hop                             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1018,16 +1044,17 @@ Our tool can help with #2 by providing tooling for server operators.
 |---------|--------|-------|--------|
 | 0.1.8 | 2025-12-27 | Real-Time Infrastructure | ✅ Complete |
 | 0.1.9 | 2025-12-29 | React Migration Part 1 | ✅ Complete |
+| **0.1.10** | **2026-01-01** | **Docker One-Click Deployment** 🆕 | **✅ Complete** |
 | 0.2.0 | 2026-01-15 | React Migration Part 2 | 🔄 Next |
 | 0.2.5 | 2026-02-01 | Traffic Analysis Dashboard | 📋 Planned |
 | 0.3.0 | 2026-02-15 | Adversary View | 📋 Planned |
 | 0.3.5 | 2026-03-01 | Advanced Test Panel | 📋 Planned |
 | 0.4.0 | 2026-03-15 | Monitoring & Grafana | 📋 Planned |
 | 0.5.0 | 2026-04-01 | Enterprise Features | 📋 Planned |
-| **0.6.0** | **2026-05-01** | **Lab Environment** 🆕 | 📋 Planned |
-| **0.7.0** | **2026-06-01** | **Private Tor Network** 🆕 | 📋 Planned |
-| **0.8.0** | **2026-07-01** | **Enterprise Stack** 🆕 | 📋 Planned |
-| **0.9.0** | **2026-08-01** | **Multi-Network (Lokinet)** 🆕 | 📋 Planned |
+| **0.6.0** | **2026-05-01** | **Lab Environment** | 🔄 Partially Complete |
+| **0.7.0** | **2026-06-01** | **Private Tor Network** | 📋 Planned |
+| **0.8.0** | **2026-07-01** | **Enterprise Stack** | 📋 Planned |
+| **0.9.0** | **2026-08-01** | **Multi-Network (Lokinet)** | 📋 Planned |
 | 1.0.0 | 2026-09-01 | Production Ready | 📋 Future |
 
 ---
@@ -1056,9 +1083,29 @@ Our tool can help with #2 by providing tooling for server operators.
 | WebSocket | Django Channels | ✅ |
 | Message Broker | Redis 7.x | ✅ |
 | Task Queue | Celery | 📋 Planned |
-| Database | SQLite → PostgreSQL | ✅ / 📋 |
+| Database | SQLite → PostgreSQL | ✅ / ✅ (Docker) |
 | Time-Series | TimescaleDB | 📋 Phase 10 |
 | Graph DB | Neo4j | 📋 Phase 10 |
+
+### Deployment (NEW in v0.1.10)
+| Component | Technology | Status |
+|-----------|------------|--------|
+| Containerization | Docker 24.x | ✅ |
+| Orchestration | Docker Compose | ✅ |
+| Reverse Proxy | Nginx | ✅ |
+| Static Files | Whitenoise | ✅ |
+| Database | PostgreSQL 15 | ✅ |
+| Metrics | InfluxDB 2.7 | ✅ |
+| Dashboards | Grafana | ✅ |
+| Tor Proxy | dperson/torproxy | ✅ |
+
+### SimpleX Server Images (NEW in v0.1.10)
+| Component | Technology | Status |
+|-----------|------------|--------|
+| SMP Server | simplex-smp:latest (v6.4.4.1) | ✅ |
+| XFTP Server | simplex-xftp:latest (v6.4.4.1) | ✅ |
+| NTF Server | simplex-ntf:latest (v6.4.4.1) | ✅ |
+| CLI Client | simplex-cli:latest | ✅ |
 
 ### Analysis Tools (Phase 10)
 | Component | Technology |
@@ -1077,6 +1124,7 @@ Our tool can help with #2 by providing tooling for server operators.
 |-----------|------------|--------|
 | Containers | Docker 24.x | ✅ |
 | SimpleX CLI | Docker containers | ✅ |
+| SimpleX Servers | Docker containers | ✅ (NEW v0.1.10) |
 | Network | Tor hidden services | ✅ |
 | Private Tor | Chutney | 📋 Phase 9 |
 | Multi-Network | Lokinet | 📋 Phase 11 |
@@ -1141,6 +1189,6 @@ Priority areas for contribution:
 
 ---
 
-*Last updated: 30 December 2025*
-*Version: Roadmap v3.0*
+*Last updated: 01 January 2026*
+*Version: Roadmap v3.1*
 *Authors: cannatoshi* 💎🧅
