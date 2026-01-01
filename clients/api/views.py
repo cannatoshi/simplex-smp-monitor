@@ -1,6 +1,7 @@
 """
 API Views für SimpleX CLI Clients
 """
+import logging
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -18,6 +19,8 @@ from .serializers import (
     TestMessageSerializer,
     ClientStatsSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SimplexClientViewSet(viewsets.ModelViewSet):
@@ -60,8 +63,9 @@ class SimplexClientViewSet(viewsets.ModelViewSet):
             client.start()
             return Response({'success': True, 'status': client.status, 'message': f'{client.name} wurde gestartet.'})
         except Exception as e:
+            logger.exception(f'Failed to start client {client.name}')
             client.set_error(str(e))
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': 'Failed to start client'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=True, methods=['post'])
     def stop(self, request, id=None):
@@ -75,8 +79,9 @@ class SimplexClientViewSet(viewsets.ModelViewSet):
             client.stop()
             return Response({'success': True, 'status': client.status, 'message': f'{client.name} wurde gestoppt.'})
         except Exception as e:
+            logger.exception(f'Failed to stop client {client.name}')
             client.set_error(str(e))
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': 'Failed to stop client'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=True, methods=['post'])
     def restart(self, request, id=None):
@@ -88,8 +93,9 @@ class SimplexClientViewSet(viewsets.ModelViewSet):
             client.start()
             return Response({'success': True, 'status': client.status, 'message': f'{client.name} wurde neu gestartet.'})
         except Exception as e:
+            logger.exception(f'Failed to restart client {client.name}')
             client.set_error(str(e))
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': 'Failed to restart client'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=True, methods=['get'])
     def logs(self, request, id=None):
@@ -101,7 +107,8 @@ class SimplexClientViewSet(viewsets.ModelViewSet):
             logs = docker_manager.get_container_logs(client, tail=tail)
             return Response({'logs': logs, 'status': client.status})
         except Exception as e:
-            return Response({'logs': f'[Fehler: {e}]', 'status': client.status})
+            logger.exception(f'Failed to get logs for client {client.name}')
+            return Response({'logs': '[Error fetching logs]', 'status': client.status})
     
     @action(detail=True, methods=['get'])
     def connections(self, request, id=None):

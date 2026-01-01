@@ -1,9 +1,14 @@
+import logging
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from .models import Server, Category
 import json, re, socket, ssl, time
+
+logger = logging.getLogger(__name__)
+
 
 def parse_simplex_address(address):
     try:
@@ -105,12 +110,16 @@ def test_connection(request):
             sock.settimeout(30)
         sock.connect((host, port))
         ctx = ssl.create_default_context()
+        # SECURITY NOTE: Hostname/cert verification disabled intentionally.
+        # SimpleX servers use self-signed certificates.
+        # This is required for .onion and self-hosted server testing.
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
         with ctx.wrap_socket(sock, server_hostname=host):
             return JsonResponse({'success': True, 'message': 'TLS OK', 'latency': int((time.time()-start)*1000), 'used_tor': is_onion})
     except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)})
+        logger.exception('Connection test failed')
+        return JsonResponse({'success': False, 'message': 'Connection failed'})
 
 @require_POST
 def test_server(request, pk):
@@ -127,6 +136,9 @@ def test_server(request, pk):
             sock.settimeout(30)
         sock.connect((host, port))
         ctx = ssl.create_default_context()
+        # SECURITY NOTE: Hostname/cert verification disabled intentionally.
+        # SimpleX servers use self-signed certificates.
+        # This is required for .onion and self-hosted server testing.
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
         with ctx.wrap_socket(sock, server_hostname=host):

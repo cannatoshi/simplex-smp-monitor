@@ -9,6 +9,7 @@ Enthält:
 - ClientDeleteView: Client löschen
 - Action Views: Start, Stop, Connect, SendMessage
 """
+import logging
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
@@ -25,6 +26,8 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import SimplexClient, ClientConnection, TestMessage, DeliveryReceipt
 from .forms import SimplexClientForm, ClientConnectionForm, TestMessageForm, BatchTestForm
 from .services.docker_manager import get_docker_manager
+
+logger = logging.getLogger(__name__)
 
 
 class ClientListView(ListView):
@@ -236,7 +239,8 @@ class ClientDeleteView(DeleteView):
             docker_manager.delete_container(client, remove_volume=remove_volume)
             messages.info(request, f'Container "{container_name}" wurde entfernt.')
         except Exception as e:
-            messages.warning(request, f'Container konnte nicht gelöscht werden: {e}')
+            logger.exception(f'Failed to delete container {container_name}')
+            messages.warning(request, f'Container konnte nicht gelöscht werden.')
         
         # Jetzt DB-Eintrag löschen
         response = super().post(request, *args, **kwargs)
@@ -275,10 +279,11 @@ class ClientStartView(View):
             messages.success(request, f'Client "{client.name}" wurde gestartet.')
             
         except Exception as e:
+            logger.exception(f'Failed to start client {client.name}')
             client.set_error(str(e))
             if is_ajax:
-                return JsonResponse({'success': False, 'error': str(e)}, status=500)
-            messages.error(request, f'Fehler beim Starten: {e}')
+                return JsonResponse({'success': False, 'error': 'Failed to start client'}, status=500)
+            messages.error(request, 'Fehler beim Starten des Clients.')
         
         return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': client.slug}))
 
@@ -312,10 +317,11 @@ class ClientStopView(View):
             messages.success(request, f'Client "{client.name}" wurde gestoppt.')
             
         except Exception as e:
+            logger.exception(f'Failed to stop client {client.name}')
             client.set_error(str(e))
             if is_ajax:
-                return JsonResponse({'success': False, 'error': str(e)}, status=500)
-            messages.error(request, f'Fehler beim Stoppen: {e}')
+                return JsonResponse({'success': False, 'error': 'Failed to stop client'}, status=500)
+            messages.error(request, 'Fehler beim Stoppen des Clients.')
         
         return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': client.slug}))
 
@@ -343,10 +349,11 @@ class ClientRestartView(View):
             messages.success(request, f'Client "{client.name}" wurde neu gestartet.')
             
         except Exception as e:
+            logger.exception(f'Failed to restart client {client.name}')
             client.set_error(str(e))
             if is_ajax:
-                return JsonResponse({'success': False, 'error': str(e)}, status=500)
-            messages.error(request, f'Fehler beim Neustart: {e}')
+                return JsonResponse({'success': False, 'error': 'Failed to restart client'}, status=500)
+            messages.error(request, 'Fehler beim Neustart des Clients.')
         
         return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': client.slug}))
 
@@ -524,7 +531,7 @@ class SendMessageView(View):
             result = svc.send_message(sender, contact_name, message_text)
             
             if not result.success:
-                error = f'Senden fehlgeschlagen: {result.error}'
+                error = 'Senden fehlgeschlagen'
                 if is_ajax:
                     return JsonResponse({'success': False, 'error': error}, status=400)
                 messages.error(request, error)
@@ -590,10 +597,10 @@ class SendMessageView(View):
             return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': sender.slug}))
             
         except Exception as e:
-            error = f'Fehler: {str(e)}'
+            logger.exception(f'Failed to send message from {sender.name}')
             if is_ajax:
-                return JsonResponse({'success': False, 'error': error}, status=500)
-            messages.error(request, error)
+                return JsonResponse({'success': False, 'error': 'Failed to send message'}, status=500)
+            messages.error(request, 'Fehler beim Senden der Nachricht.')
             return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': sender.slug}))
 
 
@@ -662,7 +669,8 @@ class BulkStartView(View):
                     client.start()  # Nutze neue Methode
                     started += 1
                 except Exception as e:
-                    messages.warning(request, f'Fehler bei {client.name}: {e}')
+                    logger.exception(f'Failed to start client {client.name}')
+                    messages.warning(request, f'Fehler bei {client.name}')
         
         messages.success(request, f'{started} Clients gestartet.')
         return HttpResponseRedirect(reverse('clients:list'))
@@ -684,7 +692,8 @@ class BulkStopView(View):
                     client.stop()  # Nutze neue Methode
                     stopped += 1
                 except Exception as e:
-                    messages.warning(request, f'Fehler bei {client.name}: {e}')
+                    logger.exception(f'Failed to stop client {client.name}')
+                    messages.warning(request, f'Fehler bei {client.name}')
         
         messages.success(request, f'{stopped} Clients gestoppt.')
         return HttpResponseRedirect(reverse('clients:list'))
@@ -733,7 +742,7 @@ class ClientConnectView(View):
             # 1. Adresse von Client B holen/erstellen
             addr_result = svc.create_or_get_address(client_b)
             if not addr_result.success:
-                error = f'Konnte keine Adresse erstellen: {addr_result.error}'
+                error = 'Konnte keine Adresse erstellen'
                 if is_ajax:
                     return JsonResponse({'success': False, 'error': error}, status=400)
                 messages.error(request, error)
@@ -747,7 +756,7 @@ class ClientConnectView(View):
             # 3. Client A verbindet sich
             connect_result = svc.connect_via_link(client_a, invitation_link)
             if not connect_result.success:
-                error = f'Verbindung fehlgeschlagen: {connect_result.error}'
+                error = 'Verbindung fehlgeschlagen'
                 if is_ajax:
                     return JsonResponse({'success': False, 'error': error}, status=400)
                 messages.error(request, error)
@@ -845,9 +854,10 @@ class ClientConnectView(View):
             )
             
         except Exception as e:
+            logger.exception(f'Failed to connect {client_a.name} to {client_b.name}')
             if is_ajax:
-                return JsonResponse({'success': False, 'error': str(e)}, status=500)
-            messages.error(request, f'Fehler: {e}')
+                return JsonResponse({'success': False, 'error': 'Connection failed'}, status=500)
+            messages.error(request, 'Fehler beim Verbinden.')
         
         return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': slug}))
 
@@ -948,13 +958,14 @@ class QuickMessageView(View):
                 messages.success(request, f'✓ Nachricht an {contact_name} gesendet.')
             else:
                 if is_ajax:
-                    return JsonResponse({'success': False, 'error': str(result.error)}, status=400)
-                messages.error(request, f'Senden fehlgeschlagen: {result.error}')
+                    return JsonResponse({'success': False, 'error': 'Senden fehlgeschlagen'}, status=400)
+                messages.error(request, 'Senden fehlgeschlagen')
                 
         except Exception as e:
+            logger.exception(f'Failed to send quick message from {client.name}')
             if is_ajax:
-                return JsonResponse({'success': False, 'error': str(e)}, status=500)
-            messages.error(request, f'Fehler: {e}')
+                return JsonResponse({'success': False, 'error': 'Failed to send message'}, status=500)
+            messages.error(request, 'Fehler beim Senden.')
         
         return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': slug}))
 
@@ -982,4 +993,5 @@ class ClientContactsAPIView(View):
             return JsonResponse({'contacts': contacts})
             
         except Exception as e:
-            return JsonResponse({'error': str(e), 'contacts': []})
+            logger.exception(f'Failed to get contacts for {client.name}')
+            return JsonResponse({'error': 'Failed to get contacts', 'contacts': []})
