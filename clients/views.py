@@ -406,7 +406,7 @@ class ConnectionCreateView(View):
             return JsonResponse({'success': False, 'error': 'Ungültige Daten.'}, status=400)
         
         messages.error(request, 'Fehler beim Erstellen der Verbindung.')
-        return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('clients:list')))
+        return HttpResponseRedirect(reverse('clients:list'))
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -479,21 +479,21 @@ class SendMessageView(View):
             if is_ajax:
                 return JsonResponse({'success': False, 'error': error}, status=400)
             messages.error(request, error)
-            return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('clients:list')))
+            return HttpResponseRedirect(reverse('clients:list'))
         
         if not contact_name:
             error = 'Kein Empfänger angegeben.'
             if is_ajax:
                 return JsonResponse({'success': False, 'error': error}, status=400)
             messages.error(request, error)
-            return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('clients:list')))
+            return HttpResponseRedirect(reverse('clients:list'))
         
         if not message_text:
             error = 'Keine Nachricht angegeben.'
             if is_ajax:
                 return JsonResponse({'success': False, 'error': error}, status=400)
             messages.error(request, error)
-            return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('clients:list')))
+            return HttpResponseRedirect(reverse('clients:list'))
         
         try:
             sender = SimplexClient.objects.get(pk=sender_id)

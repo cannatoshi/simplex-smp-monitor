@@ -1,6 +1,7 @@
 """
 Servers API - ViewSets
 """
+import logging
 import subprocess
 import time
 from django.utils import timezone
@@ -15,6 +16,8 @@ from .serializers import (
     ServerDetailSerializer,
     ServerCreateUpdateSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -105,7 +108,7 @@ class ServerViewSet(viewsets.ModelViewSet):
                 server.successful_checks += 1
             else:
                 server.last_status = 'error'
-                server.last_error = result.stderr[:500] if result.stderr else 'Connection failed'
+                server.last_error = 'Connection failed'
                 server.total_checks += 1
                 
         except subprocess.TimeoutExpired:
@@ -125,8 +128,9 @@ class ServerViewSet(viewsets.ModelViewSet):
             server.successful_checks += 1
             
         except Exception as e:
+            logger.exception(f'Server test failed for {server.name}')
             server.last_status = 'error'
-            server.last_error = str(e)[:500]
+            server.last_error = 'Test failed'
             server.total_checks += 1
             latency = None
         
@@ -137,8 +141,7 @@ class ServerViewSet(viewsets.ModelViewSet):
         return Response({
             'status': server.last_status,
             'latency': server.last_latency,
-            'message': f'Test completed: {server.last_status}',
-            'error': server.last_error
+            'message': f'Test completed: {server.last_status}'
         })
     
     @action(detail=True, methods=['post'])
