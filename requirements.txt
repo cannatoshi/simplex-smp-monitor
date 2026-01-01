@@ -50,3 +50,5 @@ ujson==5.11.0
 urllib3==2.6.2
 websockets==15.0.1
 zope.interface==8.1.1
+dj-database-url
+whitenoise
