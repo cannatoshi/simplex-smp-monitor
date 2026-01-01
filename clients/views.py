@@ -549,6 +549,7 @@ class SendMessageView(View):
             
             # Stats aktualisieren
             sender.update_stats(sent=1)
+            recipient.update_stats(received=1)
             
             # WebSocket Event für Live-Update
             try:
@@ -912,6 +913,7 @@ class QuickMessageView(View):
                     
                     # Stats aktualisieren
                     client.update_stats(sent=1)
+                    recipient.update_stats(received=1)
                     
                     # WebSocket Event
                     try:
