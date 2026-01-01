@@ -104,8 +104,8 @@ class SimplexClientViewSet(viewsets.ModelViewSet):
         try:
             from clients.services.docker_manager import get_docker_manager
             docker_manager = get_docker_manager()
-            logs = docker_manager.get_container_logs(client, tail=tail)
-            return Response({'logs': logs, 'status': client.status})
+            logs = docker_manager.get_container_logs(client, tail=tail) or ''
+            return Response({'logs': logs[:50000], 'status': client.status})
         except Exception as e:
             logger.exception(f'Failed to get logs for client {client.name}')
             return Response({'logs': '[Error fetching logs]', 'status': client.status})

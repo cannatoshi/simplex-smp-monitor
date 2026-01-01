@@ -367,8 +367,8 @@ class ClientLogsView(View):
             
         try:
             docker_manager = get_docker_manager()
-            logs = docker_manager.get_container_logs(client, tail=tail)
-            return JsonResponse({'logs': logs, 'status': client.status})
+            logs = docker_manager.get_container_logs(client, tail=tail) or ''
+            return JsonResponse({'logs': logs[:50000], 'status': client.status})
         except Exception:
             logger.exception(f'Failed to get logs for {client.name}')
             return JsonResponse({'logs': '[Error fetching logs]', 'status': client.status})
