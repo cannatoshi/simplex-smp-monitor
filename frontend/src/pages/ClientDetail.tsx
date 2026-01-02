@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { simplexClientsApi, SimplexClient, ClientConnection, messagesApi, TestMessage } from '../api/client';
+import { useClientDetailWebSocket } from '../hooks/useWebSocket';
 import ClientStats from '../components/clients/ClientStats';
 import ClientConnections from '../components/clients/ClientConnections';
 import ClientSidebar from '../components/clients/ClientSidebar';
@@ -48,9 +49,36 @@ export default function ClientDetail() {
     boxShadow: neonGlow
   };
 
+// WebSocket für Live-Updates
+  const [lastLatency, setLastLatency] = useState<{latency: number, timestamp: string} | null>(null);
+  
+  const { connectionState, bridgeClients } = useClientDetailWebSocket(client?.slug, {
+    onClientStats: (event) => {
+      if (event.client_slug === client?.slug) {
+        setClient(prev => prev ? {
+          ...prev,
+          messages_sent: event.messages_sent,
+          messages_received: event.messages_received,
+        } : prev);
+      }
+    },
+    onNewMessage: () => fetchMessages(),
+    onMessageStatus: (event) => {
+      if (event.latency_ms) {
+        setLastLatency({
+          latency: event.latency_ms,
+          timestamp: new Date().toISOString()
+        });
+      }
+      fetchMessages();
+    },
+    onConnectionCreated: () => fetchConnections(),
+    onConnectionDeleted: () => fetchConnections(),
+  });
+
   useEffect(() => {
     fetchAll();
-    const interval = setInterval(fetchAll, 5000);
+    const interval = setInterval(fetchAll, 30000);
     return () => clearInterval(interval);
   }, [id]);
 
@@ -315,6 +343,16 @@ export default function ClientDetail() {
                 {client.name} <span className="text-slate-400 font-normal">({client.profile_name})</span>
               </h1>
               <p className="text-slate-500">{client.slug} · Port {client.websocket_port}</p>
+              {/* WebSocket Status */}
+              <div className="flex items-center gap-2 mt-1">
+                <div 
+                  className={`w-2 h-2 rounded-full ${connectionState === 'connecting' ? 'animate-pulse' : ''}`}
+                  style={{ backgroundColor: connectionState === 'connected' ? neonBlue : connectionState === 'connecting' ? neonBlue : '#64748b' }}
+                />
+                <span className="text-xs" style={{ color: connectionState === 'connected' ? neonBlue : '#94a3b8' }}>
+                  {connectionState === 'connected' ? `Live · ${bridgeClients} Bridge` : connectionState}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -399,7 +437,7 @@ export default function ClientDetail() {
       )}
 
       {/* Stats Cards */}
-      <ClientStats client={client} connectionCount={connections.length} />
+      <ClientStats client={client} connectionCount={connections.length} lastLatency={lastLatency} />
 
       {/* Main Grid */}
       <div className="grid gap-6 lg:grid-cols-3" style={{ alignItems: 'stretch' }}>

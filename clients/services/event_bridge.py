@@ -268,6 +268,10 @@ class SimplexEventBridge:
             # Push updates to browser
             await self._push_new_message_event(client['slug'], sender_name, text)
             await self._push_stats_update(client['slug'])
+            
+            # Push latency update to browser
+            if latency is not None:
+                await self._push_message_status_event(tracking_id, "delivered", latency)
     
     async def _handle_status_update(self, client: dict, resp: dict):
         """

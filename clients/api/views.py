@@ -377,21 +377,20 @@ class SimplexClientViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='latency-recent')
     def latency_recent(self, request, id=None):
         """
-        Get the 15 most recent latency values for the mini graph on the card.
+        Get recent latency values for the mini graph.
         
-        Returns latencies in chronological order (oldest first) for proper
-        graph rendering.
+        Query params:
+            limit: Number of results (default 15, max 500)
         """
         client = self.get_object()
+        limit = min(int(request.query_params.get('limit', 15)), 500)
         
-        # Get last 15 delivered messages with latency
         messages = TestMessage.objects.filter(
             Q(sender=client) | Q(recipient=client),
             total_latency_ms__isnull=False,
             delivery_status='delivered'
-        ).order_by('-created_at')[:15]
+        ).order_by('-created_at')[:limit]
         
-        # Return in chronological order (oldest first for graph)
         data = []
         for msg in reversed(list(messages)):
             data.append({

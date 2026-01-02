@@ -1,21 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { simplexClientsApi, SimplexClient, ClientStats, ClientListResponse } from '../api/client';
+import { useClientsWebSocket } from '../hooks/useWebSocket';
 
 export default function Clients() {
   const { t } = useTranslation();
   const { data: clientsData, loading, refetch } = useApi<ClientListResponse>(() => simplexClientsApi.list());
   const { data: stats } = useApi<ClientStats>(() => simplexClientsApi.stats());
   
-  const clients = clientsData?.results || [];
+  const [clients, setClients] = useState<SimplexClient[]>([]);
   
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Neon Blue
   const neonBlue = '#88CED0';
+
+  // WebSocket für Live-Updates
+  const { connectionState, bridgeClients } = useClientsWebSocket({
+    onClientStats: (event) => {
+      setClients(prev => prev.map(c => 
+        c.slug === event.client_slug 
+          ? { ...c, messages_sent: event.messages_sent, messages_received: event.messages_received }
+          : c
+      ));
+    },
+    onClientStatus: (event) => {
+      setClients(prev => prev.map(c => 
+        c.slug === event.client_slug 
+          ? { ...c, status: event.status as SimplexClient['status'] } 
+          : c
+      ));
+    },
+  });
+
+  // Clients aus API laden
+  useEffect(() => {
+    if (clientsData?.results) {
+      setClients(clientsData.results);
+    }
+  }, [clientsData]);
+
+  // Clients aus API laden
+  useEffect(() => {
+    if (clientsData?.results) {
+      setClients(clientsData.results);
+    }
+  }, [clientsData]);
 
   const filteredClients = statusFilter === 'all' 
     ? clients 
@@ -99,6 +132,15 @@ export default function Clients() {
         <div>
           <h1 className="text-2xl font-bold" style={{ color: neonBlue }}>{t('clients.title')}</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">{t('clients.subtitle')}</p>
+          <div className="flex items-center gap-2 mt-2">
+            <div 
+              className={`w-2 h-2 rounded-full ${connectionState === 'connecting' ? 'animate-pulse' : ''}`}
+              style={{ backgroundColor: connectionState === 'connected' ? neonBlue : connectionState === 'connecting' ? neonBlue : '#64748b' }}
+            />
+            <span className="text-xs" style={{ color: connectionState === 'connected' ? neonBlue : '#94a3b8' }}>
+              {connectionState === 'connected' ? `Live · ${bridgeClients} Bridge Clients` : connectionState}
+            </span>
+          </div>
         </div>
         <div className="flex gap-2">
           <Link

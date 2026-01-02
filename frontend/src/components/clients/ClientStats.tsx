@@ -3,13 +3,7 @@
  * GitHub: https://github.com/cannatoshi/simplex-smp-monitor
  * Licensed under AGPL-3.0
  * 
- * ClientStats Component
- * 
- * Displays 4 stat cards for a client:
- * - Status (running/stopped/error)
- * - Messages (sent/received/delivered/failed)
- * - Success Rate (with progress bar)
- * - Latency (clickable, opens modal with detailed history)
+ * ClientStats Component - Live Updates via WebSocket
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -17,14 +11,13 @@ import { useTranslation } from 'react-i18next';
 import { SimplexClient } from '../../api/client';
 import ClientLatencyModal from './ClientLatencyModal';
 
-// Neon Blue - Primary brand color
 const neonBlue = '#88CED0';
-// Cyan - Accent color for status indicators
 const cyan = '#22D3EE';
 
 interface Props {
   client: SimplexClient;
   connectionCount: number;
+  lastLatency?: { latency: number; timestamp: string } | null;
 }
 
 interface RecentLatency {
@@ -32,20 +25,22 @@ interface RecentLatency {
   timestamp: string;
 }
 
-export default function ClientStats({ client, connectionCount }: Props) {
+export default function ClientStats({ client, connectionCount, lastLatency }: Props) {
   const { t } = useTranslation();
   
-  // Modal state
   const [showLatencyModal, setShowLatencyModal] = useState(false);
-  
-  // Mini graph data
   const [recentLatencies, setRecentLatencies] = useState<RecentLatency[]>([]);
   const [loadingLatencies, setLoadingLatencies] = useState(true);
 
-  // Fetch recent 15 latencies for mini graph
+  // Live Min/Max/Avg berechnet aus lokalen Daten
+  const [liveMin, setLiveMin] = useState<number | null>(null);
+  const [liveMax, setLiveMax] = useState<number | null>(null);
+  const [liveAvg, setLiveAvg] = useState<number | null>(null);
+
+  // Fetch recent 128 latencies for graph
   const fetchRecentLatencies = useCallback(async () => {
     try {
-      const response = await fetch(`/api/v1/clients/${client.id}/latency-recent/`);
+      const response = await fetch(`/api/v1/clients/${client.id}/latency-recent/?limit=128`);
       if (response.ok) {
         const data = await response.json();
         setRecentLatencies(data.data || []);
@@ -57,24 +52,44 @@ export default function ClientStats({ client, connectionCount }: Props) {
     }
   }, [client.id]);
 
-  // Initial load + periodic refresh
+  // Initial load only - WebSocket handles updates
   useEffect(() => {
     fetchRecentLatencies();
-    
-    // Refresh every 10 seconds for live updates
-    const interval = setInterval(fetchRecentLatencies, 10000);
-    return () => clearInterval(interval);
   }, [fetchRecentLatencies]);
 
-  // Calculate max latency for scaling the bars
+  // Live update: Add new latency from WebSocket
+  useEffect(() => {
+    if (lastLatency) {
+      setRecentLatencies(prev => {
+        const updated = [...prev, lastLatency];
+        return updated.slice(-128);
+      });
+    }
+  }, [lastLatency]);
+
+  // Recalculate Min/Max/Avg when latencies change
+  useEffect(() => {
+    if (recentLatencies.length > 0) {
+      const values = recentLatencies.map(r => r.latency);
+      setLiveMin(Math.min(...values));
+      setLiveMax(Math.max(...values));
+      setLiveAvg(Math.round(values.reduce((a, b) => a + b, 0) / values.length));
+    }
+  }, [recentLatencies]);
+
+  // For scaling bars
   const maxLatency = Math.max(...recentLatencies.map(r => r.latency), 1);
 
-  // Get bar color based on latency value - using brand colors
   const getLatencyColor = (latency: number, maxLatency: number): string => {
     const ratio = latency / maxLatency;
-    if (ratio < 0.5) return neonBlue;   // Fast = Neon Blue (heller)
-    return cyan;                         // Slower = Cyan (dunkler)
+    if (ratio < 0.5) return neonBlue;
+    return cyan;
   };
+
+  // Display values: live wenn vorhanden, sonst DB-Wert
+  const displayMin = liveMin ?? client.min_latency_ms;
+  const displayMax = liveMax ?? client.max_latency_ms;
+  const displayAvg = liveAvg ?? (client.avg_latency_ms ? Math.round(client.avg_latency_ms) : null);
 
   return (
     <>
@@ -179,13 +194,12 @@ export default function ClientStats({ client, connectionCount }: Props) {
           </div>
         </div>
 
-        {/* LATENCY Card - CLICKABLE */}
+        {/* LATENCY Card - LIVE */}
         <div 
           className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 h-36 flex flex-col relative cursor-pointer transition-all duration-200 hover:border-[#88CED0] hover:shadow-lg hover:shadow-[#88CED0]/10 group"
           onClick={() => setShowLatencyModal(true)}
           title={t('clientStats.clickForDetails')}
         >
-          {/* Click indicator - shows on hover */}
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <svg className="w-4 h-4" style={{ color: neonBlue }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -193,63 +207,69 @@ export default function ClientStats({ client, connectionCount }: Props) {
           </div>
           
           <div className="flex justify-between text-xs mb-auto">
-            <span style={{ color: neonBlue }}>↓ {client.min_latency_ms || '-'}{client.min_latency_ms && 'ms'}</span>
-            <span className="text-red-400">↑ {client.max_latency_ms || '-'}{client.max_latency_ms && 'ms'}</span>
+            <span style={{ color: neonBlue }}>↓ {displayMin || '-'}{displayMin && 'ms'}</span>
+            <span className="text-red-400">↑ {displayMax || '-'}{displayMax && 'ms'}</span>
           </div>
           <div className="flex flex-col items-center justify-center my-auto">
             <p className="text-3xl font-bold text-slate-900 dark:text-white">
-              {client.avg_latency_ms ? (
+              {lastLatency ? (
                 <>
-                  {Math.round(client.avg_latency_ms)}
+                  <span className="animate-pulse">{lastLatency.latency}</span>
+                  <span className="text-lg text-slate-400">ms</span>
+                </>
+              ) : displayAvg ? (
+                <>
+                  {displayAvg}
                   <span className="text-lg text-slate-400">ms</span>
                 </>
               ) : '-'}
             </p>
-            <p className="text-xs text-slate-500">{t('clientStats.avgLatency')}</p>
+            <p className="text-xs text-slate-500">
+              {lastLatency ? 'Live' : t('clientStats.avgLatency')}
+            </p>
           </div>
           
-          {/* Mini Graph - Real Data */}
+          {/* Mini Graph - 128 bars */}
           <div className="mt-auto pt-2">
-            <div className="h-5 flex items-end gap-0.5">
+            <div className="h-5 flex items-end gap-px">
               {loadingLatencies ? (
-                // Loading placeholder with animation
-                Array.from({ length: 15 }).map((_, i) => (
+                Array.from({ length: 64 }).map((_, i) => (
                   <div 
                     key={i} 
                     className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-t animate-pulse" 
-                    style={{ height: '20%' }}
+                    style={{ height: '20%', minWidth: '1px' }}
                   />
                 ))
               ) : recentLatencies.length > 0 ? (
-                // Real data bars with brand colors
                 recentLatencies.map((data, i) => {
                   const height = Math.max(10, (data.latency / maxLatency) * 100);
+                  const isLast = i === recentLatencies.length - 1 && lastLatency;
                   return (
                     <div 
                       key={i} 
-                      className="flex-1 rounded-t transition-all duration-300 group-hover:opacity-90"
+                      className={`flex-1 rounded-t transition-all duration-300 ${isLast ? 'animate-pulse' : ''}`}
                       style={{
                         height: `${height}%`,
                         backgroundColor: getLatencyColor(data.latency, maxLatency),
-                        opacity: 0.8
+                        opacity: isLast ? 1 : 0.8,
+                        minWidth: '1px'
                       }}
                       title={`${data.latency}ms`}
                     />
                   );
                 })
               ) : (
-                // Empty state placeholder
-                Array.from({ length: 15 }).map((_, i) => (
+                Array.from({ length: 64 }).map((_, i) => (
                   <div 
                     key={i} 
                     className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-t" 
-                    style={{ height: '20%' }}
+                    style={{ height: '20%', minWidth: '1px' }}
                   />
                 ))
               )}
             </div>
             <div className="flex justify-between text-xs text-slate-500 mt-1">
-              <span>{t('clientStats.last15')}</span>
+              <span>Last {recentLatencies.length}</span>
               <span 
                 className="group-hover:underline transition-all"
                 style={{ color: neonBlue }}
@@ -261,7 +281,6 @@ export default function ClientStats({ client, connectionCount }: Props) {
         </div>
       </div>
 
-      {/* Latency History Modal */}
       <ClientLatencyModal
         isOpen={showLatencyModal}
         onClose={() => setShowLatencyModal(false)}
