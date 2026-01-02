@@ -1,13 +1,29 @@
 """
-Serializers für SimpleX CLI Clients API
+SimpleX SMP Monitor by cannatoshi
+GitHub: https://github.com/cannatoshi/simplex-smp-monitor
+Licensed under AGPL-3.0
+
+Serializers for SimpleX CLI Clients API
+
+Contains serializers for:
+- SimplexClient (list, detail, create/update)
+- ClientConnection
+- TestMessage (with direction and profile support)
+- LatencyHistory (for modal with pagination)
+- LatencyStats (for graphs and statistics)
+- ClientStats (global statistics)
 """
 
 from rest_framework import serializers
 from clients.models import SimplexClient, ClientConnection, TestMessage
 
 
+# =============================================================================
+# CLIENT SERIALIZERS
+# =============================================================================
+
 class SimplexClientListSerializer(serializers.ModelSerializer):
-    """Serializer für Client-Liste"""
+    """Serializer for client list view - compact overview"""
     connection_count = serializers.SerializerMethodField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     uptime_display = serializers.CharField(read_only=True)
@@ -28,7 +44,7 @@ class SimplexClientListSerializer(serializers.ModelSerializer):
 
 
 class SimplexClientDetailSerializer(serializers.ModelSerializer):
-    """Serializer für Client-Details"""
+    """Serializer for client detail view - full information including latency stats"""
     connection_count = serializers.SerializerMethodField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     uptime_display = serializers.CharField(read_only=True)
@@ -59,7 +75,7 @@ class SimplexClientDetailSerializer(serializers.ModelSerializer):
 
 
 class SimplexClientCreateUpdateSerializer(serializers.ModelSerializer):
-    """Serializer für Client-Erstellung/Update"""
+    """Serializer for client creation and updates"""
     smp_server_ids = serializers.ListField(
         child=serializers.IntegerField(),
         required=False,
@@ -95,12 +111,19 @@ class SimplexClientCreateUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
+# =============================================================================
+# CONNECTION SERIALIZERS
+# =============================================================================
+
 class ClientConnectionSerializer(serializers.ModelSerializer):
-    """Serializer für Client-Verbindungen"""
+    """Serializer for client connections with profile names"""
     client_a_name = serializers.CharField(source='client_a.name', read_only=True)
     client_b_name = serializers.CharField(source='client_b.name', read_only=True)
     client_a_slug = serializers.CharField(source='client_a.slug', read_only=True)
     client_b_slug = serializers.CharField(source='client_b.slug', read_only=True)
+    # NEW: Profile names (nicknames like "maria", "bob")
+    client_a_profile = serializers.CharField(source='client_a.profile_name', read_only=True)
+    client_b_profile = serializers.CharField(source='client_b.profile_name', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     
     class Meta:
@@ -109,30 +132,200 @@ class ClientConnectionSerializer(serializers.ModelSerializer):
             'id', 'client_a', 'client_b',
             'client_a_name', 'client_b_name',
             'client_a_slug', 'client_b_slug',
+            'client_a_profile', 'client_b_profile',
             'contact_name_on_a', 'contact_name_on_b',
             'status', 'status_display',
             'created_at', 'connected_at'
         ]
 
 
+# =============================================================================
+# MESSAGE SERIALIZERS
+# =============================================================================
+
 class TestMessageSerializer(serializers.ModelSerializer):
-    """Serializer für Test-Nachrichten"""
+    """
+    Serializer for test messages with direction and profile support.
+    
+    Used for the messages table in client detail view.
+    Includes sender/recipient profiles and message direction detection.
+    """
+    # Basic info
     sender_name = serializers.CharField(source='sender.name', read_only=True)
     recipient_name = serializers.CharField(source='recipient.name', read_only=True)
     status_display = serializers.CharField(source='get_delivery_status_display', read_only=True)
+    
+    # NEW: Profile names (nicknames)
+    sender_profile = serializers.CharField(source='sender.profile_name', read_only=True)
+    recipient_profile = serializers.CharField(source='recipient.profile_name', read_only=True)
+    
+    # NEW: Clean content without tracking ID prefix
+    content_clean = serializers.CharField(source='content_without_tracking', read_only=True)
+    
+    # NEW: Tracking ID for reliable message matching
+    tracking_id = serializers.CharField(read_only=True)
+    
+    # NEW: Message direction (sent/received) based on context
+    direction = serializers.SerializerMethodField()
     
     class Meta:
         model = TestMessage
         fields = [
             'id', 'sender', 'recipient',
             'sender_name', 'recipient_name',
-            'content', 'delivery_status', 'status_display',
-            'total_latency_ms', 'created_at'
+            'sender_profile', 'recipient_profile',
+            'content', 'content_clean',
+            'delivery_status', 'status_display',
+            'total_latency_ms', 'latency_to_server_ms', 'latency_to_client_ms',
+            'tracking_id', 'direction',
+            'sent_at', 'client_received_at',
+            'created_at'
         ]
+    
+    def get_direction(self, obj):
+        """
+        Determine message direction based on request context.
+        
+        Checks:
+        1. Explicit 'direction' query param
+        2. 'client' query param to determine if message was sent or received
+        """
+        request = self.context.get('request')
+        if request:
+            # Check explicit direction param
+            direction = request.query_params.get('direction')
+            if direction in ['sent', 'received']:
+                return direction
+            
+            # Determine from client param
+            client_id = request.query_params.get('client')
+            if client_id:
+                if str(obj.sender_id) == client_id:
+                    return 'sent'
+                elif str(obj.recipient_id) == client_id:
+                    return 'received'
+        
+        return 'sent'  # Default
 
+
+# =============================================================================
+# LATENCY SERIALIZERS (for Modal and Graphs)
+# =============================================================================
+
+class LatencyHistorySerializer(serializers.ModelSerializer):
+    """
+    Detailed serializer for the Latency History Modal.
+    
+    Includes all information needed for the paginated table:
+    - Sender/Recipient with name, profile, and slug
+    - Content preview (first 30 chars without tracking ID)
+    - Latency with color indicator
+    - All relevant timestamps
+    """
+    # Sender info
+    sender_name = serializers.CharField(source='sender.name', read_only=True)
+    sender_profile = serializers.CharField(source='sender.profile_name', read_only=True)
+    sender_slug = serializers.CharField(source='sender.slug', read_only=True)
+    
+    # Recipient info
+    recipient_name = serializers.CharField(source='recipient.name', read_only=True)
+    recipient_profile = serializers.CharField(source='recipient.profile_name', read_only=True)
+    recipient_slug = serializers.CharField(source='recipient.slug', read_only=True)
+    
+    # Content preview (truncated, without tracking ID)
+    content_preview = serializers.SerializerMethodField()
+    
+    # Status
+    status_display = serializers.CharField(source='get_delivery_status_display', read_only=True)
+    
+    # Latency color indicator for visual feedback
+    latency_indicator = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TestMessage
+        fields = [
+            'id', 'tracking_id',
+            'sender', 'recipient',
+            'sender_name', 'recipient_name',
+            'sender_profile', 'recipient_profile',
+            'sender_slug', 'recipient_slug',
+            'content_preview',
+            'delivery_status', 'status_display',
+            'total_latency_ms', 'latency_to_server_ms', 'latency_to_client_ms',
+            'sent_at', 'client_received_at',
+            'latency_indicator',
+            'created_at'
+        ]
+    
+    def get_content_preview(self, obj):
+        """First 30 characters of content without tracking ID prefix"""
+        clean_content = obj.content_without_tracking
+        if len(clean_content) > 30:
+            return clean_content[:30] + '...'
+        return clean_content
+    
+    def get_latency_indicator(self, obj):
+        """
+        Color indicator based on latency thresholds:
+        - green: < 500ms (fast)
+        - yellow: 500ms - 2000ms (moderate)
+        - red: >= 2000ms (slow)
+        - gray: no data
+        """
+        if obj.total_latency_ms is None:
+            return 'gray'
+        if obj.total_latency_ms < 500:
+            return 'green'
+        elif obj.total_latency_ms < 2000:
+            return 'yellow'
+        return 'red'
+
+
+class LatencyStatsSerializer(serializers.Serializer):
+    """
+    Serializer for latency statistics and graph data.
+    
+    Used by the latency-stats endpoint to provide:
+    - Aggregate statistics (avg, min, max)
+    - Message counts by status
+    - Time series data for the graph
+    """
+    # Aggregate stats
+    avg_latency = serializers.FloatField()
+    min_latency = serializers.IntegerField(allow_null=True)
+    max_latency = serializers.IntegerField(allow_null=True)
+    
+    # Message counts
+    total_messages = serializers.IntegerField()
+    delivered_count = serializers.IntegerField()
+    failed_count = serializers.IntegerField()
+    pending_count = serializers.IntegerField()
+    
+    # Time series data for graph (list of {timestamp, latency, ...})
+    time_series = serializers.ListField(
+        child=serializers.DictField(),
+        required=False
+    )
+    
+    # Selected time range
+    time_range = serializers.CharField()
+
+
+class LatencyGraphPointSerializer(serializers.Serializer):
+    """Single data point for the latency graph"""
+    timestamp = serializers.DateTimeField()
+    latency = serializers.IntegerField()
+    message_id = serializers.UUIDField()
+    sender_profile = serializers.CharField()
+    recipient_profile = serializers.CharField()
+
+
+# =============================================================================
+# STATISTICS SERIALIZERS
+# =============================================================================
 
 class ClientStatsSerializer(serializers.Serializer):
-    """Serializer für Client-Statistiken"""
+    """Serializer for global client statistics (dashboard overview)"""
     total = serializers.IntegerField()
     running = serializers.IntegerField()
     stopped = serializers.IntegerField()
@@ -140,3 +333,11 @@ class ClientStatsSerializer(serializers.Serializer):
     total_messages_sent = serializers.IntegerField()
     total_messages_received = serializers.IntegerField()
     available_ports = serializers.ListField(child=serializers.IntegerField())
+
+
+class ResetResponseSerializer(serializers.Serializer):
+    """Serializer for reset action responses"""
+    success = serializers.BooleanField()
+    message = serializers.CharField()
+    deleted_count = serializers.IntegerField(required=False)
+    reset_values = serializers.DictField(required=False)

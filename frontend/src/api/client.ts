@@ -1,11 +1,23 @@
 /**
- * SimpleX SMP Monitor - API Client
+ * SimpleX SMP Monitor by cannatoshi
+ * GitHub: https://github.com/cannatoshi/simplex-smp-monitor
+ * Licensed under AGPL-3.0
+ * 
+ * API Client
+ * 
+ * Contains:
+ * - Type definitions for all API responses
+ * - API client functions for all endpoints
+ * - Dashboard, Servers, Categories, Tests, Events
+ * - SimpleX Clients with latency history and reset actions
  */
+
 const API_BASE = '/api/v1';
 
 // =============================================================================
-// Base Fetch Helper
+// BASE FETCH HELPER
 // =============================================================================
+
 async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -29,9 +41,20 @@ async function apiFetch<T>(
   return JSON.parse(text);
 }
 
+// Get CSRF token from cookies
+function getCsrfToken(): string {
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [key, value] = cookie.trim().split('=');
+    if (key === 'csrftoken') return value;
+  }
+  return '';
+}
+
 // =============================================================================
-// Types
+// DASHBOARD TYPES
 // =============================================================================
+
 export interface DashboardStats {
   total_servers: number;
   active_servers: number;
@@ -67,6 +90,10 @@ export interface LatencyData {
   max_latency: number | null;
   last_latency: number | null;
 }
+
+// =============================================================================
+// SERVER TYPES
+// =============================================================================
 
 export interface Category {
   id: number;
@@ -105,29 +132,6 @@ export interface Server {
   updated_at: string;
 }
 
-export interface Test {
-  id: number;
-  name: string;
-  test_type: string;
-  is_active: boolean;
-  status: string;
-  last_run: string | null;
-  created_at: string;
-  server_count?: number;
-  success_rate?: number;
-}
-
-export interface Event {
-  id: number;
-  event_type: string;
-  severity: string;
-  level: string;
-  source: string;
-  message: string;
-  server_name?: string;
-  created_at: string;
-}
-
 export interface ServerFilters {
   type?: 'smp' | 'xftp';
   status?: string;
@@ -151,6 +155,33 @@ export interface CategoryListResponse {
   results: Category[];
 }
 
+// =============================================================================
+// TEST & EVENT TYPES
+// =============================================================================
+
+export interface Test {
+  id: number;
+  name: string;
+  test_type: string;
+  is_active: boolean;
+  status: string;
+  last_run: string | null;
+  created_at: string;
+  server_count?: number;
+  success_rate?: number;
+}
+
+export interface Event {
+  id: number;
+  event_type: string;
+  severity: string;
+  level: string;
+  source: string;
+  message: string;
+  server_name?: string;
+  created_at: string;
+}
+
 export interface TestListResponse {
   count: number;
   next: string | null;
@@ -166,8 +197,9 @@ export interface EventListResponse {
 }
 
 // =============================================================================
-// Client Types (SimpleX CLI Clients)
+// CLIENT TYPES (SimpleX CLI Clients)
 // =============================================================================
+
 export interface SimplexClient {
   id: string;
   name: string;
@@ -181,6 +213,7 @@ export interface SimplexClient {
   messages_sent: number;
   messages_received: number;
   messages_failed: number;
+  messages_delivered: number;
   connection_count: number;
   uptime_display: string | null;
   delivery_success_rate: number;
@@ -194,7 +227,6 @@ export interface SimplexClient {
   avg_latency_ms?: number | null;
   min_latency_ms?: number | null;
   max_latency_ms?: number | null;
-  messages_delivered?: number;
   smp_server_ids?: number[];
 }
 
@@ -209,6 +241,8 @@ export interface ClientConnection {
   client_b_name: string;
   client_a_slug: string;
   client_b_slug: string;
+  client_a_profile: string;
+  client_b_profile: string;
   contact_name_on_a: string;
   contact_name_on_b: string;
   status: 'pending' | 'connecting' | 'connected' | 'failed' | 'deleted';
@@ -235,8 +269,119 @@ export interface ClientListResponse {
 }
 
 // =============================================================================
-// Dashboard API
+// MESSAGE TYPES
 // =============================================================================
+
+export interface TestMessage {
+  id: string;
+  tracking_id: string;
+  sender: number;
+  recipient: number;
+  sender_name: string;
+  recipient_name: string;
+  sender_profile: string;
+  recipient_profile: string;
+  content: string;
+  content_clean: string;
+  direction?: 'sent' | 'received';
+  delivery_status: 'sending' | 'sent' | 'delivered' | 'failed';
+  status_display: string;
+  latency_to_server_ms: number | null;
+  latency_to_client_ms: number | null;
+  total_latency_ms: number | null;
+  sent_at: string | null;
+  client_received_at: string | null;
+  created_at: string;
+}
+
+// =============================================================================
+// LATENCY HISTORY TYPES
+// =============================================================================
+
+export interface LatencyHistoryEntry {
+  id: string;
+  tracking_id: string;
+  sender_name: string;
+  recipient_name: string;
+  sender_profile: string;
+  recipient_profile: string;
+  content_preview: string;
+  delivery_status: string;
+  status_display?: string;
+  total_latency_ms: number | null;
+  latency_to_server_ms: number | null;
+  latency_to_client_ms: number | null;
+  sent_at: string | null;
+  client_received_at: string | null;
+  latency_indicator: 'green' | 'yellow' | 'red' | 'gray';
+  created_at: string;
+}
+
+export interface LatencyHistoryResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: LatencyHistoryEntry[];
+}
+
+export interface LatencyHistoryParams {
+  page?: number;
+  page_size?: number;
+  sort?: string;
+  status?: string;
+  date_from?: string;
+  date_to?: string;
+}
+
+export interface LatencyTimeSeriesPoint {
+  timestamp: string;
+  latency: number;
+  message_id: string;
+  sender_profile: string;
+  recipient_profile: string;
+}
+
+export interface LatencyStats {
+  avg_latency: number;
+  min_latency: number | null;
+  max_latency: number | null;
+  total_messages: number;
+  delivered_count: number;
+  failed_count: number;
+  pending_count: number;
+  time_series: LatencyTimeSeriesPoint[];
+  time_range: string;
+}
+
+export interface RecentLatency {
+  latency: number;
+  timestamp: string;
+}
+
+export interface RecentLatencyResponse {
+  data: RecentLatency[];
+  count: number;
+}
+
+// =============================================================================
+// RESET ACTION TYPES
+// =============================================================================
+
+export interface ResetResponse {
+  success: boolean;
+  message: string;
+  deleted_count?: number;
+  reset_values?: {
+    messages_sent: number;
+    messages_received: number;
+    messages_failed: number;
+  };
+}
+
+// =============================================================================
+// DASHBOARD API
+// =============================================================================
+
 export const dashboardApi = {
   getStats: () => apiFetch<DashboardStats>('/dashboard/stats/'),
   getActivity: (hours = 24) => apiFetch<ActivityData[]>(`/dashboard/activity/?hours=${hours}`),
@@ -247,8 +392,9 @@ export const dashboardApi = {
 };
 
 // =============================================================================
-// Servers API
+// SERVERS API
 // =============================================================================
+
 export const serversApi = {
   list: (filters?: ServerFilters) => {
     const params = new URLSearchParams();
@@ -284,8 +430,9 @@ export const serversApi = {
 };
 
 // =============================================================================
-// Categories API
+// CATEGORIES API
 // =============================================================================
+
 export const categoriesApi = {
   list: () => apiFetch<CategoryListResponse>('/categories/'),
   get: (id: number) => apiFetch<Category>(`/categories/${id}/`),
@@ -301,23 +448,26 @@ export const categoriesApi = {
 };
 
 // =============================================================================
-// Tests API
+// TESTS API
 // =============================================================================
+
 export const testsApi = {
   list: () => apiFetch<TestListResponse>('/stresstests/'),
   get: (id: number) => apiFetch<Test>(`/stresstests/${id}/`),
 };
 
 // =============================================================================
-// Events API
+// EVENTS API
 // =============================================================================
+
 export const eventsApi = {
   list: (limit = 50) => apiFetch<EventListResponse>(`/events/?limit=${limit}`),
 };
 
 // =============================================================================
-// Clients API (legacy - for useApi hooks)
+// CLIENTS API (legacy - for useApi hooks)
 // =============================================================================
+
 export const clientsApi = {
   list: (status?: string) => {
     const params = status ? `?status=${status}` : '';
@@ -327,9 +477,11 @@ export const clientsApi = {
 };
 
 // =============================================================================
-// SimpleX Clients API (full featured)
+// SIMPLEX CLIENTS API (full featured)
 // =============================================================================
+
 export const simplexClientsApi = {
+  // CRUD
   list: (status?: string) => {
     const params = status ? `?status=${status}` : '';
     return apiFetch<ClientListResponse>(`/clients/${params}`);
@@ -349,6 +501,7 @@ export const simplexClientsApi = {
   
   delete: (id: string) => apiFetch<void>(`/clients/${id}/`, { method: 'DELETE' }),
   
+  // Container actions
   start: (id: string) => apiFetch<{ success: boolean; status: string; message: string }>(`/clients/${id}/start/`, { method: 'POST' }),
   
   stop: (id: string) => apiFetch<{ success: boolean; status: string; message: string }>(`/clients/${id}/stop/`, { method: 'POST' }),
@@ -360,22 +513,51 @@ export const simplexClientsApi = {
   connections: (id: string) => apiFetch<ClientConnection[]>(`/clients/${id}/connections/`),
   
   stats: () => apiFetch<ClientStats>('/clients-stats/'),
+  
+  // Latency endpoints
+  latencyHistory: (id: string, params?: LatencyHistoryParams) => {
+    const urlParams = new URLSearchParams();
+    if (params?.page) urlParams.set('page', String(params.page));
+    if (params?.page_size) urlParams.set('page_size', String(params.page_size));
+    if (params?.sort) urlParams.set('sort', params.sort);
+    if (params?.status) urlParams.set('status', params.status);
+    if (params?.date_from) urlParams.set('date_from', params.date_from);
+    if (params?.date_to) urlParams.set('date_to', params.date_to);
+    const query = urlParams.toString();
+    return apiFetch<LatencyHistoryResponse>(`/clients/${id}/latency-history/${query ? `?${query}` : ''}`);
+  },
+  
+  latencyStats: (id: string, range: '24h' | '7d' | '30d' | 'all' = '24h') => 
+    apiFetch<LatencyStats>(`/clients/${id}/latency-stats/?range=${range}`),
+  
+  latencyRecent: (id: string) => 
+    apiFetch<RecentLatencyResponse>(`/clients/${id}/latency-recent/`),
+  
+  // Reset actions
+  resetMessages: (id: string) => apiFetch<ResetResponse>(`/clients/${id}/reset-messages/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrfToken() },
+  }),
+  
+  resetCounters: (id: string) => apiFetch<ResetResponse>(`/clients/${id}/reset-counters/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrfToken() },
+  }),
+  
+  resetLatency: (id: string) => apiFetch<ResetResponse>(`/clients/${id}/reset-latency/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrfToken() },
+  }),
+  
+  resetAll: (id: string) => apiFetch<ResetResponse>(`/clients/${id}/reset-all/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrfToken() },
+  }),
 };
 
-// Messages API
-export interface TestMessage {
-  direction?: 'sent' | 'received';
-  id: string;
-  sender: number;
-  recipient: number;
-  sender_name: string;
-  recipient_name: string;
-  content: string;
-  delivery_status: 'pending' | 'sent' | 'delivered' | 'failed';
-  status_display: string;
-  total_latency_ms: number | null;
-  created_at: string;
-}
+// =============================================================================
+// MESSAGES API
+// =============================================================================
 
 export const messagesApi = {
   list: (clientId?: string | number, direction?: 'sent' | 'received') => {
@@ -384,6 +566,14 @@ export const messagesApi = {
     if (clientId) params.append('client', String(clientId));
     if (direction) params.append('direction', direction);
     if (params.toString()) url += '?' + params.toString();
-    return apiFetch<{ results: TestMessage[] } | TestMessage[]>(url).then(r => Array.isArray(r) ? r : r.results);
+    return apiFetch<{ results: TestMessage[] } | TestMessage[]>(url)
+      .then(r => Array.isArray(r) ? r : r.results);
   },
+  
+  get: (id: string) => apiFetch<TestMessage>(`/messages/${id}/`),
+  
+  delete: (id: string) => apiFetch<{ success: boolean; message: string; deleted_id: string }>(`/messages/${id}/`, {
+    method: 'DELETE',
+    headers: { 'X-CSRFToken': getCsrfToken() },
+  }),
 };

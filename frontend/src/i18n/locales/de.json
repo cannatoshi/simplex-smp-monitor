@@ -275,7 +275,55 @@
     "avgLatency": "Ø Latenz",
     "minLatency": "Min",
     "maxLatency": "Max",
-    "last15": "Letzte 15"
+    "last15": "Letzte 15",
+    "clickForDetails": "Klicken für Details",
+    "details": "Details"
+  },
+  "latencyModal": {
+    "title": "Latenz History",
+    "timeRange": "Zeitraum",
+    "allTime": "Gesamt",
+    "graphTitle": "Latenz über Zeit",
+    "noData": "Keine Latenz-Daten verfügbar",
+    "avgLatency": "Ø Latenz",
+    "minLatency": "Min Latenz",
+    "maxLatency": "Max Latenz",
+    "status": "Status",
+    "all": "Alle",
+    "delivered": "Zugestellt",
+    "sent": "Gesendet",
+    "failed": "Fehlgeschlagen",
+    "sending": "Wird gesendet",
+    "entries": "Einträge",
+    "time": "Zeit",
+    "from": "Von",
+    "to": "An",
+    "content": "Inhalt",
+    "latency": "Latenz",
+    "statusColumn": "Status",
+    "action": "Aktion",
+    "noMessages": "Keine Nachrichten gefunden",
+    "confirm": "OK",
+    "cancel": "Abbrechen",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "deleteAllConfirm": "Alle Einträge löschen?",
+    "yesDeleteAll": "Ja, alle löschen",
+    "clearAll": "Alle löschen",
+    "exportCSV": "CSV Export"
+  },
+  "resetButtons": {
+    "reset": "Reset",
+    "selectAction": "Aktion auswählen",
+    "clickToConfirm": "Nochmal klicken zum Bestätigen",
+    "recalculateCounters": "Counter neu berechnen",
+    "recalculateDesc": "Zähler aus Datenbank neu berechnen",
+    "clearLatency": "Latenz-Daten löschen",
+    "clearLatencyDesc": "Nur Latenz-Werte löschen, Nachrichten behalten",
+    "resetMessages": "Nachrichten löschen",
+    "resetMessagesDesc": "Alle Nachrichten + Counter zurücksetzen",
+    "fullReset": "Komplett-Reset",
+    "fullResetDesc": "Alles löschen und zurücksetzen"
   },
   "settings": {
     "title": "Einstellungen",
@@ -286,6 +334,6 @@
   },
   "footer": {
     "copyright": "© by cannatoshi 💫",
-    "version": "v0.1.11-alpha"
+    "version": "v0.1.12-alpha"
   }
 }

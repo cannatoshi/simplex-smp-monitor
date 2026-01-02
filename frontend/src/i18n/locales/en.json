@@ -275,7 +275,55 @@
     "avgLatency": "Avg Latency",
     "minLatency": "Min",
     "maxLatency": "Max",
-    "last15": "Last 15"
+    "last15": "Last 15",
+    "clickForDetails": "Click for details",
+    "details": "Details"
+  },
+  "latencyModal": {
+    "title": "Latency History",
+    "timeRange": "Time Range",
+    "allTime": "All Time",
+    "graphTitle": "Latency Over Time",
+    "noData": "No latency data available",
+    "avgLatency": "Avg Latency",
+    "minLatency": "Min Latency",
+    "maxLatency": "Max Latency",
+    "status": "Status",
+    "all": "All",
+    "delivered": "Delivered",
+    "sent": "Sent",
+    "failed": "Failed",
+    "sending": "Sending",
+    "entries": "entries",
+    "time": "Time",
+    "from": "From",
+    "to": "To",
+    "content": "Content",
+    "latency": "Latency",
+    "statusColumn": "Status",
+    "action": "Action",
+    "noMessages": "No messages found",
+    "confirm": "OK",
+    "cancel": "Cancel",
+    "previous": "Previous",
+    "next": "Next",
+    "deleteAllConfirm": "Delete all entries?",
+    "yesDeleteAll": "Yes, delete all",
+    "clearAll": "Clear All",
+    "exportCSV": "Export CSV"
+  },
+  "resetButtons": {
+    "reset": "Reset",
+    "selectAction": "Select action",
+    "clickToConfirm": "Click again to confirm",
+    "recalculateCounters": "Recalculate Counters",
+    "recalculateDesc": "Recalculate counters from database",
+    "clearLatency": "Clear Latency Data",
+    "clearLatencyDesc": "Clear only latency values, keep messages",
+    "resetMessages": "Delete Messages",
+    "resetMessagesDesc": "Delete all messages + reset counters",
+    "fullReset": "Full Reset",
+    "fullResetDesc": "Delete everything and reset"
   },
   "settings": {
     "title": "Settings",
@@ -286,6 +334,6 @@
   },
   "footer": {
     "copyright": "© by cannatoshi 💫",
-    "version": "v0.1.11-alpha"
+    "version": "v0.1.12-alpha"
   }
 }

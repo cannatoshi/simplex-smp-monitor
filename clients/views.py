@@ -1,12 +1,16 @@
 """
-Views für SimpleX CLI Clients CRUD
+SimpleX SMP Monitor by cannatoshi
+GitHub: https://github.com/cannatoshi/simplex-smp-monitor
+Licensed under AGPL-3.0
 
-Enthält:
-- ClientListView: Übersicht aller Clients
-- ClientCreateView: Neuen Client erstellen
-- ClientDetailView: Client Details + Aktionen
-- ClientUpdateView: Client bearbeiten
-- ClientDeleteView: Client löschen
+Views for SimpleX CLI Clients CRUD
+
+Contains:
+- ClientListView: Overview of all clients
+- ClientCreateView: Create new client
+- ClientDetailView: Client details + actions
+- ClientUpdateView: Edit client
+- ClientDeleteView: Delete client
 - Action Views: Start, Stop, Connect, SendMessage
 """
 import logging
@@ -30,15 +34,19 @@ from .services.docker_manager import get_docker_manager
 logger = logging.getLogger(__name__)
 
 
+# =============================================================================
+# LIST / CRUD VIEWS
+# =============================================================================
+
 class ClientListView(ListView):
     """
-    Übersicht aller SimpleX CLI Clients.
+    Overview of all SimpleX CLI clients.
     
-    Zeigt Status-Cards mit:
-    - Status-Indikator (🟢/⚪/🔴)
+    Shows status cards with:
+    - Status indicator (🟢/⚪/🔴)
     - Port
-    - Nachrichtenstatistiken
-    - Quick Actions (Start/Stop/Delete)
+    - Message statistics
+    - Quick actions (Start/Stop/Delete)
     """
     model = SimplexClient
     template_name = 'clients/list.html'
@@ -52,7 +60,7 @@ class ClientListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Statistiken für Header
+        # Statistics for header
         context['stats'] = {
             'total': SimplexClient.objects.count(),
             'running': SimplexClient.objects.filter(status=SimplexClient.Status.RUNNING).count(),
@@ -60,7 +68,7 @@ class ClientListView(ListView):
             'error': SimplexClient.objects.filter(status=SimplexClient.Status.ERROR).count(),
         }
         
-        # Freie Ports
+        # Available ports
         used_ports = set(SimplexClient.objects.values_list('websocket_port', flat=True))
         context['available_ports'] = [p for p in range(3031, 3081) if p not in used_ports][:5]
         
@@ -69,11 +77,11 @@ class ClientListView(ListView):
 
 class ClientCreateView(CreateView):
     """
-    Neuen SimpleX Client erstellen.
+    Create a new SimpleX client.
     
-    Erstellt:
-    - SimplexClient DB-Eintrag
-    - Docker Volume (wird bei Start erstellt)
+    Creates:
+    - SimplexClient DB entry
+    - Docker volume (created on start)
     """
     model = SimplexClient
     form_class = SimplexClientForm
@@ -82,26 +90,26 @@ class ClientCreateView(CreateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Neuen Client erstellen'
-        context['submit_text'] = 'Client erstellen'
+        context['title'] = 'Create New Client'
+        context['submit_text'] = 'Create Client'
         return context
     
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f'Client "{self.object.name}" wurde erstellt.')
+        messages.success(self.request, f'Client "{self.object.name}" was created.')
         return response
 
 
 class ClientDetailView(DetailView):
     """
-    Detail-Ansicht eines Clients.
+    Detail view of a client.
     
-    Zeigt:
-    - Status + Aktionen (Start/Stop/Restart)
-    - Container Logs (live)
-    - Verbindungen zu anderen Clients
-    - Nachrichten-Historie
-    - Statistiken
+    Shows:
+    - Status + actions (Start/Stop/Restart)
+    - Container logs (live)
+    - Connections to other clients
+    - Message history
+    - Statistics
     """
     model = SimplexClient
     template_name = 'clients/detail.html'
@@ -113,32 +121,32 @@ class ClientDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         client = self.object
         
-        # Verbindungen (als A oder B)
+        # Connections (as A or B)
         context['connections'] = ClientConnection.objects.filter(
             Q(client_a=client) | Q(client_b=client)
         ).select_related('client_a', 'client_b')
         
-        # Gesendete Nachrichten
+        # Sent messages
         context['sent_messages'] = TestMessage.objects.filter(
             sender=client
         ).select_related('recipient').order_by('-created_at')[:20]
         
-        # Empfangene Nachrichten
+        # Received messages
         context['received_messages'] = TestMessage.objects.filter(
             recipient=client
         ).select_related('sender').order_by('-created_at')[:20]
         
-        # Alle Nachrichten (für "Alle" Tab)
+        # All messages (for "All" tab)
         all_messages = list(TestMessage.objects.filter(
             Q(sender=client) | Q(recipient=client)
         ).select_related('sender', 'recipient').order_by('-created_at')[:30])
         
-        # Direction hinzufügen für Template
+        # Add direction for template
         for msg in all_messages:
             msg._direction = 'sent' if msg.sender == client else 'received'
         context['all_messages'] = all_messages
         
-        # Statistiken
+        # Statistics
         sent_messages = TestMessage.objects.filter(sender=client)
         context['message_stats'] = {
             'total_sent': sent_messages.count(),
@@ -149,18 +157,18 @@ class ClientDetailView(DetailView):
             )['avg'] or 0,
         }
         
-        # Container Logs
+        # Container logs
         try:
             docker_manager = get_docker_manager()
             context['container_logs'] = docker_manager.get_container_logs(client, tail=50)
         except Exception:
             context['container_logs'] = ''
         
-        # Formulare
+        # Forms
         context['message_form'] = TestMessageForm(initial={'sender': client})
         context['connection_form'] = ClientConnectionForm(initial={'client_a': client})
         
-        # Andere laufende Clients für Quick-Connect (ohne bereits verbundene)
+        # Other running clients for quick connect (excluding already connected)
         connected_client_ids = set()
         for conn in context['connections']:
             connected_client_ids.add(conn.client_a_id)
@@ -179,10 +187,10 @@ class ClientDetailView(DetailView):
 
 class ClientUpdateView(UpdateView):
     """
-    Client bearbeiten.
+    Edit client.
     
-    Hinweis: Manche Felder (Port, Slug) können nur geändert werden
-    wenn der Client gestoppt ist.
+    Note: Some fields (port, slug) can only be changed
+    when the client is stopped.
     """
     model = SimplexClient
     form_class = SimplexClientForm
@@ -195,25 +203,25 @@ class ClientUpdateView(UpdateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = f'Client "{self.object.name}" bearbeiten'
-        context['submit_text'] = 'Änderungen speichern'
+        context['title'] = f'Edit Client "{self.object.name}"'
+        context['submit_text'] = 'Save Changes'
         context['is_edit'] = True
         return context
     
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f'Client "{self.object.name}" wurde aktualisiert.')
+        messages.success(self.request, f'Client "{self.object.name}" was updated.')
         return response
 
 
 class ClientDeleteView(DeleteView):
     """
-    Client löschen.
+    Delete client.
     
-    Löscht:
-    - SimplexClient DB-Eintrag
-    - Docker Container (falls vorhanden)
-    - Optional: Docker Volume
+    Deletes:
+    - SimplexClient DB entry
+    - Docker container (if exists)
+    - Optional: Docker volume
     """
     model = SimplexClient
     template_name = 'clients/confirm_delete.html'
@@ -227,31 +235,33 @@ class ClientDeleteView(DeleteView):
         return context
     
     def post(self, request, *args, **kwargs):
-        """Django 4+ nutzt post() statt delete()"""
+        """Django 4+ uses post() instead of delete()"""
         client = self.get_object()
         client_name = client.name
         container_name = client.container_name
         
-        # Docker Container und Volume löschen ZUERST (bevor DB-Eintrag weg ist)
+        # Delete Docker container and volume FIRST (before DB entry is gone)
         remove_volume = request.POST.get('remove_volume') == 'true'
         try:
             docker_manager = get_docker_manager()
             docker_manager.delete_container(client, remove_volume=remove_volume)
-            messages.info(request, f'Container "{container_name}" wurde entfernt.')
+            messages.info(request, f'Container "{container_name}" was removed.')
         except Exception as e:
             logger.exception(f'Failed to delete container {container_name}')
-            messages.warning(request, f'Container konnte nicht gelöscht werden.')
+            messages.warning(request, f'Container could not be deleted.')
         
-        # Jetzt DB-Eintrag löschen
+        # Now delete DB entry
         response = super().post(request, *args, **kwargs)
-        messages.success(request, f'Client "{client_name}" wurde gelöscht.')
+        messages.success(request, f'Client "{client_name}" was deleted.')
         return response
 
 
-# === Action Views (AJAX/POST) ===
+# =============================================================================
+# ACTION VIEWS (AJAX/POST)
+# =============================================================================
 
 class ClientStartView(View):
-    """Startet einen Client (Docker Container)"""
+    """Start a client (Docker container)"""
     
     def post(self, request, slug):
         client = get_object_or_404(SimplexClient, slug=slug)
@@ -259,37 +269,37 @@ class ClientStartView(View):
         
         if client.status == SimplexClient.Status.RUNNING:
             if is_ajax:
-                return JsonResponse({'success': False, 'error': f'{client.name} läuft bereits.'})
-            messages.warning(request, f'Client "{client.name}" läuft bereits.')
+                return JsonResponse({'success': False, 'error': f'{client.name} is already running.'})
+            messages.warning(request, f'Client "{client.name}" is already running.')
             return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': client.slug}))
         
         try:
             docker_manager = get_docker_manager()
             docker_manager.start_container(client)
             
-            # Nutze die neue start() Methode für started_at
+            # Use the start() method for started_at timestamp
             client.start()
             
             if is_ajax:
                 return JsonResponse({
                     'success': True,
                     'status': client.status,
-                    'message': f'{client.name} wurde gestartet.'
+                    'message': f'{client.name} was started.'
                 })
-            messages.success(request, f'Client "{client.name}" wurde gestartet.')
+            messages.success(request, f'Client "{client.name}" was started.')
             
         except Exception as e:
             logger.exception(f'Failed to start client {client.name}')
             client.set_error(str(e))
             if is_ajax:
                 return JsonResponse({'success': False, 'error': 'Failed to start client'}, status=500)
-            messages.error(request, 'Fehler beim Starten des Clients.')
+            messages.error(request, 'Error starting client.')
         
         return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': client.slug}))
 
 
 class ClientStopView(View):
-    """Stoppt einen Client (Docker Container)"""
+    """Stop a client (Docker container)"""
     
     def post(self, request, slug):
         client = get_object_or_404(SimplexClient, slug=slug)
@@ -297,37 +307,37 @@ class ClientStopView(View):
         
         if client.status != SimplexClient.Status.RUNNING:
             if is_ajax:
-                return JsonResponse({'success': False, 'error': f'{client.name} läuft nicht.'})
-            messages.warning(request, f'Client "{client.name}" läuft nicht.')
+                return JsonResponse({'success': False, 'error': f'{client.name} is not running.'})
+            messages.warning(request, f'Client "{client.name}" is not running.')
             return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': client.slug}))
         
         try:
             docker_manager = get_docker_manager()
             docker_manager.stop_container(client)
             
-            # Nutze die neue stop() Methode
+            # Use the stop() method
             client.stop()
             
             if is_ajax:
                 return JsonResponse({
                     'success': True,
                     'status': client.status,
-                    'message': f'{client.name} wurde gestoppt.'
+                    'message': f'{client.name} was stopped.'
                 })
-            messages.success(request, f'Client "{client.name}" wurde gestoppt.')
+            messages.success(request, f'Client "{client.name}" was stopped.')
             
         except Exception as e:
             logger.exception(f'Failed to stop client {client.name}')
             client.set_error(str(e))
             if is_ajax:
                 return JsonResponse({'success': False, 'error': 'Failed to stop client'}, status=500)
-            messages.error(request, 'Fehler beim Stoppen des Clients.')
+            messages.error(request, 'Error stopping client.')
         
         return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': client.slug}))
 
 
 class ClientRestartView(View):
-    """Startet einen Client neu"""
+    """Restart a client"""
     
     def post(self, request, slug):
         client = get_object_or_404(SimplexClient, slug=slug)
@@ -337,29 +347,29 @@ class ClientRestartView(View):
             docker_manager = get_docker_manager()
             docker_manager.restart_container(client)
             
-            # Nutze start() für neue started_at Zeit
+            # Use start() for new started_at timestamp
             client.start()
             
             if is_ajax:
                 return JsonResponse({
                     'success': True,
                     'status': client.status,
-                    'message': f'{client.name} wurde neu gestartet.'
+                    'message': f'{client.name} was restarted.'
                 })
-            messages.success(request, f'Client "{client.name}" wurde neu gestartet.')
+            messages.success(request, f'Client "{client.name}" was restarted.')
             
         except Exception as e:
             logger.exception(f'Failed to restart client {client.name}')
             client.set_error(str(e))
             if is_ajax:
                 return JsonResponse({'success': False, 'error': 'Failed to restart client'}, status=500)
-            messages.error(request, 'Fehler beim Neustart des Clients.')
+            messages.error(request, 'Error restarting client.')
         
         return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': client.slug}))
 
 
 class ClientLogsView(View):
-    """Holt Container Logs (AJAX)"""
+    """Get container logs (AJAX)"""
     
     def get(self, request, slug):
         client = get_object_or_404(SimplexClient, slug=slug)
@@ -374,10 +384,12 @@ class ClientLogsView(View):
             return JsonResponse({'logs': '[Error fetching logs]', 'status': client.status})
 
 
-# === Connection Views ===
+# =============================================================================
+# CONNECTION VIEWS
+# =============================================================================
 
 class ConnectionCreateView(View):
-    """Erstellt eine Verbindung zwischen zwei Clients"""
+    """Create a connection between two clients"""
     
     def post(self, request):
         form = ClientConnectionForm(request.POST)
@@ -396,22 +408,22 @@ class ConnectionCreateView(View):
             
             messages.success(
                 request, 
-                f'Verbindung zwischen {connection.client_a.name} und {connection.client_b.name} wird hergestellt...'
+                f'Connection between {connection.client_a.name} and {connection.client_b.name} is being established...'
             )
             return HttpResponseRedirect(
                 reverse('clients:detail', kwargs={'slug': connection.client_a.slug})
             )
         
         if is_ajax:
-            return JsonResponse({'success': False, 'error': 'Ungültige Daten.'}, status=400)
+            return JsonResponse({'success': False, 'error': 'Invalid data.'}, status=400)
         
-        messages.error(request, 'Fehler beim Erstellen der Verbindung.')
+        messages.error(request, 'Error creating connection.')
         return HttpResponseRedirect(reverse('clients:list'))
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class ConnectionDeleteView(View):
-    """Löscht eine Verbindung - AJAX Version"""
+    """Delete a connection - AJAX version"""
     
     def post(self, request, pk):
         connection = get_object_or_404(ClientConnection, pk=pk)
@@ -423,7 +435,7 @@ class ConnectionDeleteView(View):
         
         connection.delete()
         
-        # WebSocket Event
+        # WebSocket event
         try:
             from channels.layers import get_channel_layer
             from asgiref.sync import async_to_sync
@@ -439,57 +451,62 @@ class ConnectionDeleteView(View):
                     }
                 )
         except Exception:
-            pass  # Channel layer nicht verfügbar
+            pass  # Channel layer not available
         
         if is_ajax:
             return JsonResponse({
                 'success': True,
-                'message': f'Verbindung {client_a_name} ↔ {client_b_name} gelöscht.'
+                'message': f'Connection {client_a_name} ↔ {client_b_name} deleted.'
             })
         
-        messages.success(request, 'Verbindung wurde gelöscht.')
+        messages.success(request, 'Connection was deleted.')
         return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': client_a_slug}))
 
 
-# === Message Testing Views ===
+# =============================================================================
+# MESSAGE TESTING VIEWS
+# =============================================================================
 
 @method_decorator(csrf_exempt, name="dispatch")
 class SendMessageView(View):
     """
-    Sendet eine Test-Nachricht - AJAX-kompatibel
+    Send a test message - AJAX compatible
     
-    Akzeptiert sowohl Form-Daten (TestMessageForm) als auch 
-    direkte POST-Parameter vom Template:
+    Accepts both form data (TestMessageForm) and 
+    direct POST parameters from template:
     - sender: Client ID
-    - contact_name: Name des Kontakts (aus Verbindung)
-    - message: Nachrichtentext
+    - contact_name: Contact name (from connection)
+    - message: Message text
+    
+    IMPORTANT: Uses tracking_id for reliable delivery tracking.
+    The Event Bridge will match delivery receipts using this ID.
     """
     
     def post(self, request):
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
-        # Parameter aus POST holen
+        # Get parameters from POST
         sender_id = request.POST.get('sender')
         contact_name = request.POST.get('contact_name')
         message_text = request.POST.get('message', '').strip()
         
-        # Validierung
+        # Validation
         if not sender_id:
-            error = 'Kein Sender angegeben.'
+            error = 'No sender specified.'
             if is_ajax:
                 return JsonResponse({'success': False, 'error': error}, status=400)
             messages.error(request, error)
             return HttpResponseRedirect(reverse('clients:list'))
         
         if not contact_name:
-            error = 'Kein Empfänger angegeben.'
+            error = 'No recipient specified.'
             if is_ajax:
                 return JsonResponse({'success': False, 'error': error}, status=400)
             messages.error(request, error)
             return HttpResponseRedirect(reverse('clients:list'))
         
         if not message_text:
-            error = 'Keine Nachricht angegeben.'
+            error = 'No message specified.'
             if is_ajax:
                 return JsonResponse({'success': False, 'error': error}, status=400)
             messages.error(request, error)
@@ -498,13 +515,13 @@ class SendMessageView(View):
         try:
             sender = SimplexClient.objects.get(pk=sender_id)
         except SimplexClient.DoesNotExist:
-            error = 'Sender nicht gefunden.'
+            error = 'Sender not found.'
             if is_ajax:
                 return JsonResponse({'success': False, 'error': error}, status=404)
             messages.error(request, error)
             return HttpResponseRedirect(reverse('clients:list'))
         
-        # Finde die Verbindung basierend auf contact_name
+        # Find connection based on contact_name
         connection = ClientConnection.objects.filter(
             Q(client_a=sender, contact_name_on_a=contact_name) |
             Q(client_b=sender, contact_name_on_b=contact_name),
@@ -512,46 +529,57 @@ class SendMessageView(View):
         ).first()
         
         if not connection:
-            error = f'Keine aktive Verbindung mit "{contact_name}" gefunden.'
+            error = f'No active connection with "{contact_name}" found.'
             if is_ajax:
                 return JsonResponse({'success': False, 'error': error}, status=400)
             messages.error(request, error)
             return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': sender.slug}))
         
-        # Empfänger bestimmen
+        # Determine recipient
         if connection.client_a == sender:
             recipient = connection.client_b
         else:
             recipient = connection.client_a
         
         try:
-            # SimpleX Service für echtes Senden
-            from .services.simplex_commands import get_simplex_service
-            svc = get_simplex_service()
-            result = svc.send_message(sender, contact_name, message_text)
-            
-            if not result.success:
-                error = 'Senden fehlgeschlagen'
-                if is_ajax:
-                    return JsonResponse({'success': False, 'error': error}, status=400)
-                messages.error(request, error)
-                return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': sender.slug}))
-            
-            # TestMessage in DB erstellen
+            # Create TestMessage FIRST to get the tracking_id
+            # The tracking_id is auto-generated in model.save()
             test_message = TestMessage.objects.create(
                 connection=connection,
                 sender=sender,
                 recipient=recipient,
                 content=message_text,
                 sent_at=timezone.now(),
-                delivery_status=TestMessage.DeliveryStatus.SENT,
+                delivery_status=TestMessage.DeliveryStatus.SENDING,
             )
             
-            # Stats aktualisieren
-            sender.update_stats(sent=1)
-            recipient.update_stats(received=1)
+            # Send via SimpleX with tracking_id embedded in message
+            from .services.simplex_commands import get_simplex_service
+            svc = get_simplex_service()
+            result = svc.send_message(
+                sender, 
+                contact_name, 
+                message_text, 
+                tracking_id=test_message.tracking_id
+            )
             
-            # WebSocket Event für Live-Update
+            if not result.success:
+                # Mark message as failed
+                test_message.mark_failed(result.error or 'Send failed')
+                error = 'Send failed'
+                if is_ajax:
+                    return JsonResponse({'success': False, 'error': error}, status=400)
+                messages.error(request, error)
+                return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': sender.slug}))
+            
+            # Update message status to SENT
+            test_message.delivery_status = TestMessage.DeliveryStatus.SENT
+            test_message.save(update_fields=['delivery_status'])
+            
+            # Update sender stats only - recipient stats handled by Event Bridge!
+            sender.update_stats(sent=1)
+            
+            # WebSocket event for live update
             try:
                 from channels.layers import get_channel_layer
                 from asgiref.sync import async_to_sync
@@ -563,9 +591,12 @@ class SendMessageView(View):
                         {
                             "type": "new_message",
                             "message_id": str(test_message.id),
+                            "tracking_id": test_message.tracking_id,
                             "client_slug": sender.slug,
                             "sender": sender.name,
+                            "sender_profile": sender.profile_name,
                             "recipient": recipient.name,
+                            "recipient_profile": recipient.profile_name,
                             "content": message_text[:50],
                             "status": "sent",
                             "timestamp": timezone.now().isoformat(),
@@ -581,38 +612,41 @@ class SendMessageView(View):
                         }
                     )
             except Exception:
-                pass  # WebSocket nicht verfügbar
+                pass  # WebSocket not available
             
-            # Erfolg
+            # Success
             if is_ajax:
                 return JsonResponse({
                     'success': True,
                     'message_id': str(test_message.id),
+                    'tracking_id': test_message.tracking_id,
                     'content': message_text,
                     'recipient': recipient.name,
+                    'recipient_profile': recipient.profile_name,
                     'status': 'sent',
                     'messages_sent': sender.messages_sent,
                 })
             
-            messages.success(request, f'✓ Nachricht an {recipient.name} gesendet.')
+            messages.success(request, f'✓ Message sent to {recipient.name}.')
             return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': sender.slug}))
             
         except Exception as e:
             logger.exception(f'Failed to send message from {sender.name}')
             if is_ajax:
                 return JsonResponse({'success': False, 'error': 'Failed to send message'}, status=500)
-            messages.error(request, 'Fehler beim Senden der Nachricht.')
+            messages.error(request, 'Error sending message.')
             return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': sender.slug}))
 
 
 class MessageStatusView(View):
-    """Holt den aktuellen Status einer Nachricht (AJAX Polling)"""
+    """Get current status of a message (AJAX polling)"""
     
     def get(self, request, pk):
         message = get_object_or_404(TestMessage, pk=pk)
         
         return JsonResponse({
             'id': str(message.id),
+            'tracking_id': message.tracking_id,
             'status': message.delivery_status,
             'status_display': message.get_delivery_status_display(),
             'latency_to_server_ms': message.latency_to_server_ms,
@@ -621,24 +655,26 @@ class MessageStatusView(View):
         })
 
 
-# === Test Panel View ===
+# =============================================================================
+# TEST PANEL VIEW
+# =============================================================================
 
 class TestPanelView(View):
     """
-    Interaktives Test-Panel für Nachrichten-Tests.
+    Interactive test panel for message tests.
     
     Features:
-    - Client-zu-Client Auswahl
-    - Einzel-Nachrichten
-    - Batch-Tests
-    - Live-Status Updates
+    - Client-to-client selection
+    - Single messages
+    - Batch tests
+    - Live status updates
     """
     
     def get(self, request):
         running_clients = SimplexClient.objects.filter(status=SimplexClient.Status.RUNNING)
         connections = ClientConnection.objects.filter(status=ClientConnection.Status.CONNECTED)
         
-        # Letzte Test-Nachrichten
+        # Recent test messages
         recent_messages = TestMessage.objects.order_by('-created_at')[:50]
         
         context = {
@@ -652,10 +688,12 @@ class TestPanelView(View):
         return render(request, 'clients/test_panel.html', context)
 
 
-# === Bulk Actions ===
+# =============================================================================
+# BULK ACTIONS
+# =============================================================================
 
 class BulkStartView(View):
-    """Startet mehrere Clients gleichzeitig"""
+    """Start multiple clients at once"""
     
     def post(self, request):
         client_ids = request.POST.getlist('client_ids')
@@ -667,18 +705,18 @@ class BulkStartView(View):
             if client.status != SimplexClient.Status.RUNNING:
                 try:
                     docker_manager.start_container(client)
-                    client.start()  # Nutze neue Methode
+                    client.start()
                     started += 1
                 except Exception as e:
                     logger.exception(f'Failed to start client {client.name}')
-                    messages.warning(request, f'Fehler bei {client.name}')
+                    messages.warning(request, f'Error with {client.name}')
         
-        messages.success(request, f'{started} Clients gestartet.')
+        messages.success(request, f'{started} clients started.')
         return HttpResponseRedirect(reverse('clients:list'))
 
 
 class BulkStopView(View):
-    """Stoppt mehrere Clients gleichzeitig"""
+    """Stop multiple clients at once"""
     
     def post(self, request):
         client_ids = request.POST.getlist('client_ids')
@@ -690,22 +728,26 @@ class BulkStopView(View):
             if client.status == SimplexClient.Status.RUNNING:
                 try:
                     docker_manager.stop_container(client)
-                    client.stop()  # Nutze neue Methode
+                    client.stop()
                     stopped += 1
                 except Exception as e:
                     logger.exception(f'Failed to stop client {client.name}')
-                    messages.warning(request, f'Fehler bei {client.name}')
+                    messages.warning(request, f'Error with {client.name}')
         
-        messages.success(request, f'{stopped} Clients gestoppt.')
+        messages.success(request, f'{stopped} clients stopped.')
         return HttpResponseRedirect(reverse('clients:list'))
 
 
-# === SimpleX Connection & Messaging Views ===
+# =============================================================================
+# SIMPLEX CONNECTION & MESSAGING VIEWS
+# =============================================================================
+
 from .services.simplex_commands import get_simplex_service
+
 
 @method_decorator(csrf_exempt, name="dispatch")
 class ClientConnectView(View):
-    """Verbindet zwei Clients miteinander - AJAX Version"""
+    """Connect two clients - AJAX version"""
     
     def post(self, request, slug):
         client_a = get_object_or_404(SimplexClient, slug=slug)
@@ -715,22 +757,22 @@ class ClientConnectView(View):
         
         if not target_slug:
             if is_ajax:
-                return JsonResponse({'success': False, 'error': 'Kein Ziel-Client angegeben.'}, status=400)
-            messages.error(request, 'Kein Ziel-Client angegeben.')
+                return JsonResponse({'success': False, 'error': 'No target client specified.'}, status=400)
+            messages.error(request, 'No target client specified.')
             return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': slug}))
         
         client_b = get_object_or_404(SimplexClient, slug=target_slug)
         
-        # Prüfe ob beide laufen
+        # Check if both are running
         if client_a.status != SimplexClient.Status.RUNNING:
-            error = f'{client_a.name} läuft nicht.'
+            error = f'{client_a.name} is not running.'
             if is_ajax:
                 return JsonResponse({'success': False, 'error': error}, status=400)
             messages.error(request, error)
             return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': slug}))
         
         if client_b.status != SimplexClient.Status.RUNNING:
-            error = f'{client_b.name} läuft nicht.'
+            error = f'{client_b.name} is not running.'
             if is_ajax:
                 return JsonResponse({'success': False, 'error': error}, status=400)
             messages.error(request, error)
@@ -740,10 +782,10 @@ class ClientConnectView(View):
             import time
             svc = get_simplex_service()
             
-            # 1. Adresse von Client B holen/erstellen
+            # 1. Get/create address from Client B
             addr_result = svc.create_or_get_address(client_b)
             if not addr_result.success:
-                error = 'Konnte keine Adresse erstellen'
+                error = 'Could not create address'
                 if is_ajax:
                     return JsonResponse({'success': False, 'error': error}, status=400)
                 messages.error(request, error)
@@ -751,22 +793,22 @@ class ClientConnectView(View):
             
             invitation_link = addr_result.data.get('full_link', '')
             
-            # 2. Auto-Accept auf Client B aktivieren
+            # 2. Enable auto-accept on Client B
             svc.enable_auto_accept(client_b)
             
-            # 3. Client A verbindet sich
+            # 3. Client A connects
             connect_result = svc.connect_via_link(client_a, invitation_link)
             if not connect_result.success:
-                error = 'Verbindung fehlgeschlagen'
+                error = 'Connection failed'
                 if is_ajax:
                     return JsonResponse({'success': False, 'error': error}, status=400)
                 messages.error(request, error)
                 return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': slug}))
             
-            # 4. Warten damit SimpleX die Verbindung aufbauen kann
+            # 4. Wait for SimpleX to establish connection
             time.sleep(3)
             
-            # 5. Echte Kontaktnamen aus SimpleX holen
+            # 5. Get actual contact names from SimpleX
             contact_name_on_a = None
             contact_name_on_b = None
             
@@ -791,15 +833,15 @@ class ClientConnectView(View):
             if not contact_name_on_b:
                 contact_name_on_b = client_a.profile_name
             
-            # 6. Prüfen ob Kontakte wirklich existieren
+            # 6. Check if contacts actually exist
             if not contacts_a.success or not contacts_a.data.get('contacts'):
-                error = f'Verbindung nicht hergestellt - keine Kontakte auf {client_a.name}'
+                error = f'Connection not established - no contacts on {client_a.name}'
                 if is_ajax:
                     return JsonResponse({'success': False, 'error': error}, status=400)
                 messages.error(request, error)
                 return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': slug}))
             
-            # 7. ClientConnection in DB erstellen/aktualisieren
+            # 7. Create/update ClientConnection in DB
             connection, created = ClientConnection.objects.update_or_create(
                 client_a=client_a,
                 client_b=client_b,
@@ -812,10 +854,10 @@ class ClientConnectView(View):
                 }
             )
             
-            # Auch umgekehrte Connection löschen falls vorhanden
+            # Delete reverse connection if exists
             ClientConnection.objects.filter(client_a=client_b, client_b=client_a).delete()
             
-            # WebSocket Event für Live-Update
+            # WebSocket event for live update
             try:
                 from channels.layers import get_channel_layer
                 from asgiref.sync import async_to_sync
@@ -851,20 +893,25 @@ class ClientConnectView(View):
             
             messages.success(
                 request, 
-                f'✓ Verbindung hergestellt: {client_a.name} ({contact_name_on_a}) ↔ {client_b.name} ({contact_name_on_b})'
+                f'✓ Connection established: {client_a.name} ({contact_name_on_a}) ↔ {client_b.name} ({contact_name_on_b})'
             )
             
         except Exception as e:
             logger.exception(f'Failed to connect {client_a.name} to {client_b.name}')
             if is_ajax:
                 return JsonResponse({'success': False, 'error': 'Connection failed'}, status=500)
-            messages.error(request, 'Fehler beim Verbinden.')
+            messages.error(request, 'Error connecting.')
         
         return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': slug}))
 
 
 class QuickMessageView(View):
-    """Sendet eine schnelle Nachricht an einen verbundenen Client - AJAX Version"""
+    """
+    Send a quick message to a connected client - AJAX version
+    
+    IMPORTANT: Uses tracking_id for reliable delivery tracking.
+    The Event Bridge matches delivery receipts using this ID.
+    """
     
     def post(self, request, slug):
         client = get_object_or_404(SimplexClient, slug=slug)
@@ -875,47 +922,57 @@ class QuickMessageView(View):
         
         if not contact_name:
             if is_ajax:
-                return JsonResponse({'success': False, 'error': 'Kein Kontakt angegeben.'}, status=400)
-            messages.error(request, 'Kein Kontakt angegeben.')
+                return JsonResponse({'success': False, 'error': 'No contact specified.'}, status=400)
+            messages.error(request, 'No contact specified.')
             return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': slug}))
         
         try:
+            # Find connection - Client can be A or B
+            connection = ClientConnection.objects.filter(
+                Q(client_a=client, contact_name_on_a=contact_name) |
+                Q(client_b=client, contact_name_on_b=contact_name),
+                status=ClientConnection.Status.CONNECTED
+            ).first()
+            
+            test_msg = None
+            recipient = None
+            
+            if connection:
+                # Determine recipient
+                if connection.client_a == client:
+                    recipient = connection.client_b
+                else:
+                    recipient = connection.client_a
+                
+                # Create TestMessage FIRST to get tracking_id
+                test_msg = TestMessage.objects.create(
+                    connection=connection,
+                    sender=client,
+                    recipient=recipient,
+                    content=message_text,
+                    sent_at=timezone.now(),
+                    delivery_status=TestMessage.DeliveryStatus.SENDING,
+                )
+            
+            # Send via SimpleX with tracking_id
             svc = get_simplex_service()
-            result = svc.send_message(client, contact_name, message_text)
+            result = svc.send_message(
+                client, 
+                contact_name, 
+                message_text,
+                tracking_id=test_msg.tracking_id if test_msg else None
+            )
             
             if result.success:
-                # Finde Verbindung - Client kann A oder B sein
-                connection = ClientConnection.objects.filter(
-                    Q(client_a=client, contact_name_on_a=contact_name) |
-                    Q(client_b=client, contact_name_on_b=contact_name),
-                    status=ClientConnection.Status.CONNECTED
-                ).first()
-                
-                test_msg = None
-                recipient = None
-                
-                if connection:
-                    # Empfänger bestimmen
-                    if connection.client_a == client:
-                        recipient = connection.client_b
-                    else:
-                        recipient = connection.client_a
+                if test_msg:
+                    # Update status to SENT
+                    test_msg.delivery_status = TestMessage.DeliveryStatus.SENT
+                    test_msg.save(update_fields=['delivery_status'])
                     
-                    # TestMessage erstellen
-                    test_msg = TestMessage.objects.create(
-                        connection=connection,
-                        sender=client,
-                        recipient=recipient,
-                        content=message_text,
-                        sent_at=timezone.now(),
-                        delivery_status=TestMessage.DeliveryStatus.SENT,
-                    )
-                    
-                    # Stats aktualisieren
+                    # Update sender stats only - Event Bridge handles recipient!
                     client.update_stats(sent=1)
-                    recipient.update_stats(received=1)
                     
-                    # WebSocket Event
+                    # WebSocket event
                     try:
                         from channels.layers import get_channel_layer
                         from asgiref.sync import async_to_sync
@@ -927,9 +984,12 @@ class QuickMessageView(View):
                                 {
                                     "type": "new_message",
                                     "message_id": str(test_msg.id),
+                                    "tracking_id": test_msg.tracking_id,
                                     "client_slug": client.slug,
                                     "sender": client.name,
+                                    "sender_profile": client.profile_name,
                                     "recipient": recipient.name if recipient else contact_name,
+                                    "recipient_profile": recipient.profile_name if recipient else '',
                                     "content": message_text,
                                     "status": "sent",
                                     "timestamp": timezone.now().isoformat(),
@@ -951,35 +1011,41 @@ class QuickMessageView(View):
                     return JsonResponse({
                         'success': True,
                         'message_id': str(test_msg.id) if test_msg else None,
+                        'tracking_id': test_msg.tracking_id if test_msg else None,
                         'content': message_text,
                         'recipient': recipient.name if recipient else contact_name,
+                        'recipient_profile': recipient.profile_name if recipient else '',
                         'status': 'sent',
                         'messages_sent': client.messages_sent,
                     })
                 
-                messages.success(request, f'✓ Nachricht an {contact_name} gesendet.')
+                messages.success(request, f'✓ Message sent to {contact_name}.')
             else:
+                # Mark as failed if we created a test message
+                if test_msg:
+                    test_msg.mark_failed(result.error or 'Send failed')
+                
                 if is_ajax:
-                    return JsonResponse({'success': False, 'error': 'Senden fehlgeschlagen'}, status=400)
-                messages.error(request, 'Senden fehlgeschlagen')
+                    return JsonResponse({'success': False, 'error': 'Send failed'}, status=400)
+                messages.error(request, 'Send failed')
                 
         except Exception as e:
             logger.exception(f'Failed to send quick message from {client.name}')
             if is_ajax:
                 return JsonResponse({'success': False, 'error': 'Failed to send message'}, status=500)
-            messages.error(request, 'Fehler beim Senden.')
+            messages.error(request, 'Error sending.')
         
         return HttpResponseRedirect(reverse('clients:detail', kwargs={'slug': slug}))
 
 
 class ClientContactsAPIView(View):
-    """API: Listet Kontakte eines Clients (für AJAX)"""
+    """API: List contacts of a client (for AJAX)"""
     
     def get(self, request, slug):
         client = get_object_or_404(SimplexClient, slug=slug)
         
         if client.status != SimplexClient.Status.RUNNING:
-            return JsonResponse({'error': 'Client läuft nicht', 'contacts': []})
+            return JsonResponse({'error': 'Client is not running', 'contacts': []})
         
         try:
             svc = get_simplex_service()

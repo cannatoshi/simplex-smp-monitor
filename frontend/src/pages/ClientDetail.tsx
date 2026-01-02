@@ -6,6 +6,7 @@ import ClientStats from '../components/clients/ClientStats';
 import ClientConnections from '../components/clients/ClientConnections';
 import ClientSidebar from '../components/clients/ClientSidebar';
 import ClientMessages from '../components/clients/ClientMessages';
+import ResetButtons from '../components/clients/ResetButtons';
 
 // Neon Blue
 const neonBlue = '#88CED0';
@@ -250,6 +251,12 @@ export default function ClientDetail() {
     fetchMessages();
   };
 
+  // Handler für Reset-Aktionen - aktualisiert alle Daten
+  const handleResetComplete = () => {
+    fetchClient();
+    fetchMessages();
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-24">
@@ -375,6 +382,12 @@ export default function ClientDetail() {
             </svg>
             {t('common.delete')}
           </button>
+          
+          {/* Reset Dropdown */}
+          <ResetButtons 
+            clientId={client.id} 
+            onResetComplete={handleResetComplete}
+          />
         </div>
       </div>
 

@@ -1,8 +1,8 @@
 """
 SimpleX CLI Client Models
 
-Persistente Datenmodelle für Docker-basierte SimpleX CLI Clients
-mit Verbindungs- und Nachrichtenverfolgung.
+Persistent data models for Docker-based SimpleX CLI clients
+with connection and message tracking.
 """
 
 from django.db import models
@@ -14,72 +14,72 @@ import uuid
 
 class SimplexClient(models.Model):
     """
-    Ein SimpleX CLI Client in einem Docker Container.
+    A SimpleX CLI client running in a Docker container.
     
-    Jeder Client hat:
-    - Einen eigenen Docker Container
-    - Einen eigenen WebSocket Port (3031-3080)
-    - Persistente Daten in einem Docker Volume
-    - Konfigurierbare SMP Server
+    Each client has:
+    - Its own Docker container
+    - Its own WebSocket port (3031-3080)
+    - Persistent data in a Docker volume
+    - Configurable SMP servers
     """
     
     class Status(models.TextChoices):
-        CREATED = 'created', 'Erstellt'
-        STARTING = 'starting', 'Startet...'
-        RUNNING = 'running', 'Läuft'
-        STOPPING = 'stopping', 'Stoppt...'
-        STOPPED = 'stopped', 'Gestoppt'
-        ERROR = 'error', 'Fehler'
+        CREATED = 'created', 'Created'
+        STARTING = 'starting', 'Starting...'
+        RUNNING = 'running', 'Running'
+        STOPPING = 'stopping', 'Stopping...'
+        STOPPED = 'stopped', 'Stopped'
+        ERROR = 'error', 'Error'
     
-    # === Identifikation ===
+    # === Identification ===
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(
         max_length=100,
         verbose_name='Name',
-        help_text='Anzeigename für diesen Client'
+        help_text='Display name for this client'
     )
     slug = models.SlugField(
         max_length=50,
         unique=True,
         verbose_name='Slug',
-        help_text='Eindeutiger Bezeichner (wird für Container-Namen verwendet)'
+        help_text='Unique identifier (used for container names)'
     )
     profile_name = models.CharField(
         max_length=50,
         blank=True,
-        verbose_name='Profilname',
-        help_text='SimpleX Chat Profilname (zufällig generiert)'
+        verbose_name='Profile Name',
+        help_text='SimpleX Chat profile name (randomly generated)'
     )
     description = models.TextField(
         blank=True,
-        verbose_name='Beschreibung',
-        help_text='Optionale Beschreibung für diesen Client'
+        verbose_name='Description',
+        help_text='Optional description for this client'
     )
     
-    # === Docker Konfiguration ===
+    # === Docker Configuration ===
     container_id = models.CharField(
         max_length=64,
         blank=True,
         verbose_name='Container ID',
-        help_text='Docker Container ID (wird automatisch gesetzt)'
+        help_text='Docker container ID (set automatically)'
     )
     container_name = models.CharField(
         max_length=100,
         blank=True,
         verbose_name='Container Name',
-        help_text='Docker Container Name (wird automatisch generiert)'
+        help_text='Docker container name (generated automatically)'
     )
     websocket_port = models.IntegerField(
         unique=True,
         validators=[MinValueValidator(3031), MaxValueValidator(3080)],
         verbose_name='WebSocket Port',
-        help_text='Port für WebSocket Verbindung (3031-3080)'
+        help_text='Port for WebSocket connection (3031-3080)'
     )
     data_volume = models.CharField(
         max_length=100,
         blank=True,
         verbose_name='Data Volume',
-        help_text='Docker Volume für persistente Daten'
+        help_text='Docker volume for persistent data'
     )
     
     # === Status ===
@@ -91,42 +91,42 @@ class SimplexClient(models.Model):
     )
     last_error = models.TextField(
         blank=True,
-        verbose_name='Letzter Fehler',
-        help_text='Fehlermeldung falls Status = error'
+        verbose_name='Last Error',
+        help_text='Error message if status = error'
     )
     
-    # === Konfiguration ===
+    # === Configuration ===
     smp_servers = models.ManyToManyField(
         'servers.Server',
         blank=True,
         related_name='cli_clients',
-        verbose_name='SMP Server',
-        help_text='SMP Server die dieser Client verwendet'
+        verbose_name='SMP Servers',
+        help_text='SMP servers this client uses'
     )
     use_tor = models.BooleanField(
         default=True,
-        verbose_name='Tor verwenden',
-        help_text='Verbindung über Tor (SOCKS5 Proxy)'
+        verbose_name='Use Tor',
+        help_text='Connect via Tor (SOCKS5 proxy)'
     )
     
-    # === Statistiken ===
-    messages_sent = models.IntegerField(default=0, verbose_name='Gesendet')
-    messages_received = models.IntegerField(default=0, verbose_name='Empfangen')
-    messages_failed = models.IntegerField(default=0, verbose_name='Fehlgeschlagen')
+    # === Statistics ===
+    messages_sent = models.IntegerField(default=0, verbose_name='Sent')
+    messages_received = models.IntegerField(default=0, verbose_name='Received')
+    messages_failed = models.IntegerField(default=0, verbose_name='Failed')
     
     # === Timestamps ===
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Erstellt')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='Aktualisiert')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Created')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Updated')
     started_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name='Gestartet um',
-        help_text='Zeitpunkt des letzten Starts (für Uptime-Berechnung)'
+        verbose_name='Started At',
+        help_text='Last start time (for uptime calculation)'
     )
     last_active_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name='Zuletzt aktiv'
+        verbose_name='Last Active'
     )
     
     class Meta:
@@ -137,7 +137,7 @@ class SimplexClient(models.Model):
     def __str__(self):
         return f"{self.name} ({self.slug})"
     
-    # Profilnamen Pool
+    # Profile name pool
     PROFILE_NAMES = [
         'alice', 'bob', 'chris', 'diana', 'eve', 'frank', 'grace', 'henry',
         'iris', 'jack', 'kate', 'leo', 'maria', 'nick', 'olivia', 'peter',
@@ -150,10 +150,10 @@ class SimplexClient(models.Model):
     def save(self, *args, **kwargs):
         import random
         
-        # Auto-generiere Name und Slug wenn neu
+        # Auto-generate name and slug if new
         if self._state.adding:
             if not self.slug or not self.name:
-                # Finde nächste freie Nummer
+                # Find next free number
                 existing_slugs = set(SimplexClient.objects.values_list('slug', flat=True))
                 for i in range(1, 1000):
                     test_slug = f"client-{i:03d}"
@@ -164,17 +164,17 @@ class SimplexClient(models.Model):
                             self.name = f"Client {i:03d}"
                         break
         
-        # Auto-generiere Profilname wenn leer
+        # Auto-generate profile name if empty
         if not self.profile_name:
             used_profiles = set(SimplexClient.objects.values_list('profile_name', flat=True))
             available = [p for p in self.PROFILE_NAMES if p not in used_profiles]
             if available:
                 self.profile_name = random.choice(available)
             else:
-                # Fallback: Zufällig mit Nummer
+                # Fallback: random with number
                 self.profile_name = f"{random.choice(self.PROFILE_NAMES)}_{random.randint(100,999)}"
         
-        # Auto-generiere container_name und data_volume
+        # Auto-generate container_name and data_volume
         if not self.container_name:
             self.container_name = f"simplex-client-{self.slug}"
         if not self.data_volume:
@@ -192,17 +192,17 @@ class SimplexClient(models.Model):
     
     @property
     def data_volume_name(self):
-        """Alias für data_volume (Template-Kompatibilität)"""
+        """Alias for data_volume (template compatibility)"""
         return self.data_volume
     
     @property
     def last_activity(self):
-        """Alias für last_active_at (Template-Kompatibilität)"""
+        """Alias for last_active_at (template compatibility)"""
         return self.last_active_at
     
     @property
     def delivery_success_rate(self):
-        """Berechnet Erfolgsrate der Nachrichtenzustellung"""
+        """Calculate message delivery success rate"""
         total = self.messages_sent
         if total == 0:
             return 0.0
@@ -210,7 +210,7 @@ class SimplexClient(models.Model):
 
     @property
     def uptime_display(self):
-        """Formatierte Uptime als lesbarer String"""
+        """Formatted uptime as readable string"""
         if not self.started_at or self.status != 'running':
             return None
         
@@ -232,7 +232,7 @@ class SimplexClient(models.Model):
     
     @property
     def avg_latency_ms(self):
-        """Durchschnittliche Latenz in Millisekunden"""
+        """Average latency in milliseconds"""
         result = self.sent_messages.filter(
             total_latency_ms__isnull=False
         ).aggregate(avg=Avg('total_latency_ms'))
@@ -240,7 +240,7 @@ class SimplexClient(models.Model):
     
     @property
     def min_latency_ms(self):
-        """Minimale Latenz in Millisekunden"""
+        """Minimum latency in milliseconds"""
         result = self.sent_messages.filter(
             total_latency_ms__isnull=False
         ).aggregate(min=Min('total_latency_ms'))
@@ -248,7 +248,7 @@ class SimplexClient(models.Model):
     
     @property
     def max_latency_ms(self):
-        """Maximale Latenz in Millisekunden"""
+        """Maximum latency in milliseconds"""
         result = self.sent_messages.filter(
             total_latency_ms__isnull=False
         ).aggregate(max=Max('total_latency_ms'))
@@ -256,37 +256,37 @@ class SimplexClient(models.Model):
     
     @property
     def messages_delivered(self):
-        """Anzahl erfolgreich zugestellter Nachrichten"""
+        """Number of successfully delivered messages"""
         return self.messages_sent - self.messages_failed
     
     @property
     def last_message_received(self):
-        """Zeitpunkt der letzten empfangenen Nachricht"""
+        """Timestamp of last received message"""
         last_msg = self.received_messages.order_by('-client_received_at').first()
         if last_msg and last_msg.client_received_at:
             return last_msg.client_received_at
         return None
     
     def start(self):
-        """Setzt Status auf running und speichert Startzeit"""
+        """Set status to running and save start time"""
         self.status = self.Status.RUNNING
         self.started_at = timezone.now()
         self.last_error = ''
         self.save(update_fields=['status', 'started_at', 'last_error', 'updated_at'])
     
     def stop(self):
-        """Setzt Status auf stopped"""
+        """Set status to stopped"""
         self.status = self.Status.STOPPED
         self.save(update_fields=['status', 'updated_at'])
     
     def set_error(self, error_message: str):
-        """Setzt Status auf error mit Fehlermeldung"""
+        """Set status to error with error message"""
         self.status = self.Status.ERROR
         self.last_error = error_message
         self.save(update_fields=['status', 'last_error', 'updated_at'])
     
     def update_stats(self, sent=0, received=0, failed=0):
-        """Aktualisiert Statistiken"""
+        """Update statistics"""
         self.messages_sent += sent
         self.messages_received += received
         self.messages_failed += failed
@@ -297,22 +297,22 @@ class SimplexClient(models.Model):
 
 class ClientConnection(models.Model):
     """
-    Verbindung zwischen zwei SimpleX Clients.
+    Connection between two SimpleX clients.
     
-    SimpleX Verbindungen sind bidirektional - wenn A zu B verbindet,
-    kann B auch an A senden. Wir tracken beide Seiten.
+    SimpleX connections are bidirectional - when A connects to B,
+    B can also send to A. We track both sides.
     """
     
     class Status(models.TextChoices):
-        PENDING = 'pending', 'Ausstehend'
-        CONNECTING = 'connecting', 'Verbindet...'
-        CONNECTED = 'connected', 'Verbunden'
-        FAILED = 'failed', 'Fehlgeschlagen'
-        DELETED = 'deleted', 'Gelöscht'
+        PENDING = 'pending', 'Pending'
+        CONNECTING = 'connecting', 'Connecting...'
+        CONNECTED = 'connected', 'Connected'
+        FAILED = 'failed', 'Failed'
+        DELETED = 'deleted', 'Deleted'
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Die beiden Clients
+    # The two clients
     client_a = models.ForeignKey(
         SimplexClient,
         on_delete=models.CASCADE,
@@ -323,27 +323,27 @@ class ClientConnection(models.Model):
         SimplexClient,
         on_delete=models.CASCADE,
         related_name='connections_as_b',
-        verbose_name='Client B (Akzeptierer)'
+        verbose_name='Client B (Acceptor)'
     )
     
-    # Einladungslink (von Client A erstellt)
+    # Invitation link (created by Client A)
     invitation_link = models.TextField(
         blank=True,
-        verbose_name='Einladungslink'
+        verbose_name='Invitation Link'
     )
     
-    # Kontaktnamen (wie sie sich gegenseitig sehen)
+    # Contact names (how they see each other)
     contact_name_on_a = models.CharField(
         max_length=100,
         blank=True,
-        verbose_name='Name auf A',
-        help_text='Wie Client A den Client B sieht'
+        verbose_name='Name on A',
+        help_text='How Client A sees Client B'
     )
     contact_name_on_b = models.CharField(
         max_length=100,
         blank=True,
-        verbose_name='Name auf B',
-        help_text='Wie Client B den Client A sieht'
+        verbose_name='Name on B',
+        help_text='How Client B sees Client A'
     )
     
     status = models.CharField(
@@ -352,7 +352,7 @@ class ClientConnection(models.Model):
         default=Status.PENDING,
         verbose_name='Status'
     )
-    last_error = models.TextField(blank=True, verbose_name='Letzter Fehler')
+    last_error = models.TextField(blank=True, verbose_name='Last Error')
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -360,8 +360,8 @@ class ClientConnection(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = 'Client Verbindung'
-        verbose_name_plural = 'Client Verbindungen'
+        verbose_name = 'Client Connection'
+        verbose_name_plural = 'Client Connections'
         unique_together = ['client_a', 'client_b']
         ordering = ['-created_at']
     
@@ -375,32 +375,32 @@ class ClientConnection(models.Model):
 
 class TestMessage(models.Model):
     """
-    Eine Test-Nachricht zwischen zwei verbundenen Clients.
+    A test message between two connected clients.
     
-    Trackt den vollständigen Delivery-Lifecycle:
-    - ⏳ sending: Wird gesendet
-    - ✓ sent: Server hat empfangen
-    - ✓✓ delivered: Client hat empfangen
-    - ❌ failed: Zustellung fehlgeschlagen
+    Tracks the complete delivery lifecycle:
+    - ⏳ sending: Being sent
+    - ✓ sent: Server received
+    - ✓✓ delivered: Client received
+    - ❌ failed: Delivery failed
     """
     
     class DeliveryStatus(models.TextChoices):
-        SENDING = 'sending', '⏳ Wird gesendet'
-        SENT = 'sent', '✓ Server empfangen'
-        DELIVERED = 'delivered', '✓✓ Client empfangen'
-        FAILED = 'failed', '❌ Fehlgeschlagen'
+        SENDING = 'sending', '⏳ Sending'
+        SENT = 'sent', '✓ Server received'
+        DELIVERED = 'delivered', '✓✓ Client received'
+        FAILED = 'failed', '❌ Failed'
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Verbindung über die gesendet wird
+    # Connection used for sending
     connection = models.ForeignKey(
         ClientConnection,
         on_delete=models.CASCADE,
         related_name='messages',
-        verbose_name='Verbindung'
+        verbose_name='Connection'
     )
     
-    # Sender und Empfänger
+    # Sender and recipient
     sender = models.ForeignKey(
         SimplexClient,
         on_delete=models.CASCADE,
@@ -411,65 +411,76 @@ class TestMessage(models.Model):
         SimplexClient,
         on_delete=models.CASCADE,
         related_name='received_messages',
-        verbose_name='Empfänger'
+        verbose_name='Recipient'
     )
     
-    # Nachrichteninhalt
-    content = models.TextField(verbose_name='Inhalt')
+    # Message content
+    content = models.TextField(verbose_name='Content')
     
-    # Correlation ID für WebSocket Tracking
+    # Legacy correlation ID for WebSocket tracking
     correlation_id = models.CharField(
         max_length=50,
         blank=True,
         verbose_name='Correlation ID'
     )
     
-    # Delivery Status
+    # NEW: Unique tracking ID for reliable message matching
+    tracking_id = models.CharField(
+        max_length=32,
+        unique=True,
+        db_index=True,
+        null=True,
+        blank=True,
+        verbose_name='Tracking ID',
+        help_text='Unique ID for message tracking (msg_xxxxxxxxxxxx)'
+    )
+    
+    # Delivery status
     delivery_status = models.CharField(
         max_length=20,
         choices=DeliveryStatus.choices,
         default=DeliveryStatus.SENDING,
-        verbose_name='Zustellstatus'
+        verbose_name='Delivery Status'
     )
     
-    # Timestamps für Latenz-Berechnung
+    # Timestamps for latency calculation
     sent_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name='Gesendet um'
+        verbose_name='Sent At'
     )
     server_received_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name='Server empfangen um'
+        verbose_name='Server Received At'
     )
     client_received_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name='Client empfangen um'
+        verbose_name='Client Received At'
     )
     
-    # Berechnete Latenzen (in Millisekunden)
+    # Calculated latencies (in milliseconds)
     latency_to_server_ms = models.IntegerField(
         null=True,
         blank=True,
-        verbose_name='Latenz zum Server (ms)'
+        verbose_name='Latency to Server (ms)'
     )
     latency_to_client_ms = models.IntegerField(
         null=True,
         blank=True,
-        verbose_name='Latenz zum Client (ms)'
+        verbose_name='Latency to Client (ms)'
     )
     total_latency_ms = models.IntegerField(
         null=True,
         blank=True,
-        verbose_name='Gesamtlatenz (ms)'
+        verbose_name='Total Latency (ms)'
     )
     
-    # Fehlerinfo
-    error_message = models.TextField(blank=True, verbose_name='Fehlermeldung')
+    # Error info
+    error_message = models.TextField(blank=True, verbose_name='Error Message')
     
-    # Optional: Referenz zu einem Stress-Test Run
+    # Optional: Reference to a stress test run
     test_run = models.ForeignKey(
         'stresstests.TestRun',
         on_delete=models.SET_NULL,
@@ -483,8 +494,8 @@ class TestMessage(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = 'Test Nachricht'
-        verbose_name_plural = 'Test Nachrichten'
+        verbose_name = 'Test Message'
+        verbose_name_plural = 'Test Messages'
         ordering = ['-created_at']
     
     def __str__(self):
@@ -496,33 +507,45 @@ class TestMessage(models.Model):
         }.get(self.delivery_status, '?')
         return f"{status_icon} {self.sender.name} → {self.recipient.name}"
     
+    def save(self, *args, **kwargs):
+        # Auto-generate tracking_id if not set
+        if not self.tracking_id:
+            self.tracking_id = f"msg_{uuid.uuid4().hex[:12]}"
+        super().save(*args, **kwargs)
+    
     @property
     def recipient_name(self):
-        """Name des Empfängers (für Template)"""
-        return self.recipient.name if self.recipient else 'Unbekannt'
+        """Recipient name (for template)"""
+        return self.recipient.name if self.recipient else 'Unknown'
     
     @property
     def sender_name(self):
-        """Name des Senders (für Template)"""
-        return self.sender.name if self.sender else 'Unbekannt'
+        """Sender name (for template)"""
+        return self.sender.name if self.sender else 'Unknown'
     
     @property
     def contact_name(self):
-        """Kontaktname (für 'Alle' Tab)"""
+        """Contact name (for 'All' tab)"""
         return self.recipient.name if hasattr(self, '_direction') and self._direction == 'sent' else self.sender.name
     
     @property
     def direction(self):
-        """Richtung der Nachricht (für Template)"""
+        """Message direction (for template)"""
         return getattr(self, '_direction', 'sent')
     
     @property
     def received_at(self):
-        """Alias für client_received_at (Template-Kompatibilität)"""
+        """Alias for client_received_at (template compatibility)"""
         return self.client_received_at or self.created_at
     
+    @property
+    def content_without_tracking(self):
+        """Message content without the tracking ID prefix"""
+        import re
+        return re.sub(r'^\[msg_[a-f0-9]+\]\s*', '', self.content)
+    
     def mark_sent(self):
-        """Markiert Nachricht als vom Server empfangen (✓)"""
+        """Mark message as received by server (✓)"""
         now = timezone.now()
         self.delivery_status = self.DeliveryStatus.SENT
         self.server_received_at = now
@@ -531,7 +554,7 @@ class TestMessage(models.Model):
         self.save()
     
     def mark_delivered(self):
-        """Markiert Nachricht als vom Client empfangen (✓✓)"""
+        """Mark message as received by client (✓✓)"""
         now = timezone.now()
         self.delivery_status = self.DeliveryStatus.DELIVERED
         self.client_received_at = now
@@ -540,13 +563,9 @@ class TestMessage(models.Model):
         if self.sent_at:
             self.total_latency_ms = int((now - self.sent_at).total_seconds() * 1000)
         self.save()
-        
-        # Update sender stats
-        self.sender.update_stats(sent=0, received=0, failed=0)  # Just touch last_active
-        self.recipient.update_stats(received=1)
     
     def mark_failed(self, error: str = ''):
-        """Markiert Nachricht als fehlgeschlagen (❌)"""
+        """Mark message as failed (❌)"""
         self.delivery_status = self.DeliveryStatus.FAILED
         self.error_message = error
         self.save()
@@ -555,13 +574,13 @@ class TestMessage(models.Model):
 
 class DeliveryReceipt(models.Model):
     """
-    Explizites Tracking von Delivery Receipts.
+    Explicit tracking of delivery receipts.
     
-    SimpleX sendet asynchrone Events wenn:
-    - Server die Nachricht empfangen hat
-    - Client die Nachricht empfangen hat
+    SimpleX sends async events when:
+    - Server has received the message
+    - Client has received the message
     
-    Diese werden hier separat geloggt für detailliertes Debugging.
+    These are logged separately here for detailed debugging.
     """
     
     class ReceiptType(models.TextChoices):
@@ -574,20 +593,20 @@ class DeliveryReceipt(models.Model):
         TestMessage,
         on_delete=models.CASCADE,
         related_name='receipts',
-        verbose_name='Nachricht'
+        verbose_name='Message'
     )
     
     receipt_type = models.CharField(
         max_length=20,
         choices=ReceiptType.choices,
-        verbose_name='Receipt Typ'
+        verbose_name='Receipt Type'
     )
     
-    # Raw Event Data (für Debugging)
+    # Raw event data (for debugging)
     raw_event = models.JSONField(
         default=dict,
         verbose_name='Raw Event',
-        help_text='Original SimpleX Event JSON'
+        help_text='Original SimpleX event JSON'
     )
     
     received_at = models.DateTimeField(auto_now_add=True)
@@ -598,4 +617,4 @@ class DeliveryReceipt(models.Model):
         ordering = ['-received_at']
     
     def __str__(self):
-        return f"{self.get_receipt_type_display()} für {self.message}"
+        return f"{self.get_receipt_type_display()} for {self.message}"
