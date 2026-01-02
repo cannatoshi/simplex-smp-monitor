@@ -618,3 +618,125 @@ class DeliveryReceipt(models.Model):
     
     def __str__(self):
         return f"{self.get_receipt_type_display()} for {self.message}"
+
+class TestRun(models.Model):
+    """
+    A configured test run for measuring message delivery performance.
+    
+    Allows customizable test parameters:
+    - Number of messages
+    - Interval between messages
+    - Recipient selection mode
+    - Message size
+    """
+    
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        RUNNING = 'running', 'Running'
+        COMPLETED = 'completed', 'Completed'
+        CANCELLED = 'cancelled', 'Cancelled'
+        FAILED = 'failed', 'Failed'
+    
+    class RecipientMode(models.TextChoices):
+        ALL = 'all', 'All contacts'
+        RANDOM = 'random', 'Random'
+        ROUND_ROBIN = 'round_robin', 'Round-Robin'
+        SELECTED = 'selected', 'Selected contacts'
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Test identification
+    name = models.CharField(
+        max_length=100,
+        verbose_name='Test Name',
+        help_text='Name for this test run'
+    )
+    
+    # Source client (sender)
+    sender = models.ForeignKey(
+        SimplexClient,
+        on_delete=models.CASCADE,
+        related_name='test_runs',
+        verbose_name='Sender Client'
+    )
+    
+    # === Test Configuration ===
+    message_count = models.IntegerField(
+        default=10,
+        validators=[MinValueValidator(1), MaxValueValidator(1000)],
+        verbose_name='Message Count',
+        help_text='Number of messages to send'
+    )
+    
+    interval_ms = models.IntegerField(
+        default=1000,
+        validators=[MinValueValidator(100), MaxValueValidator(60000)],
+        verbose_name='Interval (ms)',
+        help_text='Pause between messages in milliseconds'
+    )
+    
+    message_size = models.IntegerField(
+        default=50,
+        validators=[MinValueValidator(10), MaxValueValidator(5000)],
+        verbose_name='Message Size',
+        help_text='Approximate message length in characters'
+    )
+    
+    recipient_mode = models.CharField(
+        max_length=20,
+        choices=RecipientMode.choices,
+        default=RecipientMode.ROUND_ROBIN,
+        verbose_name='Recipient Mode'
+    )
+    
+    # Selected recipients (only used when mode = SELECTED)
+    selected_recipients = models.ManyToManyField(
+        SimplexClient,
+        blank=True,
+        related_name='test_runs_as_recipient',
+        verbose_name='Selected Recipients'
+    )
+    
+    # === Status & Progress ===
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        verbose_name='Status'
+    )
+    
+    messages_sent = models.IntegerField(default=0, verbose_name='Messages Sent')
+    messages_delivered = models.IntegerField(default=0, verbose_name='Messages Delivered')
+    messages_failed = models.IntegerField(default=0, verbose_name='Messages Failed')
+    
+    # === Results ===
+    avg_latency_ms = models.FloatField(null=True, blank=True, verbose_name='Avg Latency (ms)')
+    min_latency_ms = models.IntegerField(null=True, blank=True, verbose_name='Min Latency (ms)')
+    max_latency_ms = models.IntegerField(null=True, blank=True, verbose_name='Max Latency (ms)')
+    success_rate = models.FloatField(null=True, blank=True, verbose_name='Success Rate (%)')
+    
+    # === Timestamps ===
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Test Run'
+        verbose_name_plural = 'Test Runs'
+    
+    def __str__(self):
+        return f"{self.name} ({self.sender.name})"
+    
+    @property
+    def progress_percent(self):
+        if self.message_count == 0:
+            return 0
+        return round((self.messages_sent / self.message_count) * 100, 1)
+    
+    @property
+    def duration_seconds(self):
+        if not self.started_at:
+            return None
+        end = self.completed_at or timezone.now()
+        return (end - self.started_at).total_seconds()

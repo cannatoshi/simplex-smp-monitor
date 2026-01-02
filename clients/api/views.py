@@ -24,8 +24,10 @@ from rest_framework.pagination import PageNumberPagination
 from django.db.models import Sum, Q, Avg, Min, Max, Count
 from django.utils import timezone
 
-from clients.models import SimplexClient, ClientConnection, TestMessage
+from clients.models import SimplexClient, ClientConnection, TestMessage, TestRun
 from .serializers import (
+    TestRunSerializer,
+    TestRunCreateSerializer,
     SimplexClientListSerializer,
     SimplexClientDetailSerializer,
     SimplexClientCreateUpdateSerializer,
@@ -678,3 +680,148 @@ class TestMessageViewSet(viewsets.ModelViewSet):
             'message': f'Message deleted.',
             'deleted_id': message_id,
         }, status=status.HTTP_200_OK)
+
+# =============================================================================
+# TEST RUN VIEWSET
+# =============================================================================
+
+class TestRunViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing test runs.
+    
+    Supports:
+    - Creating new test runs with custom configuration
+    - Starting/stopping test runs
+    - Viewing progress and results
+    """
+    
+    queryset = TestRun.objects.all()
+    serializer_class = TestRunSerializer
+    lookup_field = 'id'
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return TestRunCreateSerializer
+        return TestRunSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = TestRunCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        return Response(TestRunSerializer(instance).data, status=201)
+    
+    def get_queryset(self):
+        queryset = TestRun.objects.all()
+        sender = self.request.query_params.get('sender')
+        status = self.request.query_params.get('status')
+        
+        if sender:
+            queryset = queryset.filter(sender__slug=sender)
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        return queryset.order_by('-created_at')
+    
+    @action(detail=True, methods=['post'], url_path='start')
+    def start_test(self, request, id=None):
+        """Start a pending test run"""
+        test_run = self.get_object()
+        
+        if test_run.status != 'pending':
+            return Response(
+                {'error': f'Cannot start test with status: {test_run.status}'},
+                status=400
+            )
+        
+        # Start test in background
+        from ..services.test_runner import TestRunner
+        runner = TestRunner(test_run)
+        runner.start_async()
+        
+        test_run.status = 'running'
+        test_run.started_at = timezone.now()
+        test_run.save()
+        
+        return Response({
+            'success': True,
+            'message': 'Test started',
+            'test_run': TestRunSerializer(test_run).data
+        })
+    
+    @action(detail=True, methods=['post'], url_path='cancel')
+    def cancel_test(self, request, id=None):
+        """Cancel a running test"""
+        test_run = self.get_object()
+        
+        if test_run.status != 'running':
+            return Response(
+                {'error': f'Cannot cancel test with status: {test_run.status}'},
+                status=400
+            )
+        
+        from ..services.test_runner import TestRunner
+        TestRunner.cancel(test_run.id)
+        
+        test_run.status = 'cancelled'
+        test_run.completed_at = timezone.now()
+        test_run.save()
+        
+        return Response({
+            'success': True,
+            'message': 'Test cancelled',
+            'test_run': TestRunSerializer(test_run).data
+        })
+    
+    @action(detail=True, methods=['get'], url_path='results')
+    def results(self, request, id=None):
+        """Get detailed results for a completed test"""
+        test_run = self.get_object()
+        
+        # Get all messages from this test run
+        messages = TestMessage.objects.filter(
+            tracking_id__startswith=f'test_{test_run.id.hex[:8]}'
+        ).order_by('created_at')
+        
+        results = {
+            'test_run': TestRunSerializer(test_run).data,
+            'messages': [],
+            'latency_distribution': {
+                'buckets': [],
+                'counts': [],
+            }
+        }
+        
+        latencies = []
+        for msg in messages:
+            results['messages'].append({
+                'id': str(msg.id),
+                'recipient': msg.recipient.name,
+                'status': msg.delivery_status,
+                'total_latency_ms': msg.total_latency_ms,
+                'latency_to_server_ms': msg.latency_to_server_ms,
+                'latency_to_client_ms': msg.latency_to_client_ms,
+                'sent_at': msg.sent_at.isoformat() if msg.sent_at else None,
+                'delivered_at': msg.client_received_at.isoformat() if msg.client_received_at else None,
+            })
+            if msg.total_latency_ms:
+                latencies.append(msg.total_latency_ms)
+        
+        # Calculate latency distribution
+        if latencies:
+            min_lat = min(latencies)
+            max_lat = max(latencies)
+            bucket_size = max(1, (max_lat - min_lat) // 10)
+            
+            buckets = list(range(min_lat, max_lat + bucket_size, bucket_size))
+            counts = [0] * len(buckets)
+            
+            for lat in latencies:
+                for i, bucket in enumerate(buckets):
+                    if lat < bucket + bucket_size:
+                        counts[i] += 1
+                        break
+            
+            results['latency_distribution']['buckets'] = buckets
+            results['latency_distribution']['counts'] = counts
+        
+        return Response(results)

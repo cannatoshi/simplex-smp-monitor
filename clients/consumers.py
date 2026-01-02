@@ -108,6 +108,17 @@ class ClientUpdateConsumer(AsyncJsonWebsocketConsumer):
             "client_a_slug": event["client_a_slug"],
         })
 
+    async def test_progress(self, event):
+        """Test run progress update"""
+        await self.send_json({
+            "type": "test_progress",
+            "test_run_id": event["test_run_id"],
+            "messages_sent": event["messages_sent"],
+            "messages_delivered": event["messages_delivered"],
+            "messages_failed": event["messages_failed"],
+            "progress_percent": event["progress_percent"],
+        })
+
 
 class ClientDetailConsumer(AsyncJsonWebsocketConsumer):
     """
@@ -214,6 +225,17 @@ class ClientDetailConsumer(AsyncJsonWebsocketConsumer):
             "type": "connection_deleted",
             "connection_id": event["connection_id"],
             "client_a_slug": event["client_a_slug"],
+        })
+
+    async def test_progress(self, event):
+        """Test run progress update"""
+        await self.send_json({
+            "type": "test_progress",
+            "test_run_id": event["test_run_id"],
+            "messages_sent": event["messages_sent"],
+            "messages_delivered": event["messages_delivered"],
+            "messages_failed": event["messages_failed"],
+            "progress_percent": event["progress_percent"],
         })
 
     

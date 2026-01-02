@@ -102,7 +102,7 @@ export function useClientsWebSocket(callbacks?: UseClientsWebSocketCallbacks) {
   const getWsUrl = useCallback(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    const port = import.meta.env?.DEV ? '8000' : window.location.port;
+    const port = (import.meta as any).env?.DEV ? '8000' : window.location.port;
     return `${protocol}//${host}:${port}/ws/clients/`;
   }, []);
 
@@ -225,7 +225,7 @@ export function useClientDetailWebSocket(
     if (!clientSlug) return null;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    const port = import.meta.env?.DEV ? '8000' : window.location.port;
+    const port = (import.meta as any).env?.DEV ? '8000' : window.location.port;
     return `${protocol}//${host}:${port}/ws/clients/${clientSlug}/`;
   }, [clientSlug]);
 

@@ -15,7 +15,7 @@ Contains serializers for:
 """
 
 from rest_framework import serializers
-from clients.models import SimplexClient, ClientConnection, TestMessage
+from clients.models import SimplexClient, ClientConnection, TestMessage, TestRun
 
 
 # =============================================================================
@@ -341,3 +341,42 @@ class ResetResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
     deleted_count = serializers.IntegerField(required=False)
     reset_values = serializers.DictField(required=False)
+
+# =============================================================================
+# TEST RUN SERIALIZERS
+# =============================================================================
+
+class TestRunSerializer(serializers.ModelSerializer):
+    """Serializer for TestRun model"""
+    
+    sender_name = serializers.CharField(source='sender.name', read_only=True)
+    progress_percent = serializers.FloatField(read_only=True)
+    duration_seconds = serializers.FloatField(read_only=True)
+    
+    class Meta:
+        model = TestRun
+        fields = [
+            'id', 'name', 'sender', 'sender_name',
+            'message_count', 'interval_ms', 'message_size',
+            'recipient_mode', 'selected_recipients',
+            'status', 'messages_sent', 'messages_delivered', 'messages_failed',
+            'avg_latency_ms', 'min_latency_ms', 'max_latency_ms', 'success_rate',
+            'progress_percent', 'duration_seconds',
+            'created_at', 'started_at', 'completed_at',
+        ]
+        read_only_fields = [
+            'id', 'status', 'messages_sent', 'messages_delivered', 'messages_failed',
+            'avg_latency_ms', 'min_latency_ms', 'max_latency_ms', 'success_rate',
+            'created_at', 'started_at', 'completed_at',
+        ]
+
+
+class TestRunCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating a new TestRun"""
+    
+    class Meta:
+        model = TestRun
+        fields = [
+            'name', 'sender', 'message_count', 'interval_ms',
+            'message_size', 'recipient_mode', 'selected_recipients',
+        ]
