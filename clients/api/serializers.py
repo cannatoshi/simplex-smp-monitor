@@ -15,7 +15,7 @@ Contains serializers for:
 """
 
 from rest_framework import serializers
-from clients.models import SimplexClient, ClientConnection, TestMessage, TestRun
+from clients.models import SimplexClient, ClientConnection, TestMessage, ClientTestRun as TestRun
 
 
 # =============================================================================
@@ -342,41 +342,97 @@ class ResetResponseSerializer(serializers.Serializer):
     deleted_count = serializers.IntegerField(required=False)
     reset_values = serializers.DictField(required=False)
 
+
 # =============================================================================
 # TEST RUN SERIALIZERS
 # =============================================================================
 
 class TestRunSerializer(serializers.ModelSerializer):
-    """Serializer for TestRun model"""
-    
+    """Serializer for TestRun - full details with extended latency metrics"""
     sender_name = serializers.CharField(source='sender.name', read_only=True)
+    sender_profile = serializers.CharField(source='sender.profile_name', read_only=True)
+    sender_use_tor = serializers.BooleanField(source='sender.use_tor', read_only=True)
     progress_percent = serializers.FloatField(read_only=True)
     duration_seconds = serializers.FloatField(read_only=True)
+    
+    # Extended latency fields
+    avg_latency_to_server_ms = serializers.FloatField(read_only=True)
+    min_latency_to_server_ms = serializers.IntegerField(read_only=True)
+    max_latency_to_server_ms = serializers.IntegerField(read_only=True)
+    avg_latency_to_client_ms = serializers.FloatField(read_only=True)
+    min_latency_to_client_ms = serializers.IntegerField(read_only=True)
+    max_latency_to_client_ms = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = TestRun
         fields = [
-            'id', 'name', 'sender', 'sender_name',
-            'message_count', 'interval_ms', 'message_size',
-            'recipient_mode', 'selected_recipients',
+            'id', 'name', 'sender', 'sender_name', 'sender_profile', 'sender_use_tor',
+            'message_count', 'interval_ms', 'message_size', 'recipient_mode',
             'status', 'messages_sent', 'messages_delivered', 'messages_failed',
-            'avg_latency_ms', 'min_latency_ms', 'max_latency_ms', 'success_rate',
-            'progress_percent', 'duration_seconds',
+            # Total latency
+            'avg_latency_ms', 'min_latency_ms', 'max_latency_ms',
+            # To Server latency
+            'avg_latency_to_server_ms', 'min_latency_to_server_ms', 'max_latency_to_server_ms',
+            # To Client latency
+            'avg_latency_to_client_ms', 'min_latency_to_client_ms', 'max_latency_to_client_ms',
+            # Other fields
+            'success_rate', 'progress_percent', 'duration_seconds',
             'created_at', 'started_at', 'completed_at',
         ]
         read_only_fields = [
             'id', 'status', 'messages_sent', 'messages_delivered', 'messages_failed',
-            'avg_latency_ms', 'min_latency_ms', 'max_latency_ms', 'success_rate',
+            'avg_latency_ms', 'min_latency_ms', 'max_latency_ms',
+            'avg_latency_to_server_ms', 'min_latency_to_server_ms', 'max_latency_to_server_ms',
+            'avg_latency_to_client_ms', 'min_latency_to_client_ms', 'max_latency_to_client_ms',
             'created_at', 'started_at', 'completed_at',
         ]
 
 
 class TestRunCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating a new TestRun"""
+    selected_recipients = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=SimplexClient.objects.all(),
+        required=False
+    )
     
     class Meta:
         model = TestRun
         fields = [
             'name', 'sender', 'message_count', 'interval_ms',
             'message_size', 'recipient_mode', 'selected_recipients',
+        ]
+    
+    def validate(self, data):
+        """Validate test run configuration"""
+        sender = data.get('sender')
+        
+        if sender and sender.status != 'running':
+            raise serializers.ValidationError({
+                'sender': f'Sender client must be running (current: {sender.status})'
+            })
+        
+        recipient_mode = data.get('recipient_mode', 'round_robin')
+        selected = data.get('selected_recipients', [])
+        
+        if recipient_mode == 'selected' and not selected:
+            raise serializers.ValidationError({
+                'selected_recipients': 'At least one recipient must be selected'
+            })
+        
+        return data
+
+
+class TestRunMessageSerializer(serializers.ModelSerializer):
+    """Serializer for test messages within a test run"""
+    recipient_name = serializers.CharField(source='recipient.name', read_only=True)
+    sender_name = serializers.CharField(source='sender.name', read_only=True)
+    
+    class Meta:
+        model = TestMessage
+        fields = [
+            'id', 'tracking_id', 'sender_name', 'recipient_name',
+            'delivery_status', 'sent_at', 'server_received_at', 'client_received_at',
+            'latency_to_server_ms', 'latency_to_client_ms', 'total_latency_ms',
+            'error_message',
         ]

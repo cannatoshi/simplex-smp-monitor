@@ -43,20 +43,10 @@ export default function ClientDetail() {
   const logsEndRef = useRef<HTMLDivElement>(null);
   const [showTestModal, setShowTestModal] = useState(false);
 
-  // Neon Button Style
-  const neonButtonStyle = {
-    backgroundColor: 'rgb(30, 41, 59)',
-    color: neonBlue,
-    border: `1px solid ${neonBlue}`,
-    boxShadow: neonGlow
-  };
-
-// WebSocket für Live-Updates
-  const [lastLatency, setLastLatency] = useState<{latency: number, timestamp: string} | null>(null);
-  
-  const { connectionState, bridgeClients } = useClientDetailWebSocket(client?.slug, {
+  // WebSocket für Live-Updates
+  const { connectionState } = useClientDetailWebSocket(client?.slug, {
     onClientStats: (event) => {
-      if (event.client_slug === client?.slug) {
+      if (client && event.client_slug === client.slug) {
         setClient(prev => prev ? {
           ...prev,
           messages_sent: event.messages_sent,
@@ -65,21 +55,25 @@ export default function ClientDetail() {
       }
     },
     onNewMessage: () => fetchMessages(),
-    onMessageStatus: (event) => {
-      if (event.latency_ms) {
-        setLastLatency({
-          latency: event.latency_ms,
-          timestamp: new Date().toISOString()
-        });
-      }
+    onMessageStatus: () => {
       fetchMessages();
     },
     onConnectionCreated: () => fetchConnections(),
     onConnectionDeleted: () => fetchConnections(),
   });
 
+  // Neon Button Style
+  const neonButtonStyle = {
+    backgroundColor: 'rgb(30, 41, 59)',
+    color: neonBlue,
+    border: `1px solid ${neonBlue}`,
+    boxShadow: neonGlow
+  };
+
+  // Initial Fetch
   useEffect(() => {
     fetchAll();
+    // Reduziertes Polling da WebSocket live updated
     const interval = setInterval(fetchAll, 30000);
     return () => clearInterval(interval);
   }, [id]);
@@ -172,7 +166,7 @@ export default function ClientDetail() {
       else if (action === 'stop') await simplexClientsApi.stop(client.id);
       else await simplexClientsApi.restart(client.id);
       fetchClient();
-    fetchMessages();
+      fetchMessages();
     } finally {
       setActionLoading(null);
     }
@@ -215,7 +209,7 @@ export default function ClientDetail() {
         throw new Error(data.error || 'Connection failed');
       }
       
-      fetchConnections(),
+      fetchConnections();
       fetchMessages();
       fetchAllClients();
     } catch (err) {
@@ -242,7 +236,7 @@ export default function ClientDetail() {
         }
       }
       
-      fetchConnections(),
+      fetchConnections();
       fetchMessages();
       fetchAllClients();
     } catch (err) {
@@ -281,10 +275,20 @@ export default function ClientDetail() {
     fetchMessages();
   };
 
-  // Handler für Reset-Aktionen - aktualisiert alle Daten
+  // Handler für Reset-Aktionen
   const handleResetComplete = () => {
     fetchClient();
     fetchMessages();
+  };
+
+  // WebSocket Status Indicator
+  const getWsStatusColor = () => {
+    switch (connectionState) {
+      case 'connected': return 'bg-emerald-500';
+      case 'connecting': return 'bg-amber-500 animate-pulse';
+      case 'disconnected': return 'bg-slate-500';
+      case 'error': return 'bg-red-500';
+    }
   };
 
   if (loading) {
@@ -345,16 +349,14 @@ export default function ClientDetail() {
                 {client.name} <span className="text-slate-400 font-normal">({client.profile_name})</span>
               </h1>
               <p className="text-slate-500">{client.slug} · Port {client.websocket_port}</p>
-              {/* WebSocket Status */}
-              <div className="flex items-center gap-2 mt-1">
-                <div 
-                  className={`w-2 h-2 rounded-full ${connectionState === 'connecting' ? 'animate-pulse' : ''}`}
-                  style={{ backgroundColor: connectionState === 'connected' ? neonBlue : connectionState === 'connecting' ? neonBlue : '#64748b' }}
-                />
-                <span className="text-xs" style={{ color: connectionState === 'connected' ? neonBlue : '#94a3b8' }}>
-                  {connectionState === 'connected' ? `Live · ${bridgeClients} Bridge` : connectionState}
-                </span>
-              </div>
+            </div>
+            
+            {/* WebSocket Status Badge */}
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-800 rounded-lg border border-slate-700 ml-2">
+              <div className={`w-2 h-2 rounded-full ${getWsStatusColor()}`}></div>
+              <span className="text-xs text-slate-400">
+                {connectionState === 'connected' ? 'Live' : connectionState}
+              </span>
             </div>
           </div>
         </div>
@@ -422,7 +424,7 @@ export default function ClientDetail() {
             </svg>
             {t('common.delete')}
           </button>
-          
+
           {/* Test Run Button */}
           <button
             onClick={() => setShowTestModal(true)}
@@ -430,11 +432,24 @@ export default function ClientDetail() {
             style={neonButtonStyle}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             Test
           </button>
 
+          {/* Test History Button */}
+          <Link
+            to="/test-runs"
+            className="px-3 py-1.5 rounded-lg text-sm font-medium inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+            style={neonButtonStyle}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            History
+          </Link>
+          
           {/* Reset Dropdown */}
           <ResetButtons 
             clientId={client.id} 
@@ -451,7 +466,7 @@ export default function ClientDetail() {
       )}
 
       {/* Stats Cards */}
-      <ClientStats client={client} connectionCount={connections.length} lastLatency={lastLatency} />
+      <ClientStats client={client} connectionCount={connections.length} />
 
       {/* Main Grid */}
       <div className="grid gap-6 lg:grid-cols-3" style={{ alignItems: 'stretch' }}>
@@ -529,6 +544,7 @@ export default function ClientDetail() {
           </p>
         </div>
       </div>
+
       {/* Test Run Modal */}
       <TestRunModal
         isOpen={showTestModal}

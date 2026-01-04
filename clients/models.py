@@ -232,27 +232,44 @@ class SimplexClient(models.Model):
     
     @property
     def avg_latency_ms(self):
-        """Average latency in milliseconds"""
+        """Average latency in milliseconds (only delivered messages, last 24h)"""
+        from datetime import timedelta
+        cutoff = timezone.now() - timedelta(hours=24)
         result = self.sent_messages.filter(
-            total_latency_ms__isnull=False
+            delivery_status='delivered',
+            total_latency_ms__isnull=False,
+            client_received_at__gte=cutoff
         ).aggregate(avg=Avg('total_latency_ms'))
         return result['avg']
     
     @property
     def min_latency_ms(self):
-        """Minimum latency in milliseconds"""
+        """Minimum latency in milliseconds (only delivered messages, last 24h)"""
+        from datetime import timedelta
+        cutoff = timezone.now() - timedelta(hours=24)
         result = self.sent_messages.filter(
-            total_latency_ms__isnull=False
+            delivery_status='delivered',
+            total_latency_ms__isnull=False,
+            client_received_at__gte=cutoff
         ).aggregate(min=Min('total_latency_ms'))
         return result['min']
     
     @property
     def max_latency_ms(self):
-        """Maximum latency in milliseconds"""
+        """Maximum latency in milliseconds (only delivered messages, last 24h)"""
+        from datetime import timedelta
+        cutoff = timezone.now() - timedelta(hours=24)
         result = self.sent_messages.filter(
-            total_latency_ms__isnull=False
+            delivery_status='delivered',
+            total_latency_ms__isnull=False,
+            client_received_at__gte=cutoff
         ).aggregate(max=Max('total_latency_ms'))
         return result['max']
+    
+    @property
+    def messages_delivered(self):
+        """Count of successfully delivered messages"""
+        return self.sent_messages.filter(delivery_status='delivered').count()
     
     @property
     def messages_delivered(self):
@@ -480,13 +497,13 @@ class TestMessage(models.Model):
     # Error info
     error_message = models.TextField(blank=True, verbose_name='Error Message')
     
-    # Optional: Reference to a stress test run
+    # Reference to a client test run
     test_run = models.ForeignKey(
-        'stresstests.TestRun',
+        'clients.ClientTestRun',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='cli_messages',
+        related_name='messages',
         verbose_name='Test Run'
     )
     
@@ -545,23 +562,53 @@ class TestMessage(models.Model):
         return re.sub(r'^\[msg_[a-f0-9]+\]\s*', '', self.content)
     
     def mark_sent(self):
-        """Mark message as received by server (✓)"""
+        """
+        Mark message as received by server (✓)
+        
+        Called when we receive sndSent status from SimpleX.
+        Note: Due to Tor latency, this may arrive AFTER mark_delivered().
+        In that case, we still update the server timestamps but don't change status.
+        """
         now = timezone.now()
-        self.delivery_status = self.DeliveryStatus.SENT
-        self.server_received_at = now
-        if self.sent_at:
-            self.latency_to_server_ms = int((now - self.sent_at).total_seconds() * 1000)
+        
+        # Only update status if not already delivered
+        if self.delivery_status not in [self.DeliveryStatus.DELIVERED, self.DeliveryStatus.FAILED]:
+            self.delivery_status = self.DeliveryStatus.SENT
+        
+        # Always set server timestamp if not already set
+        if not self.server_received_at:
+            self.server_received_at = now
+        
+        # Calculate latency to server
+        if self.sent_at and not self.latency_to_server_ms:
+            self.latency_to_server_ms = int((self.server_received_at - self.sent_at).total_seconds() * 1000)
+        
+        # If already delivered, also calculate to_client latency now that we have server timestamp
+        if self.delivery_status == self.DeliveryStatus.DELIVERED and self.client_received_at:
+            if not self.latency_to_client_ms:
+                self.latency_to_client_ms = int((self.client_received_at - self.server_received_at).total_seconds() * 1000)
+        
         self.save()
     
     def mark_delivered(self):
-        """Mark message as received by client (✓✓)"""
+        """
+        Mark message as received by client (✓✓)
+        
+        Called when we receive newChatItems (recipient) or sndRcvd (sender).
+        Note: server_received_at may not be set yet if sndSent hasn't arrived.
+        """
         now = timezone.now()
         self.delivery_status = self.DeliveryStatus.DELIVERED
         self.client_received_at = now
-        if self.server_received_at:
+        
+        # Calculate latency_to_client only if we have server timestamp
+        if self.server_received_at and not self.latency_to_client_ms:
             self.latency_to_client_ms = int((now - self.server_received_at).total_seconds() * 1000)
+        
+        # Always calculate total latency
         if self.sent_at:
             self.total_latency_ms = int((now - self.sent_at).total_seconds() * 1000)
+        
         self.save()
     
     def mark_failed(self, error: str = ''):
@@ -619,124 +666,283 @@ class DeliveryReceipt(models.Model):
     def __str__(self):
         return f"{self.get_receipt_type_display()} for {self.message}"
 
-class TestRun(models.Model):
+
+# =============================================================================
+# CLIENT TEST RUN MODEL
+# =============================================================================
+
+class ClientTestRun(models.Model):
     """
-    A configured test run for measuring message delivery performance.
+    Client-side quick test for message delivery between SimpleX clients.
     
-    Allows customizable test parameters:
-    - Number of messages
-    - Interval between messages
-    - Recipient selection mode
-    - Message size
+    Used to verify end-to-end connectivity and measure latency metrics:
+    - Total latency (sender → SMP server → recipient)
+    - To-server latency (sender → SMP server)
+    - To-client latency (SMP server → recipient)
+    
+    All latency fields are persisted in DB for fast queries and historical analysis.
     """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('running', 'Running'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+        ('failed', 'Failed'),
+    ]
     
-    class Status(models.TextChoices):
-        PENDING = 'pending', 'Pending'
-        RUNNING = 'running', 'Running'
-        COMPLETED = 'completed', 'Completed'
-        CANCELLED = 'cancelled', 'Cancelled'
-        FAILED = 'failed', 'Failed'
+    RECIPIENT_MODES = [
+        ('round_robin', 'Round Robin'),
+        ('random', 'Random'),
+        ('all', 'All Recipients'),
+        ('selected', 'Selected Only'),
+    ]
     
-    class RecipientMode(models.TextChoices):
-        ALL = 'all', 'All contacts'
-        RANDOM = 'random', 'Random'
-        ROUND_ROBIN = 'round_robin', 'Round-Robin'
-        SELECTED = 'selected', 'Selected contacts'
-    
+    # === Identification ===
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
-    # Test identification
     name = models.CharField(
-        max_length=100,
+        max_length=200,
         verbose_name='Test Name',
-        help_text='Name for this test run'
+        help_text='Display name for this test run'
     )
     
-    # Source client (sender)
+    # === Sender Client ===
     sender = models.ForeignKey(
-        SimplexClient,
+        'SimplexClient',
         on_delete=models.CASCADE,
         related_name='test_runs',
-        verbose_name='Sender Client'
+        verbose_name='Sender Client',
+        help_text='Client that sends the test messages'
     )
     
     # === Test Configuration ===
-    message_count = models.IntegerField(
+    message_count = models.PositiveIntegerField(
         default=10,
-        validators=[MinValueValidator(1), MaxValueValidator(1000)],
-        verbose_name='Message Count',
-        help_text='Number of messages to send'
+        verbose_name='Number of Messages',
+        help_text='Total messages to send in this test'
     )
-    
-    interval_ms = models.IntegerField(
+    interval_ms = models.PositiveIntegerField(
         default=1000,
-        validators=[MinValueValidator(100), MaxValueValidator(60000)],
         verbose_name='Interval (ms)',
-        help_text='Pause between messages in milliseconds'
+        help_text='Delay between messages in milliseconds'
     )
-    
-    message_size = models.IntegerField(
+    message_size = models.PositiveIntegerField(
         default=50,
-        validators=[MinValueValidator(10), MaxValueValidator(5000)],
-        verbose_name='Message Size',
-        help_text='Approximate message length in characters'
+        verbose_name='Message Size (chars)',
+        help_text='Size of each test message in characters'
     )
-    
     recipient_mode = models.CharField(
         max_length=20,
-        choices=RecipientMode.choices,
-        default=RecipientMode.ROUND_ROBIN,
-        verbose_name='Recipient Mode'
+        choices=RECIPIENT_MODES,
+        default='round_robin',
+        verbose_name='Recipient Mode',
+        help_text='How to select recipients for each message'
     )
-    
-    # Selected recipients (only used when mode = SELECTED)
     selected_recipients = models.ManyToManyField(
-        SimplexClient,
+        'SimplexClient',
         blank=True,
-        related_name='test_runs_as_recipient',
-        verbose_name='Selected Recipients'
+        related_name='selected_for_tests',
+        verbose_name='Selected Recipients',
+        help_text='Specific recipients (only for "selected" mode)'
     )
     
-    # === Status & Progress ===
+    # === Status & Counters ===
     status = models.CharField(
         max_length=20,
-        choices=Status.choices,
-        default=Status.PENDING,
+        choices=STATUS_CHOICES,
+        default='pending',
         verbose_name='Status'
     )
+    messages_sent = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Messages Sent',
+        help_text='Number of messages sent so far'
+    )
+    messages_delivered = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Messages Delivered',
+        help_text='Number of messages confirmed delivered'
+    )
+    messages_failed = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Messages Failed',
+        help_text='Number of messages that failed to deliver'
+    )
+    error_message = models.TextField(
+        blank=True,
+        verbose_name='Error Message',
+        help_text='Error details if test failed'
+    )
     
-    messages_sent = models.IntegerField(default=0, verbose_name='Messages Sent')
-    messages_delivered = models.IntegerField(default=0, verbose_name='Messages Delivered')
-    messages_failed = models.IntegerField(default=0, verbose_name='Messages Failed')
+    # === Latency: Total (End-to-End) ===
+    avg_latency_ms = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='Avg Total Latency (ms)',
+        help_text='Average end-to-end latency in milliseconds'
+    )
+    min_latency_ms = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Min Total Latency (ms)',
+        help_text='Minimum end-to-end latency in milliseconds'
+    )
+    max_latency_ms = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Max Total Latency (ms)',
+        help_text='Maximum end-to-end latency in milliseconds'
+    )
     
-    # === Results ===
-    avg_latency_ms = models.FloatField(null=True, blank=True, verbose_name='Avg Latency (ms)')
-    min_latency_ms = models.IntegerField(null=True, blank=True, verbose_name='Min Latency (ms)')
-    max_latency_ms = models.IntegerField(null=True, blank=True, verbose_name='Max Latency (ms)')
-    success_rate = models.FloatField(null=True, blank=True, verbose_name='Success Rate (%)')
+    # === Latency: To Server (Client → SMP Server) ===
+    avg_latency_to_server_ms = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='Avg To-Server Latency (ms)',
+        help_text='Average latency from sender to SMP server'
+    )
+    min_latency_to_server_ms = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Min To-Server Latency (ms)',
+        help_text='Minimum latency from sender to SMP server'
+    )
+    max_latency_to_server_ms = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Max To-Server Latency (ms)',
+        help_text='Maximum latency from sender to SMP server'
+    )
+    
+    # === Latency: To Client (SMP Server → Recipient) ===
+    avg_latency_to_client_ms = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='Avg To-Client Latency (ms)',
+        help_text='Average latency from SMP server to recipient'
+    )
+    min_latency_to_client_ms = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Min To-Client Latency (ms)',
+        help_text='Minimum latency from SMP server to recipient'
+    )
+    max_latency_to_client_ms = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Max To-Client Latency (ms)',
+        help_text='Maximum latency from SMP server to recipient'
+    )
     
     # === Timestamps ===
-    created_at = models.DateTimeField(auto_now_add=True)
-    started_at = models.DateTimeField(null=True, blank=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Created At'
+    )
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Started At',
+        help_text='When the test execution started'
+    )
+    completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Completed At',
+        help_text='When the test finished (success, failed, or cancelled)'
+    )
     
     class Meta:
+        verbose_name = 'Client Test Run'
+        verbose_name_plural = 'Client Test Runs'
         ordering = ['-created_at']
-        verbose_name = 'Test Run'
-        verbose_name_plural = 'Test Runs'
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['status']),
+            models.Index(fields=['sender', '-created_at']),
+        ]
     
     def __str__(self):
-        return f"{self.name} ({self.sender.name})"
+        return f"{self.name} ({self.sender.name}) - {self.status}"
+    
+    # ==========================================================================
+    # COMPUTED PROPERTIES
+    # ==========================================================================
     
     @property
     def progress_percent(self):
+        """Progress as percentage (0-100)"""
         if self.message_count == 0:
             return 0
         return round((self.messages_sent / self.message_count) * 100, 1)
     
     @property
+    def success_rate(self):
+        """Delivery success rate as percentage"""
+        if self.messages_sent == 0:
+            return None
+        return round((self.messages_delivered / self.messages_sent) * 100, 1)
+    
+    @property
     def duration_seconds(self):
+        """Test duration in seconds"""
         if not self.started_at:
             return None
-        end = self.completed_at or timezone.now()
-        return (end - self.started_at).total_seconds()
+        end_time = self.completed_at or timezone.now()
+        return (end_time - self.started_at).total_seconds()
+    
+    # ==========================================================================
+    # LATENCY CALCULATION METHOD
+    # ==========================================================================
+    
+    def update_latency_stats(self):
+        """
+        Calculate and save latency statistics from related messages.
+        Called by test runner after test completion.
+        """
+        delivered_msgs = self.messages.filter(delivery_status='delivered')
+        
+        # Total latency (end-to-end)
+        total_stats = delivered_msgs.filter(
+            total_latency_ms__isnull=False
+        ).aggregate(
+            avg=Avg('total_latency_ms'),
+            min=Min('total_latency_ms'),
+            max=Max('total_latency_ms')
+        )
+        self.avg_latency_ms = total_stats['avg']
+        self.min_latency_ms = total_stats['min']
+        self.max_latency_ms = total_stats['max']
+        
+        # To-server latency
+        server_stats = delivered_msgs.filter(
+            latency_to_server_ms__isnull=False
+        ).aggregate(
+            avg=Avg('latency_to_server_ms'),
+            min=Min('latency_to_server_ms'),
+            max=Max('latency_to_server_ms')
+        )
+        self.avg_latency_to_server_ms = server_stats['avg']
+        self.min_latency_to_server_ms = server_stats['min']
+        self.max_latency_to_server_ms = server_stats['max']
+        
+        # To-client latency
+        client_stats = delivered_msgs.filter(
+            latency_to_client_ms__isnull=False
+        ).aggregate(
+            avg=Avg('latency_to_client_ms'),
+            min=Min('latency_to_client_ms'),
+            max=Max('latency_to_client_ms')
+        )
+        self.avg_latency_to_client_ms = client_stats['avg']
+        self.min_latency_to_client_ms = client_stats['min']
+        self.max_latency_to_client_ms = client_stats['max']
+        
+        self.save(update_fields=[
+            'avg_latency_ms', 'min_latency_ms', 'max_latency_ms',
+            'avg_latency_to_server_ms', 'min_latency_to_server_ms', 'max_latency_to_server_ms',
+            'avg_latency_to_client_ms', 'min_latency_to_client_ms', 'max_latency_to_client_ms',
+        ])
+
+
+# Alias for backwards compatibility with serializers
+TestRun = ClientTestRun

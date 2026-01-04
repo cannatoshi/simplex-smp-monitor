@@ -512,7 +512,7 @@ export const simplexClientsApi = {
   
   connections: (id: string) => apiFetch<ClientConnection[]>(`/clients/${id}/connections/`),
   
-  stats: () => apiFetch<ClientStats>('/clients-stats/'),
+  stats: () => apiFetch<ClientStats>('/clients/stats/'),
   
   // Latency endpoints
   latencyHistory: (id: string, params?: LatencyHistoryParams) => {

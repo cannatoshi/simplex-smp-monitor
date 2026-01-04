@@ -10,6 +10,7 @@ import Clients from './pages/Clients';
 import ClientDetail from './pages/ClientDetail';
 import ClientForm from './pages/ClientForm';
 import Categories from './pages/Categories';
+import TestRunHistory from './pages/TestRunHistory';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="servers/:id/edit" element={<ServerForm />} />
         <Route path="servers/categories" element={<Categories />} />
         <Route path="tests" element={<Tests />} />
+        <Route path="test-runs" element={<TestRunHistory />} />
         <Route path="events" element={<Events />} />
         <Route path="clients" element={<Clients />} />
         <Route path="clients/new" element={<ClientForm />} />

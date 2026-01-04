@@ -34,7 +34,10 @@ logger = logging.getLogger(__name__)
 
 # Regex pattern to extract tracking ID from message content
 # Matches: [msg_a1b2c3d4e5f6] at the start of a message
-TRACKING_ID_PATTERN = re.compile(r'^\[msg_([a-f0-9]{12})\]\s*')
+# Pattern for tracking IDs in messages:
+# - Test messages: [test_0d52e84a_0000] (test_<uuid8>_<sequence>)
+# - Regular messages: [msg_a1b2c3d4e5f6] (msg_<uuid12>)
+TRACKING_ID_PATTERN = re.compile(r'^\[(test_[a-f0-9]{8}_\d{4}|msg_[a-f0-9]{12})\]\s*')
 
 
 class SimplexEventBridge:
@@ -268,17 +271,13 @@ class SimplexEventBridge:
             # Push updates to browser
             await self._push_new_message_event(client['slug'], sender_name, text)
             await self._push_stats_update(client['slug'])
-            
-            # Push latency update to browser
-            if latency is not None:
-                await self._push_message_status_event(tracking_id, "delivered", latency)
     
     async def _handle_status_update(self, client: dict, resp: dict):
         """
         Handles chatItemsStatusesUpdated events - delivery receipts.
         
-        This is triggered on the SENDER side when their message is delivered.
-        Status flow: sndNew → sndSent → sndRcvd/sndRead
+        This is triggered on the SENDER side when their message status changes.
+        Status flow: sndNew → sndSent (server ACK) → sndRcvd/sndRead (client ACK)
         
         Args:
             client: The sender client
@@ -292,10 +291,6 @@ class SimplexEventBridge:
             item_status = meta.get('itemStatus', {})
             status_type = item_status.get('type', '')
             
-            # Only process delivery confirmations
-            if status_type not in ['sndRcvd', 'sndRead']:
-                continue
-            
             # Extract message content
             content = chat_item.get('content', {})
             msg_content = content.get('msgContent', {})
@@ -304,10 +299,25 @@ class SimplexEventBridge:
             if not text:
                 continue
             
-            logger.info(f"✓✓ {client['name']} delivery confirmed: \"{text[:50]}...\"")
+            # Extract tracking ID
+            tracking_id = self._extract_tracking_id(text)
+            
+            # Handle server acknowledgment (sndSent = server received the message)
+            if status_type == 'sndSent':
+                logger.info(f"✓ {client['name']} → server: \"{text[:40]}...\"")
+                if tracking_id:
+                    latency = await self._mark_message_sent_by_tracking_id(tracking_id)
+                    if latency is not None:
+                        logger.info(f"  ✓ Server ACK (tracking: {tracking_id}, latency: {latency}ms)")
+                continue
+            
+            # Handle client acknowledgment (sndRcvd/sndRead = recipient received/read)
+            if status_type not in ['sndRcvd', 'sndRead']:
+                continue
+            
+            logger.info(f"✓✓ {client['name']} delivery confirmed: \"{text[:40]}...\"")
             
             # Try to find and update the TestMessage
-            tracking_id = self._extract_tracking_id(text)
             latency = None
             
             if tracking_id:
@@ -328,14 +338,14 @@ class SimplexEventBridge:
         Extracts tracking ID from message content.
         
         Args:
-            text: Message content, e.g. "[msg_a1b2c3d4e5f6] Hello World"
+            text: Message content, e.g. "[test_0d52e84a_0000] Hello" or "[msg_a1b2c3d4e5f6] Hello"
             
         Returns:
-            Tracking ID (e.g. "msg_a1b2c3d4e5f6") or None if not found
+            Tracking ID (e.g. "test_0d52e84a_0000" or "msg_a1b2c3d4e5f6") or None if not found
         """
         match = TRACKING_ID_PATTERN.match(text)
         if match:
-            return f"msg_{match.group(1)}"
+            return match.group(1)  # Return the full tracking ID
         return None
     
     # =========================================================================
@@ -359,6 +369,39 @@ class SimplexEventBridge:
             messages_received=F('messages_received') + 1,
             last_active_at=timezone.now()
         )
+    
+    @sync_to_async
+    def _mark_message_sent_by_tracking_id(self, tracking_id: str) -> Optional[int]:
+        """
+        Find and mark a message as sent (server received) using tracking ID.
+        
+        This is called when we receive the sndSent status update, indicating
+        the SMP server has acknowledged receipt of the message.
+        
+        Note: Due to Tor latency, this may arrive AFTER the message is already
+        delivered. In that case, we still update the server timestamp.
+        
+        Args:
+            tracking_id: The unique tracking ID (e.g. "test_0d52e84a_0000")
+            
+        Returns:
+            Latency to server in ms, or None if message not found
+        """
+        from clients.models import TestMessage
+        
+        try:
+            # Accept sending, sent, OR delivered status (out-of-order events)
+            msg = TestMessage.objects.get(
+                tracking_id=tracking_id,
+                delivery_status__in=['sending', 'sent', 'delivered']
+            )
+            msg.mark_sent()
+            return msg.latency_to_server_ms
+        except TestMessage.DoesNotExist:
+            return None
+        except TestMessage.MultipleObjectsReturned:
+            logger.warning(f"Multiple messages with tracking_id {tracking_id}")
+            return None
     
     @sync_to_async
     def _mark_message_delivered_by_tracking_id(self, tracking_id: str) -> Optional[int]:
