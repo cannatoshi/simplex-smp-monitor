@@ -30,7 +30,7 @@ RUN useradd -r -s /bin/false -d /var/opt/simplex simplex \
     && chown -R simplex:simplex /etc/opt/simplex /var/opt/simplex /var/log/simplex
 
 # Copy entrypoint
-COPY docker/smp-entrypoint.sh /entrypoint.sh
+COPY smp-entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Expose SMP port
