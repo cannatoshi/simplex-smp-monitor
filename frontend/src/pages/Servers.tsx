@@ -4,9 +4,30 @@ import { Link } from 'react-router-dom';
 import { useServers, useCategories } from '../hooks/useApi';
 import { serversApi, Server, Category } from '../api/client';
 
-// Neon Blue
+// Neon Blue Design System
 const neonBlue = '#88CED0';
 const neonGlow = '0 0 8px rgba(136, 206, 208, 0.4)';
+
+// Docker Status Badge Component
+function DockerStatusBadge({ status }: { status: string }) {
+  const statusConfig: Record<string, { bg: string; text: string; icon: string }> = {
+    not_created: { bg: 'bg-slate-700/50', text: 'text-slate-400', icon: '⚪' },
+    created: { bg: 'bg-blue-900/30', text: 'text-blue-400', icon: '🔵' },
+    starting: { bg: 'bg-yellow-900/30', text: 'text-yellow-400', icon: '🟡' },
+    running: { bg: 'bg-green-900/30', text: 'text-green-400', icon: '🟢' },
+    stopping: { bg: 'bg-yellow-900/30', text: 'text-yellow-400', icon: '🟡' },
+    stopped: { bg: 'bg-red-900/30', text: 'text-red-400', icon: '🔴' },
+    error: { bg: 'bg-red-900/30', text: 'text-red-400', icon: '❌' },
+  };
+  
+  const config = statusConfig[status] || statusConfig.not_created;
+  
+  return (
+    <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${config.bg} ${config.text}`}>
+      {config.icon}
+    </span>
+  );
+}
 
 export default function Servers() {
   const { t } = useTranslation();
@@ -140,11 +161,35 @@ export default function Servers() {
     return `${days} Tag${days > 1 ? 'en' : ''} ago`;
   };
 
+  // Get effective host display
+  const getHostDisplay = (server: Server) => {
+    if (server.is_docker_hosted) {
+      if (server.hosting_mode === 'tor' && server.onion_address) {
+        return server.onion_address;
+      }
+      if (server.generated_address) {
+        // Extract host from generated address
+        const match = server.generated_address.match(/@([^:]+)/);
+        if (match) return `${match[1]}:${server.exposed_port || 5223}`;
+      }
+      return server.docker_status === 'running' ? 'Starting...' : 'Not started';
+    }
+    return server.host;
+  };
+
+  // Get effective fingerprint display
+  const getFingerprintDisplay = (server: Server) => {
+    if (server.is_docker_hosted && server.generated_fingerprint) {
+      return server.generated_fingerprint;
+    }
+    return server.fingerprint || '-';
+  };
+
   const activeCategory = categories.find((c: { id: number }) => c.id === categoryFilter);
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header - TITEL IN NEON BLUE */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h1 className="text-2xl font-bold" style={{ color: neonBlue }}>{t('servers.subtitle')}</h1>
         <div className="flex items-center space-x-3">
@@ -235,7 +280,7 @@ export default function Servers() {
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, server.id)}
               onDragEnd={handleDragEnd}
-              className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all ${draggedId === server.id ? 'opacity-50' : ''}`}
+              className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all flex flex-col ${draggedId === server.id ? 'opacity-50' : ''}`}
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
@@ -248,15 +293,47 @@ export default function Servers() {
                   <div className="min-w-0">
                     <h3 className="text-white font-semibold truncate">{server.name}</h3>
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-900/30 text-blue-400 font-medium">{server.server_type.toUpperCase()}</span>
-                      {server.is_onion && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-900/30 text-purple-400 font-medium">🧅 ONION</span>}
+                      {/* Server Type Badge */}
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-900/30 text-blue-400 font-medium">
+                        {server.server_type.toUpperCase()}
+                      </span>
+                      
+                      {/* Hosting Mode Badge */}
+                      {server.is_docker_hosted ? (
+                        server.hosting_mode === 'tor' || server.is_onion ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-900/30 text-purple-400 font-medium">
+                            🧅 ONION
+                          </span>
+                        ) : (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-900/30 text-cyan-400 font-medium">
+                            🏠 LAN
+                          </span>
+                        )
+                      ) : server.is_onion ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-900/30 text-purple-400 font-medium">
+                          🧅 ONION
+                        </span>
+                      ) : null}
+                      
+                      {/* Docker Badge with Status */}
+                      {server.is_docker_hosted && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-300 font-medium inline-flex items-center space-x-1">
+                          <span>🐳</span>
+                          <DockerStatusBadge status={server.docker_status || 'not_created'} />
+                        </span>
+                      )}
+                      
+                      {/* Categories */}
                       {server.categories?.map((cat: Category) => (
-                        <span key={cat.id} className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${cat.color}20`, color: cat.color }}>{cat.name}</span>
+                        <span key={cat.id} className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${cat.color}20`, color: cat.color }}>
+                          {cat.name}
+                        </span>
                       ))}
                     </div>
                   </div>
                 </div>
-                {/* Active Toggle - NEON BLUE statt primary */}
+                
+                {/* Active Toggle */}
                 <button onClick={() => handleToggleActive(server)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Active">
                   {server.is_active ? (
                     <span className="flex h-3 w-3 relative">
@@ -275,38 +352,51 @@ export default function Servers() {
                 </button>
               </div>
 
-              {/* Server Info */}
-              <div className="space-y-2 text-sm">
+              {/* Server Info - Fixed Height for Consistency */}
+              <div className="space-y-2 text-sm flex-grow">
+                {/* Host */}
                 <div>
                   <span className="text-slate-600 dark:text-slate-400 text-xs">Host</span>
-                  <p className="font-mono text-xs text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded truncate">{server.host}</p>
+                  <p className="font-mono text-xs text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded truncate">
+                    {getHostDisplay(server)}
+                  </p>
                 </div>
+                
+                {/* Fingerprint */}
                 <div>
                   <span className="text-slate-600 dark:text-slate-400 text-xs">Fingerprint</span>
-                  <p className="font-mono text-xs text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded truncate">{server.fingerprint || '-'}</p>
+                  <p className="font-mono text-xs text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded truncate">
+                    {getFingerprintDisplay(server)}
+                  </p>
                 </div>
-                {server.password && (
-                  <div>
-                    <span className="text-slate-600 dark:text-slate-400 text-xs">Password</span>
-                    <div className="flex items-center space-x-2">
-                      <p className="flex-1 font-mono text-xs text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded truncate">
-                        {showPasswords[server.id] ? server.password : '••••••••'}
-                      </p>
+                
+                {/* Password - ALWAYS SHOWN */}
+                <div>
+                  <span className="text-slate-600 dark:text-slate-400 text-xs">Password</span>
+                  <div className="flex items-center space-x-2">
+                    <p className="flex-1 font-mono text-xs text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded truncate">
+                      {server.password ? (
+                        showPasswords[server.id] ? server.password : '••••••••'
+                      ) : (
+                        <span className="text-slate-500">—</span>
+                      )}
+                    </p>
+                    {server.password && (
                       <button onClick={() => togglePassword(server.id)} className="p-1 text-slate-600 dark:text-slate-400 hover:text-slate-200">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showPasswords[server.id] ? "M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" : "M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"}/>
                         </svg>
                       </button>
-                    </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Status Bar */}
               <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    {/* Online Status - NEON BLUE */}
+                    {/* Online Status */}
                     {server.last_status === 'online' ? (
                       <>
                         <span 
@@ -346,7 +436,7 @@ export default function Servers() {
                   </button>
                 </div>
                 
-                {/* Actions - Details in NEON BLUE */}
+                {/* Actions */}
                 <div className="flex items-center justify-end space-x-3 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 text-sm">
                   <Link 
                     to={`/servers/${server.id}`} 

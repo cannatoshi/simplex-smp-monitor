@@ -131,6 +131,18 @@ REST_FRAMEWORK = {
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOW_CREDENTIALS = True
 
+# =============================================================================
+# CSRF Trusted Origins (für React Dev Server)
+# =============================================================================
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+    'http://192.168.1.146:3001',  # Deine lokale IP
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://192.168.1.146:8000',
+]
+
 # Logging
 LOGGING = {
     'version': 1,

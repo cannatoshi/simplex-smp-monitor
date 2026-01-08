@@ -10,6 +10,7 @@
  * - API client functions for all endpoints
  * - Dashboard, Servers, Categories, Tests, Events
  * - SimpleX Clients with latency history and reset actions
+ * - Docker hosting support for servers (NEW in v0.1.12)
  */
 
 const API_BASE = '/api/v1';
@@ -33,7 +34,26 @@ async function apiFetch<T>(
   });
 
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    // Try to get error details from response body
+    let errorMessage = `API Error: ${response.status} ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      if (errorData.detail) {
+        errorMessage = errorData.detail;
+      } else if (errorData.error) {
+        errorMessage = errorData.error;
+      } else if (errorData.name) {
+        // Django validation errors often come as field: [errors]
+        errorMessage = Object.entries(errorData)
+          .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+          .join('; ');
+      } else if (typeof errorData === 'string') {
+        errorMessage = errorData;
+      }
+    } catch {
+      // Could not parse JSON, use default message
+    }
+    throw new Error(errorMessage);
   }
   
   const text = await response.text();
@@ -108,10 +128,26 @@ export interface Category {
   updated_at: string;
 }
 
+// Server type options - NOW INCLUDES 'ntf'
+export type ServerType = 'smp' | 'xftp' | 'ntf';
+
+// Hosting mode options (NEW)
+export type HostingMode = 'ip' | 'tor';
+
+// Docker status options (NEW)
+export type DockerStatus = 
+  | 'not_created' 
+  | 'created' 
+  | 'starting' 
+  | 'running' 
+  | 'stopping' 
+  | 'stopped' 
+  | 'error';
+
 export interface Server {
   id: number;
   name: string;
-  server_type: 'smp' | 'xftp';
+  server_type: ServerType;  // Updated to include 'ntf'
   address?: string;
   host: string;
   fingerprint: string;
@@ -130,15 +166,46 @@ export interface Server {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  
+  // ==========================================================================
+  // Docker Hosting Fields (v0.1.12)
+  // ==========================================================================
+  is_docker_hosted?: boolean;
+  docker_status?: DockerStatus;
+  docker_status_display?: string;
+  docker_error?: string;
+  container_id?: string;
+  container_name?: string;
+  data_volume?: string;
+  config_volume?: string;
+  exposed_port?: number;
+  generated_fingerprint?: string;
+  generated_address?: string;
+  effective_address?: string;
+  is_docker_running?: boolean;
+  docker_image_name?: string;
+  default_internal_port?: number;
+  
+  // ==========================================================================
+  // Hosting Mode Fields (NEW v0.1.13)
+  // ==========================================================================
+  hosting_mode?: HostingMode;
+  hosting_mode_display?: string;
+  host_ip?: string;
+  onion_address?: string;
+  is_tor_hosted?: boolean;
+  effective_host?: string;
 }
 
 export interface ServerFilters {
-  type?: 'smp' | 'xftp';
+  type?: ServerType;
   status?: string;
   active?: boolean;
   maintenance?: boolean;
   category?: number;
   onion?: boolean;
+  is_docker_hosted?: boolean;  // NEW
+  docker_status?: DockerStatus;  // NEW
 }
 
 export interface ServerListResponse {
@@ -153,6 +220,61 @@ export interface CategoryListResponse {
   next: string | null;
   previous: string | null;
   results: Category[];
+}
+
+// =============================================================================
+// NEW: Docker Action Types (v0.1.12)
+// =============================================================================
+
+export type DockerAction = 'start' | 'stop' | 'restart' | 'delete';
+
+export interface DockerActionRequest {
+  action: DockerAction;
+  remove_volumes?: boolean;
+}
+
+export interface DockerActionResponse {
+  success: boolean;
+  message: string;
+  docker_status: DockerStatus;
+  docker_status_display: string;
+  generated_address?: string;
+}
+
+export interface DockerLogsResponse {
+  logs: string;
+  container_name: string;
+  container_status: string;
+}
+
+export interface DockerImageModeStatus {
+  ip: boolean;
+  tor: boolean;
+}
+
+export interface DockerImagesStatus {
+  smp: DockerImageModeStatus;
+  xftp: DockerImageModeStatus;
+  ntf: DockerImageModeStatus;
+}
+
+export interface DockerContainer {
+  id: string;
+  name: string;
+  status: string;
+  server_type: string;
+  server_name: string;
+  hosting_mode?: string;  // NEW
+}
+
+export interface DockerContainersResponse {
+  containers: DockerContainer[];
+  count: number;
+}
+
+export interface CleanupOrphanedResponse {
+  removed: number;
+  message: string;
 }
 
 // =============================================================================
@@ -392,18 +514,21 @@ export const dashboardApi = {
 };
 
 // =============================================================================
-// SERVERS API
+// SERVERS API (Extended with Docker support)
 // =============================================================================
 
 export const serversApi = {
+  // Standard CRUD
   list: (filters?: ServerFilters) => {
     const params = new URLSearchParams();
-    if (filters?.type) params.set('type', filters.type);
+    if (filters?.type) params.set('server_type', filters.type);
     if (filters?.status) params.set('status', filters.status);
-    if (filters?.active !== undefined) params.set('active', String(filters.active));
-    if (filters?.maintenance !== undefined) params.set('maintenance', String(filters.maintenance));
+    if (filters?.active !== undefined) params.set('is_active', String(filters.active));
+    if (filters?.maintenance !== undefined) params.set('maintenance_mode', String(filters.maintenance));
     if (filters?.category) params.set('category', String(filters.category));
     if (filters?.onion) params.set('onion', String(filters.onion));
+    if (filters?.is_docker_hosted !== undefined) params.set('is_docker_hosted', String(filters.is_docker_hosted));
+    if (filters?.docker_status) params.set('docker_status', filters.docker_status);
     const query = params.toString();
     return apiFetch<ServerListResponse>(`/servers/${query ? `?${query}` : ''}`);
   },
@@ -420,6 +545,11 @@ export const serversApi = {
     body: JSON.stringify(data),
   }),
   
+  patch: (id: number, data: Partial<Server>) => apiFetch<Server>(`/servers/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }),
+  
   delete: (id: number) => apiFetch<void>(`/servers/${id}/`, { method: 'DELETE' }),
   
   test: (id: number) => apiFetch<{ status: string; message: string }>(`/servers/${id}/test/`, { method: 'POST' }),
@@ -427,6 +557,53 @@ export const serversApi = {
   toggleActive: (id: number) => apiFetch<{ id: number; is_active: boolean }>(`/servers/${id}/toggle_active/`, { method: 'POST' }),
   
   toggleMaintenance: (id: number) => apiFetch<{ id: number; maintenance_mode: boolean }>(`/servers/${id}/toggle_maintenance/`, { method: 'POST' }),
+  
+  // ==========================================================================
+  // NEW: Docker Actions (v0.1.12)
+  // ==========================================================================
+  
+  /**
+   * Perform Docker container action (start/stop/restart/delete)
+   */
+  dockerAction: (id: number, action: DockerAction, removeVolumes = false) => 
+    apiFetch<DockerActionResponse>(`/servers/${id}/docker-action/`, {
+      method: 'POST',
+      body: JSON.stringify({ action, remove_volumes: removeVolumes }),
+    }),
+  
+  /**
+   * Get container logs
+   */
+  dockerLogs: (id: number, tail = 100, timestamps = true) =>
+    apiFetch<DockerLogsResponse>(`/servers/${id}/logs/?tail=${tail}&timestamps=${timestamps}`),
+  
+  /**
+   * Sync Docker status with actual container state
+   */
+  syncDockerStatus: (id: number) =>
+    apiFetch<{ docker_status: DockerStatus; docker_status_display: string }>(`/servers/${id}/sync-status/`, {
+      method: 'POST',
+    }),
+  
+  /**
+   * Check which Docker images are available
+   */
+  checkDockerImages: () =>
+    apiFetch<DockerImagesStatus>('/servers/docker-images/'),
+  
+  /**
+   * List all managed Docker containers
+   */
+  listDockerContainers: () =>
+    apiFetch<DockerContainersResponse>('/servers/docker-containers/'),
+  
+  /**
+   * Remove orphaned Docker containers
+   */
+  cleanupOrphanedContainers: () =>
+    apiFetch<CleanupOrphanedResponse>('/servers/cleanup-orphaned/', {
+      method: 'POST',
+    }),
 };
 
 // =============================================================================
