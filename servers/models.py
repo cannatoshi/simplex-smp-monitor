@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 import re
 
 
@@ -33,21 +34,139 @@ class Category(models.Model):
 
 
 class Server(models.Model):
-    """SMP/XFTP Server Configuration"""
-    SERVER_TYPES = [('smp', 'SMP'), ('xftp', 'XFTP')]
+    """SMP/XFTP Server Configuration - supports both external and Docker-hosted servers"""
+    
+    SERVER_TYPES = [('smp', 'SMP'), ('xftp', 'XFTP'), ('ntf', 'NTF')]
     STATUS_CHOICES = [
         ('unknown', 'Unknown'),
         ('online', 'Online'),
         ('offline', 'Offline'),
         ('error', 'Error'),
     ]
+    
+    # === Docker Status Choices (analog zu SimplexClient) ===
+    class DockerStatus(models.TextChoices):
+        NOT_CREATED = 'not_created', 'Not Created'
+        CREATED = 'created', 'Created'
+        STARTING = 'starting', 'Starting...'
+        RUNNING = 'running', 'Running'
+        STOPPING = 'stopping', 'Stopping...'
+        STOPPED = 'stopped', 'Stopped'
+        ERROR = 'error', 'Error'
 
     # === Basic Info ===
     name = models.CharField(max_length=100)
     server_type = models.CharField(max_length=10, choices=SERVER_TYPES, default='smp')
-    address = models.TextField(help_text="Full smp://... or xftp://... URL")
+    address = models.TextField(
+        blank=True,  # CHANGED: Now optional for Docker-hosted servers
+        help_text="Full smp://... or xftp://... URL (auto-generated for Docker servers)"
+    )
     description = models.TextField(blank=True, help_text="Notes about this server")
     location = models.CharField(max_length=100, blank=True, help_text="Physical location")
+    
+    # ==========================================================================
+    # NEW: Docker Hosting Configuration
+    # ==========================================================================
+    is_docker_hosted = models.BooleanField(
+        default=False,
+        verbose_name='Docker Hosted',
+        help_text='Run this server locally in a Docker container'
+    )
+    
+    # Hosting Mode (IP or Tor)
+    class HostingMode(models.TextChoices):
+        IP = 'ip', 'IP Address (LAN)'
+        TOR = 'tor', 'Tor Hidden Service (.onion)'
+    
+    hosting_mode = models.CharField(
+        max_length=10,
+        choices=HostingMode.choices,
+        default=HostingMode.IP,
+        verbose_name='Hosting Mode',
+        help_text='How the server should be accessible'
+    )
+    
+    # For IP mode - which IP to bind/advertise
+    host_ip = models.CharField(
+        max_length=45,  # IPv6 max length
+        blank=True,
+        default='0.0.0.0',
+        verbose_name='Host IP',
+        help_text='IP address for server certificate (use host IP for LAN access)'
+    )
+    
+    # For Tor mode - generated .onion address
+    onion_address = models.CharField(
+        max_length=62,  # v3 onion = 56 chars + .onion
+        blank=True,
+        verbose_name='Onion Address',
+        help_text='Tor hidden service address (auto-generated)'
+    )
+    
+    # Docker Container Info
+    container_id = models.CharField(
+        max_length=64,
+        blank=True,
+        verbose_name='Container ID',
+        help_text='Docker container ID (set automatically)'
+    )
+    container_name = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Container Name',
+        help_text='Docker container name (generated automatically)'
+    )
+    data_volume = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Data Volume',
+        help_text='Docker volume for persistent data'
+    )
+    config_volume = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Config Volume',
+        help_text='Docker volume for configuration'
+    )
+    
+    # Docker Port Mapping
+    exposed_port = models.IntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1024), MaxValueValidator(65535)],
+        verbose_name='Exposed Port',
+        help_text='Host port for Docker container (5223 for SMP, 443 for XFTP/NTF)'
+    )
+    
+    # Docker Status
+    docker_status = models.CharField(
+        max_length=20,
+        choices=DockerStatus.choices,
+        default=DockerStatus.NOT_CREATED,
+        verbose_name='Docker Status'
+    )
+    docker_error = models.TextField(
+        blank=True,
+        verbose_name='Docker Error',
+        help_text='Last Docker error message'
+    )
+    
+    # Server Fingerprint (extracted from container logs after init)
+    generated_fingerprint = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Generated Fingerprint',
+        help_text='Server fingerprint (extracted after container initialization)'
+    )
+    generated_address = models.TextField(
+        blank=True,
+        verbose_name='Generated Address',
+        help_text='Full server address (generated after container initialization)'
+    )
+    
+    # ==========================================================================
+    # END: Docker Hosting Configuration
+    # ==========================================================================
     
     # === Status & Monitoring ===
     is_active = models.BooleanField(default=True, help_text="Include in tests")
@@ -115,11 +234,53 @@ class Server(models.Model):
         ordering = ['sort_order', 'name']
 
     def __str__(self):
-        return f"{self.name} ({self.server_type.upper()})"
+        docker_badge = " 🐳" if self.is_docker_hosted else ""
+        return f"{self.name} ({self.server_type.upper()}){docker_badge}"
+    
+    def save(self, *args, **kwargs):
+        # Auto-generate Docker-related names
+        if self.is_docker_hosted:
+            if not self.container_name:
+                # Generate: simplex-smp-servername or simplex-xftp-servername
+                safe_name = re.sub(r'[^a-z0-9-]', '-', self.name.lower())
+                self.container_name = f"simplex-{self.server_type}-{safe_name}"
+            
+            if not self.data_volume:
+                self.data_volume = f"{self.container_name}-data"
+            
+            if not self.config_volume:
+                self.config_volume = f"{self.container_name}-config"
+            
+            # Set default ports based on server type
+            if not self.exposed_port:
+                if self.server_type == 'smp':
+                    self.exposed_port = self._get_next_available_port(5223, 5299)
+                elif self.server_type == 'xftp':
+                    self.exposed_port = self._get_next_available_port(5443, 5499)
+                elif self.server_type == 'ntf':
+                    self.exposed_port = self._get_next_available_port(5543, 5599)
+        
+        super().save(*args, **kwargs)
+    
+    def _get_next_available_port(self, start_port: int, end_port: int) -> int:
+        """Find next available port in range"""
+        used_ports = set(
+            Server.objects.filter(is_docker_hosted=True)
+            .exclude(pk=self.pk)
+            .values_list('exposed_port', flat=True)
+        )
+        for port in range(start_port, end_port + 1):
+            if port not in used_ports:
+                return port
+        return start_port  # Fallback
 
     def _parse_address(self):
-        pattern = r'^(smp|xftp)://([^:@]+)(?::([^@]+))?@(.+)$'
-        match = re.match(pattern, self.address.strip())
+        # Use generated_address for Docker servers if available
+        addr = self.effective_address
+        if not addr:
+            return None
+        pattern = r'^(smp|xftp|ntf)://([^:@]+)(?::([^@]+))?@(.+)$'
+        match = re.match(pattern, addr.strip())
         if match:
             return {
                 'protocol': match.group(1),
@@ -128,6 +289,13 @@ class Server(models.Model):
                 'host': match.group(4)
             }
         return None
+
+    @property
+    def effective_address(self):
+        """Returns the actual address to use (generated for Docker, manual for external)"""
+        if self.is_docker_hosted and self.generated_address:
+            return self.generated_address
+        return self.address
 
     @property
     def fingerprint(self):
@@ -142,7 +310,7 @@ class Server(models.Model):
     @property
     def host(self):
         parsed = self._parse_address()
-        return parsed['host'] if parsed else self.address
+        return parsed['host'] if parsed else self.effective_address
 
     @property
     def is_onion(self):
@@ -180,3 +348,70 @@ class Server(models.Model):
     @property
     def telegraf_configured(self):
         return self.telegraf_enabled and self.influxdb_url and self.influxdb_token
+    
+    # ==========================================================================
+    # NEW: Docker-related properties
+    # ==========================================================================
+    
+    @property
+    def is_docker_running(self):
+        """Check if Docker container is running"""
+        return self.docker_status == self.DockerStatus.RUNNING
+    
+    @property
+    def docker_image_name(self):
+        """Get the Docker image name for this server type"""
+        images = {
+            'smp': 'simplex-smp:latest',
+            'xftp': 'simplex-xftp:latest',
+            'ntf': 'simplex-ntf:latest',
+        }
+        return images.get(self.server_type, 'simplex-smp:latest')
+    
+    @property
+    def default_internal_port(self):
+        """Get the internal port the server listens on"""
+        ports = {
+            'smp': 5223,
+            'xftp': 443,
+            'ntf': 443,
+        }
+        return ports.get(self.server_type, 5223)
+    
+    @property
+    def docker_status_display(self):
+        """Human-readable Docker status with emoji"""
+        status_map = {
+            'not_created': '⚪ Not Created',
+            'created': '🔵 Created',
+            'starting': '🟡 Starting...',
+            'running': '🟢 Running',
+            'stopping': '🟡 Stopping...',
+            'stopped': '🔴 Stopped',
+            'error': '❌ Error',
+        }
+        return status_map.get(self.docker_status, '❓ Unknown')
+    
+    @property
+    def is_tor_hosted(self):
+        """Check if this is a Tor hidden service"""
+        return self.is_docker_hosted and self.hosting_mode == self.HostingMode.TOR
+    
+    @property
+    def effective_host(self):
+        """Returns the host to use (onion for Tor, IP for IP-mode)"""
+        if self.is_tor_hosted and self.onion_address:
+            return self.onion_address
+        elif self.host_ip:
+            return f"{self.host_ip}:{self.exposed_port or self.default_internal_port}"
+        return self.host
+    
+    @property
+    def hosting_mode_display(self):
+        """Human-readable hosting mode"""
+        if not self.is_docker_hosted:
+            return '🌐 External'
+        elif self.hosting_mode == self.HostingMode.TOR:
+            return '🧅 Tor Hidden Service'
+        else:
+            return '🏠 LAN (IP)'
