@@ -7,6 +7,7 @@
  * Compact audio player with Cache Panel.
  * Shows if playing from CACHE or YOUTUBE.
  * Click on source badge to toggle between LOCAL and STREAM.
+ * Auto-switches to LOCAL when track becomes cached.
  */
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -47,6 +48,7 @@ export default function MiniPlayer() {
   const [showCachePanel, setShowCachePanel] = useState(false);
   const [cacheSettings, setCacheSettings] = useState<CacheSettings | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [lastCachedState, setLastCachedState] = useState<boolean | null>(null);
   const { openVideo } = useVideoWidget();
 
   const {
@@ -179,13 +181,46 @@ export default function MiniPlayer() {
       setStreamUrl(null);
       setStreamSource(null);
       setAudioError(null);
+      setLastCachedState(null);
       return; 
     }
     
     // Auto-select source: prefer local if cached
     const useLocal = preferLocal && currentTrack.is_cached;
     loadStreamUrl(currentTrack.id, useLocal);
+    setLastCachedState(currentTrack.is_cached);
   }, [currentTrack?.id]);
+
+  // AUTO-SWITCH: When track becomes cached while playing, switch to LOCAL
+  useEffect(() => {
+    if (!currentTrack) return;
+    
+    // Check if is_cached changed from false to true
+    if (lastCachedState === false && currentTrack.is_cached === true) {
+      console.log('Track just got cached! Auto-switching to LOCAL...');
+      
+      const wasPlaying = isPlaying;
+      const currentPos = audioRef.current?.currentTime || 0;
+      
+      // Pause current playback
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      
+      // Clear current stream
+      setStreamUrl(null);
+      setStreamSource(null);
+      setAudioError(null);
+      
+      // Reload with local source, preserving position and play state
+      setTimeout(() => {
+        loadStreamUrl(currentTrack.id, true, currentPos, wasPlaying);
+      }, 100);
+    }
+    
+    // Update last cached state
+    setLastCachedState(currentTrack.is_cached);
+  }, [currentTrack?.is_cached]);
 
   // Audio element event handlers
   useEffect(() => {
