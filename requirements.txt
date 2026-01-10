@@ -31,3 +31,7 @@ websockets
 
 # Tor/SOCKS Support
 PySocks
+
+# === MUSIC PLAYER ===
+# YouTube Audio Extraction (from cannatoshi fork)
+git+https://github.com/cannatoshi/yt-dlp.git

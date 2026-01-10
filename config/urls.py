@@ -4,13 +4,14 @@ SimpleX SMP Monitor - URL Configuration
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.http import JsonResponse
+from django.conf import settings
+from django.conf.urls.static import static
 import time
 
 from core.spa import serve_react_spa
 
 
 def health_check(request):
-    """Health check endpoint for Docker"""
     return JsonResponse({"status": "healthy", "timestamp": time.time()})
 
 
@@ -28,9 +29,18 @@ urlpatterns = [
     path('api/v1/', include('clients.api.urls')),
     path('api/v1/dashboard/', include('dashboard.api.urls')),
     
-    # Legacy clients URLs (if needed)
-    path('clients/', include('clients.urls')),
+    # Music Player API
+    path('', include('music_player.urls')),
     
-    # React SPA - catch all other routes
+    # Legacy clients URLs
+    path('clients/', include('clients.urls')),
+]
+
+# Media files - BEFORE SPA catch-all!
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# SPA catch-all - MUST BE LAST!
+urlpatterns += [
     re_path(r'^.*$', serve_react_spa, name='spa'),
 ]
