@@ -5,7 +5,7 @@
  * https://github.com/cannatoshi/simplex-smp-monitor
  *
  * Full music library and player interface.
- * Features: Library, Search, Playlists with Pin support
+ * Features: Library, Search, Playlists with Pin support, System Playlists (Video Help, News)
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -34,14 +34,14 @@ const neonBlue = '#88CED0';
 const neonGlow = '0 0 8px rgba(136, 206, 208, 0.4)';
 const cyan = '#22D3EE';
 
-const neonButtonStyle = {
+const neonButtonStyle: React.CSSProperties = {
   backgroundColor: 'rgb(30, 41, 59)',
   color: neonBlue,
   border: `1px solid ${neonBlue}`,
   boxShadow: neonGlow
 };
 
-const neonInputStyle = {
+const neonInputStyle: React.CSSProperties = {
   backgroundColor: 'rgb(30, 41, 59)',
   color: '#fff',
   border: `1px solid ${neonBlue}`,
@@ -50,12 +50,72 @@ const neonInputStyle = {
 
 const PINNED_PLAYLISTS_KEY = 'simplex-music-pinned-playlists';
 
+// ============================================================================
+// SVG Icons - All in Neon Blue theme
+// ============================================================================
+
+const IconPin = ({ filled = false }: { filled?: boolean }) => (
+  <svg className="w-4 h-4" fill={filled ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+  </svg>
+);
+
+const IconEdit = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+);
+
+const IconTrash = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+
+const IconPlaylist = () => (
+  <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+  </svg>
+);
+
+const IconVideo = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+  </svg>
+);
+
+const IconNews = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+  </svg>
+);
+
+// Get icon for system playlist
+const getSystemIcon = (systemKey: string | null) => {
+  switch (systemKey) {
+    case 'video_help': return <IconVideo />;
+    case 'news': return <IconNews />;
+    default: return <IconVideo />;
+  }
+};
+
+// Get display name for system playlist
+const getSystemDisplayName = (playlist: Playlist, t: (key: string) => string) => {
+  switch (playlist.system_key) {
+    case 'video_help': return t('music.videoHelp') || 'Video Help';
+    case 'news': return t('music.news') || 'News';
+    default: return playlist.name;
+  }
+};
+
 export default function Music() {
   const { t } = useTranslation();
   const { openVideo } = useVideoWidget();
   
   const [tracks, setTracks] = useState<Track[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [systemPlaylists, setSystemPlaylists] = useState<Playlist[]>([]);
+  const [systemPlaylistData, setSystemPlaylistData] = useState<Map<string, Playlist>>(new Map());
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -92,6 +152,10 @@ export default function Music() {
   const [pinnedPlaylistData, setPinnedPlaylistData] = useState<Map<string, Playlist>>(new Map());
 
   const { currentTrack, isPlaying, setQueue, play, pause, setCacheStatus } = useAudioPlayerStore();
+
+  // ============================================================================
+  // Effects
+  // ============================================================================
 
   useEffect(() => {
     localStorage.setItem(PINNED_PLAYLISTS_KEY, JSON.stringify(pinnedPlaylistIds));
@@ -132,6 +196,9 @@ export default function Music() {
     if (activeTab.startsWith('playlist-')) {
       const playlistId = activeTab.replace('playlist-', '');
       loadPinnedPlaylistData(playlistId);
+    } else if (activeTab.startsWith('system-')) {
+      const systemKey = activeTab.replace('system-', '');
+      loadSystemPlaylistData(systemKey);
     }
   }, [activeTab]);
 
@@ -139,6 +206,10 @@ export default function Music() {
     const interval = setInterval(loadCacheStatus, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // ============================================================================
+  // Data Loading
+  // ============================================================================
 
   const loadTracks = async () => {
     try {
@@ -155,7 +226,21 @@ export default function Music() {
   const loadPlaylists = async () => {
     try {
       const data = await fetchPlaylists();
-      setPlaylists(data);
+      
+      // Separate system playlists from user playlists
+      const system = data.filter(p => p.playlist_type === 'system');
+      const user = data.filter(p => p.playlist_type !== 'system');
+      
+      setSystemPlaylists(system);
+      setPlaylists(user);
+      
+      // Load full data for system playlists
+      for (const sp of system) {
+        if (sp.system_key) {
+          const full = await fetchPlaylist(sp.id);
+          setSystemPlaylistData(prev => new Map(prev).set(sp.system_key!, full));
+        }
+      }
     } catch (err) {
       console.error('Failed to load playlists:', err);
     }
@@ -179,6 +264,17 @@ export default function Music() {
     }
   };
 
+  const loadSystemPlaylistData = async (systemKey: string) => {
+    const existing = systemPlaylists.find(p => p.system_key === systemKey);
+    if (!existing) return;
+    try {
+      const playlist = await fetchPlaylist(existing.id);
+      setSystemPlaylistData(prev => new Map(prev).set(systemKey, playlist));
+    } catch (err) {
+      console.error('Failed to load system playlist:', err);
+    }
+  };
+
   const loadPlaylistDetail = async (playlistId: string) => {
     setDetailLoading(true);
     try {
@@ -191,6 +287,10 @@ export default function Music() {
       setDetailLoading(false);
     }
   };
+
+  // ============================================================================
+  // Handlers
+  // ============================================================================
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -276,7 +376,15 @@ export default function Music() {
     if (!editingPlaylist || !editName.trim()) return;
     try {
       const updated = await updatePlaylist(editingPlaylist.id, { name: editName, description: editDesc });
-      setPlaylists((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      
+      // Check if it's a system playlist
+      if (editingPlaylist.playlist_type === 'system' && editingPlaylist.system_key) {
+        setSystemPlaylistData(prev => new Map(prev).set(editingPlaylist.system_key!, updated));
+        setSystemPlaylists(prev => prev.map(p => p.id === updated.id ? updated : p));
+      } else {
+        setPlaylists((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      }
+      
       if (pinnedPlaylistData.has(editingPlaylist.id)) {
         setPinnedPlaylistData(prev => new Map(prev).set(editingPlaylist.id, updated));
       }
@@ -315,6 +423,11 @@ export default function Music() {
       if (pinnedPlaylistIds.includes(playlistId)) {
         loadPinnedPlaylistData(playlistId);
       }
+      // Reload system playlist if it was updated
+      const systemPlaylist = systemPlaylists.find(p => p.id === playlistId);
+      if (systemPlaylist?.system_key) {
+        loadSystemPlaylistData(systemPlaylist.system_key);
+      }
     } catch (err) {
       console.error('Failed to add to playlist:', err);
     }
@@ -328,6 +441,11 @@ export default function Music() {
       }
       if (detailPlaylist?.id === playlistId) {
         loadPlaylistDetail(playlistId);
+      }
+      // Reload system playlist if it was updated
+      const systemPlaylist = systemPlaylists.find(p => p.id === playlistId);
+      if (systemPlaylist?.system_key) {
+        loadSystemPlaylistData(systemPlaylist.system_key);
       }
       loadPlaylists();
     } catch (err) {
@@ -363,6 +481,10 @@ export default function Music() {
     setShowEditModal(true);
   };
 
+  // ============================================================================
+  // Helpers
+  // ============================================================================
+
   const formatDuration = (seconds: number | null): string => {
     if (!seconds) return '--:--';
     const mins = Math.floor(seconds / 60);
@@ -381,6 +503,21 @@ export default function Music() {
     for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   };
+
+  // Get first track thumbnail for playlist card
+  const getPlaylistThumbnail = (playlist: Playlist): string | null => {
+    if (playlist.first_track_thumbnail) {
+      return playlist.first_track_thumbnail;
+    }
+    if (playlist.entries && playlist.entries.length > 0 && playlist.entries[0].track.thumbnail_url) {
+      return playlist.entries[0].track.thumbnail_url;
+    }
+    return playlist.thumbnail_url || null;
+  };
+
+  // ============================================================================
+  // Render Functions
+  // ============================================================================
 
   const renderTrackRow = (track: Track, index: number, queue: Track[], playlistId?: string, entryId?: string) => (
     <div
@@ -410,6 +547,117 @@ export default function Music() {
     </div>
   );
 
+  const renderPlaylistCard = (playlist: Playlist) => {
+    const isPinned = pinnedPlaylistIds.includes(playlist.id);
+    const thumbnail = getPlaylistThumbnail(playlist);
+    
+    return (
+      <div
+        key={playlist.id}
+        className="rounded-lg overflow-hidden transition-all flex flex-col"
+        style={{ 
+          backgroundColor: 'rgb(30, 41, 59)', 
+          border: `1px solid rgba(136, 206, 208, ${isPinned ? '0.6' : '0.3'})`,
+        }}
+      >
+        {/* Thumbnail - like search results */}
+        <div 
+          className="relative aspect-video bg-slate-700 cursor-pointer group/thumb"
+          onClick={() => loadPlaylistDetail(playlist.id)}
+        >
+          {thumbnail ? (
+            <img src={thumbnail} alt={playlist.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center" style={{ color: neonBlue }}>
+              <IconPlaylist />
+            </div>
+          )}
+          
+          {/* Hover Play Overlay */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/thumb:opacity-100 transition-opacity">
+            <button
+              onClick={(e) => { e.stopPropagation(); handlePlayPlaylist(playlist); }}
+              className="w-12 h-12 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'rgba(136, 206, 208, 0.9)', boxShadow: neonGlow }}
+            >
+              <svg className="w-6 h-6 text-slate-900 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </button>
+          </div>
+          
+          {/* Track count badge */}
+          <span className="absolute bottom-1 right-1 px-1.5 py-0.5 text-[10px] rounded" style={{ backgroundColor: 'rgba(0,0,0,0.8)', color: neonBlue }}>
+            {playlist.track_count} tracks
+          </span>
+          
+          {/* Pin Badge */}
+          {isPinned && (
+            <div className="absolute top-1 right-1 p-1 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: neonBlue }}>
+              <IconPin filled />
+            </div>
+          )}
+        </div>
+        
+        {/* Info + Action Buttons */}
+        <div className="p-2 flex-1 flex flex-col">
+          <p 
+            className="font-medium text-xs truncate cursor-pointer hover:underline" 
+            style={{ color: neonBlue }} 
+            title={playlist.name}
+            onClick={() => loadPlaylistDetail(playlist.id)}
+          >
+            {playlist.name}
+          </p>
+          <p className="text-[10px] text-slate-500 truncate mt-0.5">
+            {playlist.description || `${playlist.track_count} tracks`}
+          </p>
+          
+          {/* Action Buttons - always visible */}
+          <div className="flex gap-1 mt-2">
+            <button 
+              onClick={() => handlePlayPlaylist(playlist)}
+              disabled={playlist.track_count === 0}
+              className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-1"
+              style={neonButtonStyle}
+            >
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              Play
+            </button>
+            <button 
+              onClick={() => togglePinPlaylist(playlist.id)}
+              className="px-2 py-1.5 rounded-lg text-xs transition-colors"
+              style={{ 
+                backgroundColor: isPinned ? 'rgba(136, 206, 208, 0.2)' : 'transparent',
+                color: isPinned ? neonBlue : '#64748b',
+                border: `1px solid ${isPinned ? neonBlue : '#475569'}`
+              }}
+              title={isPinned ? 'Unpin' : 'Pin'}
+            >
+              <IconPin filled={isPinned} />
+            </button>
+            <button 
+              onClick={() => openEditPlaylist(playlist)}
+              className="px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-slate-700"
+              style={{ color: '#64748b', border: '1px solid #475569' }}
+              title="Edit"
+            >
+              <IconEdit />
+            </button>
+            <button 
+              onClick={() => handleDeletePlaylist(playlist.id)}
+              className="px-2 py-1.5 rounded-lg text-xs text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              style={{ border: '1px solid #475569' }}
+              title="Delete"
+            >
+              <IconTrash />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderPlaylistContent = (playlistId: string) => {
     const playlist = pinnedPlaylistData.get(playlistId);
     if (!playlist) return <div className="flex items-center justify-center py-12"><svg className="w-8 h-8 animate-spin" style={{ color: neonBlue }} fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg></div>;
@@ -424,8 +672,8 @@ export default function Music() {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => handlePlayPlaylist(playlist)} disabled={!playlist.entries?.length} className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50 flex items-center gap-2" style={neonButtonStyle}><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>Play All</button>
-            <button onClick={() => openEditPlaylist(playlist)} className="px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800" style={{ color: neonBlue }}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
-            <button onClick={() => togglePinPlaylist(playlist.id)} className="px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800 text-yellow-500" title="Unpin">📌</button>
+            <button onClick={() => openEditPlaylist(playlist)} className="px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800" style={{ color: neonBlue }}><IconEdit /></button>
+            <button onClick={() => togglePinPlaylist(playlist.id)} className="px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800" style={{ color: neonBlue }} title="Unpin"><IconPin filled /></button>
           </div>
         </div>
         {!playlist.entries?.length ? <div className="text-center py-12 text-slate-500"><p>Playlist is empty</p><p className="text-sm mt-1">Add tracks from your library</p></div> : <div className="space-y-2">{playlist.entries.map((entry, index) => renderTrackRow(entry.track, index, playlistTracks, playlist.id, entry.id))}</div>}
@@ -433,12 +681,55 @@ export default function Music() {
     );
   };
 
+  const renderSystemPlaylistContent = (systemKey: string) => {
+    const playlist = systemPlaylistData.get(systemKey);
+    if (!playlist) return <div className="flex items-center justify-center py-12"><svg className="w-8 h-8 animate-spin" style={{ color: neonBlue }} fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg></div>;
+    const playlistTracks = playlist.entries?.map(e => e.track) || [];
+    
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(136, 206, 208, 0.1)', color: neonBlue }}>
+              {getSystemIcon(systemKey)}
+            </div>
+            <div>
+              <h2 className="text-lg font-bold" style={{ color: neonBlue }}>{getSystemDisplayName(playlist, t)}</h2>
+              {playlist.description && <p className="text-sm text-slate-500">{playlist.description}</p>}
+              <p className="text-xs text-slate-600 mt-1">{playlist.track_count} videos · {formatDuration(playlist.total_duration)}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => handlePlayPlaylist(playlist)} disabled={!playlist.entries?.length} className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50 flex items-center gap-2" style={neonButtonStyle}><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>Play All</button>
+            <button onClick={() => openEditPlaylist(playlist)} className="px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800" style={{ color: neonBlue }}><IconEdit /></button>
+          </div>
+        </div>
+        {!playlist.entries?.length ? (
+          <div className="text-center py-12 text-slate-500">
+            <div className="w-16 h-16 mx-auto mb-4 opacity-50" style={{ color: neonBlue }}>
+              {getSystemIcon(systemKey)}
+            </div>
+            <p className="text-lg mb-2">{t('music.noTracks')}</p>
+            <p className="text-sm">Search for videos and add them here</p>
+          </div>
+        ) : (
+          <div className="space-y-2">{playlist.entries.map((entry, index) => renderTrackRow(entry.track, index, playlistTracks, playlist.id, entry.id))}</div>
+        )}
+      </div>
+    );
+  };
+
+  // ============================================================================
+  // Main Render
+  // ============================================================================
+
   return (
     <div className="flex flex-col h-full">
+      {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex-shrink-0">
           <h1 className="text-2xl font-bold" style={{ color: neonBlue }}>{t('music.title')}</h1>
-          <p className="text-slate-500 text-sm mt-1">{tracks.length} {t('music.tracks')} · {playlists.length} {t('music.playlists')}</p>
+          <p className="text-slate-500 text-sm mt-1">{tracks.length} {t('music.tracks')} · {playlists.length + systemPlaylists.length} {t('music.playlists')}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap justify-end">
           {activeTab === 'search' && searchResults.length > 0 && (
@@ -463,23 +754,44 @@ export default function Music() {
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-slate-800 mb-4 overflow-x-auto">
-        {['library', 'search', 'playlists'].map((tab) => (
-          <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-3 px-3 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === tab ? '' : 'text-slate-500 hover:text-white'}`} style={{ color: activeTab === tab ? neonBlue : undefined }}>
-            {tab === 'library' && t('music.library')}
-            {tab === 'search' && <>{t('music.searchResults')}{searchResults.length > 0 && <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full" style={{ backgroundColor: neonBlue, color: '#0f172a' }}>{searchResults.length}</span>}</>}
-            {tab === 'playlists' && t('music.playlists')}
-            {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: neonBlue }} />}
-          </button>
-        ))}
-        {pinnedPlaylists.map((playlist) => (
-          <button key={`tab-${playlist.id}`} onClick={() => setActiveTab(`playlist-${playlist.id}`)} className={`pb-3 px-3 text-sm font-medium transition-colors relative whitespace-nowrap flex items-center gap-1.5 ${activeTab === `playlist-${playlist.id}` ? '' : 'text-slate-500 hover:text-white'}`} style={{ color: activeTab === `playlist-${playlist.id}` ? neonBlue : undefined }}>
-            <span className="text-yellow-500">📌</span>{playlist.name}
-            {activeTab === `playlist-${playlist.id}` && <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: neonBlue }} />}
-          </button>
-        ))}
+      {/* Tabs */}
+      <div className="flex items-center justify-between border-b border-slate-800 mb-4 overflow-x-auto">
+        {/* Left Tabs */}
+        <div className="flex gap-1">
+          {['library', 'search', 'playlists'].map((tab) => (
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-3 px-3 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === tab ? '' : 'text-slate-500 hover:text-white'}`} style={{ color: activeTab === tab ? neonBlue : undefined }}>
+              {tab === 'library' && t('music.library')}
+              {tab === 'search' && <>{t('music.searchResults')}{searchResults.length > 0 && <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full" style={{ backgroundColor: neonBlue, color: '#0f172a' }}>{searchResults.length}</span>}</>}
+              {tab === 'playlists' && t('music.playlists')}
+              {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: neonBlue }} />}
+            </button>
+          ))}
+          {pinnedPlaylists.map((playlist) => (
+            <button key={`tab-${playlist.id}`} onClick={() => setActiveTab(`playlist-${playlist.id}`)} className={`pb-3 px-3 text-sm font-medium transition-colors relative whitespace-nowrap flex items-center gap-1.5 ${activeTab === `playlist-${playlist.id}` ? '' : 'text-slate-500 hover:text-white'}`} style={{ color: activeTab === `playlist-${playlist.id}` ? neonBlue : undefined }}>
+              <span style={{ color: neonBlue }}><IconPin filled /></span>{playlist.name}
+              {activeTab === `playlist-${playlist.id}` && <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: neonBlue }} />}
+            </button>
+          ))}
+        </div>
+        
+        {/* Right Tabs - System Playlists */}
+        <div className="flex gap-1">
+          {systemPlaylists.map((playlist) => (
+            <button 
+              key={`system-tab-${playlist.system_key}`} 
+              onClick={() => setActiveTab(`system-${playlist.system_key}`)} 
+              className={`pb-3 px-4 text-sm font-medium transition-colors relative whitespace-nowrap flex items-center gap-2 ${activeTab === `system-${playlist.system_key}` ? '' : 'text-slate-500 hover:text-white'}`} 
+              style={{ color: activeTab === `system-${playlist.system_key}` ? neonBlue : undefined }}
+            >
+              {getSystemIcon(playlist.system_key)}
+              {getSystemDisplayName(playlist, t)}
+              {activeTab === `system-${playlist.system_key}` && <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: neonBlue }} />}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {/* Content */}
       <div className="flex-1 overflow-auto min-h-0">
         {activeTab === 'library' && (
           <div className="space-y-2">
@@ -511,29 +823,18 @@ export default function Music() {
             <button onClick={() => setShowCreateModal(true)} className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90 inline-flex items-center gap-2" style={neonButtonStyle}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>{t('music.createPlaylist')}</button>
             {playlists.length === 0 ? <div className="text-center py-12 text-slate-500"><svg className="w-16 h-16 mx-auto mb-4 opacity-50" style={{ color: neonBlue }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg><p className="text-lg mb-2">{t('music.noPlaylists')}</p><p className="text-sm">{t('music.noPlaylistsHint')}</p></div> : (
               <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))` }}>
-                {playlists.map((playlist) => {
-                  const isPinned = pinnedPlaylistIds.includes(playlist.id);
-                  return (
-                    <div key={playlist.id} className="rounded-lg p-4 transition-colors group cursor-pointer" style={{ backgroundColor: 'rgb(30, 41, 59)', border: `1px solid rgba(136, 206, 208, ${isPinned ? '0.6' : '0.3'})` }} onClick={() => loadPlaylistDetail(playlist.id)}>
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-2 mx-auto" style={{ backgroundColor: 'rgba(136, 206, 208, 0.1)' }}>{isPinned ? '📌' : '📁'}</div>
-                      <h3 className="font-medium text-center truncate text-sm" style={{ color: neonBlue }}>{playlist.name}</h3>
-                      <p className="text-[10px] text-slate-500 text-center mt-1">{playlist.track_count} {t('music.tracks')}</p>
-                      <div className="flex justify-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={(e) => { e.stopPropagation(); togglePinPlaylist(playlist.id); }} className={`px-2 py-1 text-[10px] rounded-lg transition-colors ${isPinned ? 'text-yellow-500 hover:bg-yellow-500/10' : 'text-slate-400 hover:bg-slate-700'}`} title={isPinned ? 'Unpin' : 'Pin'}>📌</button>
-                        <button onClick={(e) => { e.stopPropagation(); openEditPlaylist(playlist); }} className="px-2 py-1 text-[10px] rounded-lg text-slate-400 hover:bg-slate-700 transition-colors">✏️</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDeletePlaylist(playlist.id); }} className="px-2 py-1 text-[10px] rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">🗑️</button>
-                      </div>
-                    </div>
-                  );
-                })}
+                {playlists.map((playlist) => renderPlaylistCard(playlist))}
               </div>
             )}
           </div>
         )}
 
         {activeTab.startsWith('playlist-') && renderPlaylistContent(activeTab.replace('playlist-', ''))}
+        
+        {activeTab.startsWith('system-') && renderSystemPlaylistContent(activeTab.replace('system-', ''))}
       </div>
 
+      {/* Modals */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="w-full max-w-md rounded-xl p-6" style={{ backgroundColor: 'rgb(15, 23, 42)', border: `1px solid ${neonBlue}`, boxShadow: neonGlow }}>
@@ -577,7 +878,9 @@ export default function Music() {
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => handlePlayPlaylist(detailPlaylist)} disabled={!detailPlaylist.entries?.length} className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50 flex items-center gap-2" style={neonButtonStyle}><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>Play</button>
-                <button onClick={() => togglePinPlaylist(detailPlaylist.id)} className={`px-3 py-2 rounded-lg text-sm transition-colors ${pinnedPlaylistIds.includes(detailPlaylist.id) ? 'text-yellow-500' : 'text-slate-400 hover:text-yellow-500'}`} title={pinnedPlaylistIds.includes(detailPlaylist.id) ? 'Unpin' : 'Pin'}>📌</button>
+                {detailPlaylist.playlist_type !== 'system' && (
+                  <button onClick={() => togglePinPlaylist(detailPlaylist.id)} className="px-3 py-2 rounded-lg text-sm transition-colors hover:bg-slate-800" style={{ color: pinnedPlaylistIds.includes(detailPlaylist.id) ? neonBlue : '#64748b' }} title={pinnedPlaylistIds.includes(detailPlaylist.id) ? 'Unpin' : 'Pin'}><IconPin filled={pinnedPlaylistIds.includes(detailPlaylist.id)} /></button>
+                )}
                 <button onClick={() => { setShowPlaylistDetail(false); setDetailPlaylist(null); }} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-800 transition-colors" style={{ color: neonBlue }}><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
               </div>
             </div>
@@ -593,11 +896,19 @@ export default function Music() {
           <div className="w-full max-w-md rounded-xl p-6" style={{ backgroundColor: 'rgb(15, 23, 42)', border: `1px solid ${neonBlue}`, boxShadow: neonGlow }}>
             <h2 className="text-xl font-bold mb-2" style={{ color: neonBlue }}>{t('music.addToPlaylist')}</h2>
             <p className="text-sm text-slate-400 mb-4 truncate">{trackToAdd.title}</p>
-            {playlists.length === 0 ? <p className="text-slate-500 text-center py-4">{t('music.noPlaylistsCreate')}</p> : (
+            {playlists.length === 0 && systemPlaylists.length === 0 ? <p className="text-slate-500 text-center py-4">{t('music.noPlaylistsCreate')}</p> : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
+                {/* System Playlists first */}
+                {systemPlaylists.map((playlist) => (
+                  <button key={playlist.id} onClick={() => handleAddToPlaylist(playlist.id)} className="w-full px-4 py-3 rounded-lg text-left transition-all hover:opacity-90 flex items-center gap-3" style={{ backgroundColor: 'rgb(30, 41, 59)', border: '1px solid rgba(136, 206, 208, 0.3)' }}>
+                    <span style={{ color: neonBlue }}>{getSystemIcon(playlist.system_key)}</span>
+                    <div className="flex-1 min-w-0"><p style={{ color: neonBlue }}>{getSystemDisplayName(playlist, t)}</p><p className="text-xs text-slate-500">{playlist.track_count} {t('music.tracks')}</p></div>
+                  </button>
+                ))}
+                {/* User Playlists */}
                 {playlists.map((playlist) => (
                   <button key={playlist.id} onClick={() => handleAddToPlaylist(playlist.id)} className="w-full px-4 py-3 rounded-lg text-left transition-all hover:opacity-90 flex items-center gap-3" style={{ backgroundColor: 'rgb(30, 41, 59)', border: '1px solid rgba(136, 206, 208, 0.2)' }}>
-                    <span className="text-xl">{pinnedPlaylistIds.includes(playlist.id) ? '📌' : '📁'}</span>
+                    <span style={{ color: pinnedPlaylistIds.includes(playlist.id) ? neonBlue : '#64748b' }}><IconPin filled={pinnedPlaylistIds.includes(playlist.id)} /></span>
                     <div className="flex-1 min-w-0"><p style={{ color: neonBlue }}>{playlist.name}</p><p className="text-xs text-slate-500">{playlist.track_count} {t('music.tracks')}</p></div>
                   </button>
                 ))}
