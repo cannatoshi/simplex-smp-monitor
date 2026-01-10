@@ -2,10 +2,15 @@ import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Sidebar from './Sidebar';
+import MiniPlayer from '../music/MiniPlayer';
+import FloatingVideoWidget from '../music/FloatingVideoWidget';
+import { useVideoWidget } from '../../contexts/VideoWidgetContext';
 
 export default function Layout() {
   const { t } = useTranslation();
   const location = useLocation();
+  const { widget, closeVideo } = useVideoWidget();
+  
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved !== null ? JSON.parse(saved) : true;
@@ -71,7 +76,7 @@ export default function Layout() {
       <Sidebar darkMode={darkMode} setDarkMode={setDarkMode} />
 
       {/* Main Area */}
-      <div className="ml-16 flex flex-col min-h-screen">
+      <div className="ml-16 flex flex-col h-screen">
         {/* Top Toolbar */}
         <header className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
           <div className="h-full px-6 flex items-center justify-between">
@@ -164,15 +169,21 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="flex-1 p-6 overflow-auto">
+        {/* Main Content - Fixed height, scrollable */}
+        <main className="flex-1 p-6 overflow-auto min-h-0">
           <Outlet />
         </main>
 
         {/* Footer - NEON BLUE */}
-        <footer className="h-12 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end px-6 overflow-hidden">
+        <footer className="h-14 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 overflow-hidden">
+          {/* MiniPlayer (left side) */}
+          <div className="flex-1">
+            <MiniPlayer />
+          </div>
+          
+          {/* Rotating Text (right side) */}
           <div 
-            className={`text-xs font-mono transition-all duration-300 ease-in-out ${
+            className={`text-xs font-mono transition-all duration-300 ease-in-out flex-shrink-0 ml-4 ${
               isAnimating 
                 ? 'translate-x-8 opacity-0' 
                 : 'translate-x-0 opacity-100'
@@ -183,6 +194,14 @@ export default function Layout() {
           </div>
         </footer>
       </div>
+
+      {/* Floating Video Widget - Persistent across navigation */}
+      <FloatingVideoWidget
+        isOpen={widget.isOpen}
+        onClose={closeVideo}
+        videoId={widget.videoId}
+        title={widget.title}
+      />
 
       {/* Global Styles */}
       <style>{`

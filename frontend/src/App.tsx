@@ -11,9 +11,12 @@ import ClientDetail from './pages/ClientDetail';
 import ClientForm from './pages/ClientForm';
 import Categories from './pages/Categories';
 import TestRunHistory from './pages/TestRunHistory';
+import Music from './pages/Music';
+import { VideoWidgetProvider } from './contexts/VideoWidgetContext';
 
 function App() {
   return (
+    <VideoWidgetProvider>
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
@@ -30,8 +33,10 @@ function App() {
         <Route path="clients/new" element={<ClientForm />} />
         <Route path="clients/:id" element={<ClientDetail />} />
         <Route path="clients/:id/edit" element={<ClientForm />} />
+        <Route path="music" element={<Music />} />
       </Route>
     </Routes>
+    </VideoWidgetProvider>
   );
 }
 
