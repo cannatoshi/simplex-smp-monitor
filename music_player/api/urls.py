@@ -17,6 +17,11 @@ from .views import (
     CacheSettingsView,
     LatencyCorrelationView,
 )
+from .views_cache_forensics import (
+    CacheHistoryView,
+    CacheAnalyticsView,
+    CacheCleanupHistoryView,
+)
 from .proxy_views import proxy_audio_stream
 
 router = DefaultRouter()
@@ -34,6 +39,11 @@ urlpatterns = [
     path('cache/status/', CacheStatusView.as_view(), name='cache-status'),
     path('cache/control/', CacheControlView.as_view(), name='cache-control'),
     path('cache/settings/', CacheSettingsView.as_view(), name='cache-settings'),
+    
+    # Cache Forensics endpoints
+    path('cache/history/', CacheHistoryView.as_view(), name='cache-history'),
+    path('cache/history/cleanup/', CacheCleanupHistoryView.as_view(), name='cache-history-cleanup'),
+    path('cache/analytics/', CacheAnalyticsView.as_view(), name='cache-analytics'),
     
     # Latency correlation
     path('cache/correlation/', LatencyCorrelationView.as_view(), name='latency-correlation'),

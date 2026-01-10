@@ -12,6 +12,7 @@ import ClientForm from './pages/ClientForm';
 import Categories from './pages/Categories';
 import TestRunHistory from './pages/TestRunHistory';
 import Music from './pages/Music';
+import CacheForensics from './pages/CacheForensics';
 import { VideoWidgetProvider } from './contexts/VideoWidgetContext';
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
         <Route path="clients/:id" element={<ClientDetail />} />
         <Route path="clients/:id/edit" element={<ClientForm />} />
         <Route path="music" element={<Music />} />
+        <Route path="cache-forensics" element={<CacheForensics />} />
       </Route>
     </Routes>
     </VideoWidgetProvider>
