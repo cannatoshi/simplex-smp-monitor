@@ -31,11 +31,14 @@ export interface Playlist {
   id: string;
   name: string;
   description: string;
-  thumbnail_url: string;
-  playlist_type: 'user' | 'curated' | 'lofi' | 'cyberpunk';
+  thumbnail_url: string | null;
+  playlist_type: 'user' | 'curated' | 'system';
+  system_key: string | null;  // 'video_help' | 'news' | null
+  is_system_playlist: boolean;
   is_public: boolean;
   track_count: number;
   total_duration: number;
+  first_track_thumbnail: string | null;
   entries?: PlaylistEntry[];
   created_at: string;
   updated_at: string;
