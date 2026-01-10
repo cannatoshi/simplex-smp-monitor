@@ -50,6 +50,14 @@ const neonInputStyle: React.CSSProperties = {
 
 const PINNED_PLAYLISTS_KEY = 'simplex-music-pinned-playlists';
 
+// Estimate file size based on duration and bitrate (default 192kbps)
+const estimateFileSize = (durationSeconds: number | null, bitrateKbps: number = 192): string => {
+  if (!durationSeconds) return '?';
+  const sizeMB = (durationSeconds * bitrateKbps) / 8 / 1024;
+  if (sizeMB < 1) return `${Math.round(sizeMB * 1024)} KB`;
+  return `~${sizeMB.toFixed(1)} MB`;
+};
+
 // ============================================================================
 // SVG Icons - All in Neon Blue theme
 // ============================================================================
@@ -150,8 +158,11 @@ export default function Music() {
   const [trackToAdd, setTrackToAdd] = useState<Track | null>(null);
 
   const [pinnedPlaylistData, setPinnedPlaylistData] = useState<Map<string, Playlist>>(new Map());
+  
+  // Track which tracks are currently being cached
+  const [cachingTrackIds, setCachingTrackIds] = useState<Set<string>>(new Set());
 
-  const { currentTrack, isPlaying, setQueue, play, pause, setCacheStatus } = useAudioPlayerStore();
+  const { currentTrack, isPlaying, setQueue, play, pause, setCacheStatus, markTrackCached } = useAudioPlayerStore();
 
   // ============================================================================
   // Effects
@@ -350,12 +361,56 @@ export default function Music() {
   };
 
   const handleCacheTrack = async (trackId: string) => {
+    // Add to caching set immediately for UI feedback
+    setCachingTrackIds(prev => new Set(prev).add(trackId));
+    
     try {
       await cacheTrack(trackId);
       loadCacheStatus();
-      setTimeout(loadTracks, 2000);
+      
+      // Poll for completion - check every 2 seconds until done
+      const pollInterval = setInterval(async () => {
+        const status = await fetchCacheStatus();
+        setCacheStatus(status);
+        
+        // Find if this track is still being cached
+        const track = tracks.find(t => t.id === trackId);
+        const stillCaching = status.active_downloads.some(
+          d => track && d.video_id === track.source_id
+        );
+        
+        if (!stillCaching) {
+          clearInterval(pollInterval);
+          setCachingTrackIds(prev => {
+            const next = new Set(prev);
+            next.delete(trackId);
+            return next;
+          });
+          // Mark track as cached in store (triggers MiniPlayer auto-switch)
+          markTrackCached(trackId);
+          // Reload tracks to get updated is_cached status
+          loadTracks();
+        }
+      }, 2000);
+      
+      // Safety timeout - stop polling after 5 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        setCachingTrackIds(prev => {
+          const next = new Set(prev);
+          next.delete(trackId);
+          return next;
+        });
+        loadTracks();
+      }, 300000);
+      
     } catch (err) {
       console.error('Failed to cache track:', err);
+      setCachingTrackIds(prev => {
+        const next = new Set(prev);
+        next.delete(trackId);
+        return next;
+      });
     }
   };
 
@@ -519,33 +574,134 @@ export default function Music() {
   // Render Functions
   // ============================================================================
 
-  const renderTrackRow = (track: Track, index: number, queue: Track[], playlistId?: string, entryId?: string) => (
-    <div
-      key={track.id + (entryId || '')}
-      className={`flex items-center gap-4 p-3 rounded-lg transition-colors group ${currentTrack?.id === track.id ? 'border' : 'bg-slate-800/50 hover:bg-slate-800 border border-transparent'}`}
-      style={currentTrack?.id === track.id ? { backgroundColor: 'rgba(136, 206, 208, 0.1)', borderColor: 'rgba(136, 206, 208, 0.3)' } : undefined}
-    >
-      <button onClick={() => handlePlayTrack(track, index, queue)} className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 group/play" style={{ border: `1px solid ${currentTrack?.id === track.id ? neonBlue : 'transparent'}` }}>
-        {track.thumbnail_url ? <img src={track.thumbnail_url} alt={track.title} className="w-full h-full object-cover" /> : (
-          <div className="w-full h-full flex items-center justify-center bg-slate-700" style={{ color: neonBlue }}>
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+  const renderTrackRow = (track: Track, index: number, queue: Track[], playlistId?: string, entryId?: string) => {
+    const isCurrentTrack = currentTrack?.id === track.id;
+    const isCaching = cachingTrackIds.has(track.id);
+    
+    return (
+      <div
+        key={track.id + (entryId || '')}
+        className={`flex items-center gap-3 p-3 rounded-lg transition-colors group ${isCurrentTrack ? 'border' : 'bg-slate-800/50 hover:bg-slate-800 border border-transparent'}`}
+        style={isCurrentTrack ? { backgroundColor: 'rgba(136, 206, 208, 0.1)', borderColor: 'rgba(136, 206, 208, 0.3)' } : undefined}
+      >
+        {/* Thumbnail with Play Button */}
+        <button onClick={() => handlePlayTrack(track, index, queue)} className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 group/play" style={{ border: `1px solid ${isCurrentTrack ? neonBlue : 'rgba(136, 206, 208, 0.2)'}` }}>
+          {track.thumbnail_url ? (
+            <img src={track.thumbnail_url} alt={track.title} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-slate-700" style={{ color: neonBlue }}>
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+            </div>
+          )}
+          <div className={`absolute inset-0 flex items-center justify-center bg-black/60 transition-opacity ${isCurrentTrack && isPlaying ? 'opacity-100' : 'opacity-0 group-hover/play:opacity-100'}`}>
+            {isCurrentTrack && isPlaying ? (
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z" /></svg>
+            ) : (
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+            )}
           </div>
-        )}
-        <div className={`absolute inset-0 flex items-center justify-center bg-black/60 transition-opacity ${currentTrack?.id === track.id && isPlaying ? 'opacity-100' : 'opacity-0 group-hover/play:opacity-100'}`}>
-          {currentTrack?.id === track.id && isPlaying ? <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z" /></svg> : <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>}
+        </button>
+        
+        {/* Title & Artist */}
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate" style={{ color: isCurrentTrack ? neonBlue : 'white' }}>{track.title}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-sm text-slate-500 truncate">{track.artist || t('music.unknownArtist')}</p>
+            {track.play_count > 0 && (
+              <span className="text-[10px] text-slate-600 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                {track.play_count}
+              </span>
+            )}
+          </div>
         </div>
-      </button>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium truncate" style={{ color: currentTrack?.id === track.id ? neonBlue : 'white' }}>{track.title}</p>
-        <p className="text-sm text-slate-500 truncate">{track.artist || t('music.unknownArtist')}</p>
+        
+        {/* Action Buttons - hidden until hover */}
+        <div className="flex items-center gap-1">
+          {/* Add to Playlist */}
+          {!playlistId && (
+            <button 
+              onClick={() => openAddToPlaylist(track)} 
+              className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors opacity-0 group-hover:opacity-100 hover:bg-slate-700" 
+              style={{ color: neonBlue }} 
+              title={t('music.addToPlaylist')}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            </button>
+          )}
+          
+          {/* Remove from Playlist */}
+          {playlistId && entryId && (
+            <button 
+              onClick={() => handleRemoveFromPlaylist(playlistId, entryId)} 
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100" 
+              title="Remove"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
+            </button>
+          )}
+          
+          {/* Delete Track */}
+          {!playlistId && (
+            <button 
+              onClick={() => handleDeleteTrack(track.id)} 
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+              title="Delete"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            </button>
+          )}
+        </div>
+        
+        {/* YouTube Link */}
+        {track.source_type === 'youtube' && track.source_id && (
+          <a 
+            href={`https://youtube.com/watch?v=${track.source_id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-red-500/10"
+            style={{ color: '#FF0000' }}
+            title="Open on YouTube"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+          </a>
+        )}
+
+        {/* Duration */}
+        <span className="text-sm text-slate-400 w-14 text-right font-mono">{formatDuration(track.duration)}</span>
+        
+        {/* Cache Status/Button - Always Visible */}
+        <div className="w-24 flex justify-center">
+          {track.is_cached ? (
+            <span className="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5" style={{ backgroundColor: 'rgba(136, 206, 208, 0.15)', color: neonBlue, border: `1px solid ${neonBlue}` }}>
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" /></svg>
+              {t('music.cached')}
+            </span>
+          ) : isCaching ? (
+            <span className="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5" style={{ backgroundColor: 'rgba(234, 179, 8, 0.15)', color: '#EAB308', border: '1px solid #EAB308' }}>
+              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Caching...
+            </span>
+          ) : (
+            <button 
+              onClick={() => handleCacheTrack(track.id)} 
+              className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all hover:scale-105 flex items-center gap-1.5"
+              style={neonButtonStyle}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              {t('music.cache')}
+            </button>
+          )}
+        </div>
       </div>
-      <span className="text-sm text-slate-500 w-12 text-right">{formatDuration(track.duration)}</span>
-      {track.is_cached ? <span className="px-2 py-1 text-xs rounded-full" style={{ backgroundColor: 'rgba(136, 206, 208, 0.2)', color: neonBlue }}>{t('music.cached')}</span> : <button onClick={() => handleCacheTrack(track.id)} className="px-2 py-1 text-xs rounded-lg transition-colors opacity-0 group-hover:opacity-100" style={neonButtonStyle}>{t('music.cache')}</button>}
-      {!playlistId && <button onClick={() => openAddToPlaylist(track)} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors opacity-0 group-hover:opacity-100 hover:bg-slate-700" style={{ color: neonBlue }} title={t('music.addToPlaylist')}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg></button>}
-      {playlistId && entryId && <button onClick={() => handleRemoveFromPlaylist(playlistId, entryId)} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100" title="Remove"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg></button>}
-      {!playlistId && <button onClick={() => handleDeleteTrack(track.id)} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>}
-    </div>
-  );
+    );
+  };
 
   const renderPlaylistCard = (playlist: Playlist) => {
     const isPinned = pinnedPlaylistIds.includes(playlist.id);
@@ -810,7 +966,10 @@ export default function Music() {
                 </div>
                 <div className="p-2 flex-1 flex flex-col">
                   <p className="font-medium text-xs truncate" style={{ color: neonBlue }} title={result.title}>{result.title}</p>
-                  <p className="text-[10px] text-slate-500 truncate mt-0.5">{result.artist || 'Unknown'}</p>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <p className="text-[10px] text-slate-500 truncate flex-1">{result.artist || 'Unknown'}</p>
+                    <span className="text-[10px] text-slate-600 ml-2 flex-shrink-0" title="Estimated file size">{estimateFileSize(result.duration)}</span>
+                  </div>
                   <button onClick={() => handleAddTrack(result)} disabled={addingTrack === result.video_id} className="mt-2 w-full py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90 disabled:opacity-50" style={neonButtonStyle}>{addingTrack === result.video_id ? '...' : t('music.addToLibrary')}</button>
                 </div>
               </div>
