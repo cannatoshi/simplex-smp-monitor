@@ -24,6 +24,7 @@ export interface Track {
   source_id: string;
   thumbnail_url: string;
   youtube_url: string | null;
+  play_count: number;
   is_cached: boolean;
 }
 
@@ -104,6 +105,7 @@ interface AudioPlayerState {
 
   // Actions - Cache
   setCacheStatus: (status: CacheStatus) => void;
+  markTrackCached: (trackId: string) => void;
   
   // Actions - Reset
   resetPlayer: () => void;
@@ -275,6 +277,26 @@ export const useAudioPlayerStore = create<AudioPlayerState>()(
 
       // Actions - Cache
       setCacheStatus: (status) => set({ cacheStatus: status }),
+      
+      // Mark a track as cached - updates currentTrack and queue
+      markTrackCached: (trackId) => set((state) => {
+        const updates: Partial<AudioPlayerState> = {};
+        
+        // Update currentTrack if it matches
+        if (state.currentTrack?.id === trackId) {
+          updates.currentTrack = { ...state.currentTrack, is_cached: true };
+        }
+        
+        // Update track in queue if it exists
+        const queueIndex = state.queue.findIndex(t => t.id === trackId);
+        if (queueIndex !== -1) {
+          const newQueue = [...state.queue];
+          newQueue[queueIndex] = { ...newQueue[queueIndex], is_cached: true };
+          updates.queue = newQueue;
+        }
+        
+        return updates;
+      }),
       
       // Reset
       resetPlayer: () => set({
