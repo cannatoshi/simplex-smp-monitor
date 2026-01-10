@@ -14,7 +14,7 @@
   "music": {
     "title": "Music Player",
     "tracks": "tracks",
-    "playlists": "playlists",
+    "playlists": "Playlists",
     "library": "Library",
     "searchResults": "Search Results",
     "search": "Search",
@@ -35,10 +35,6 @@
     "playlistNamePlaceholder": "My Playlist",
     "playlistDesc": "Description (optional)",
     "playlistDescPlaceholder": "A collection of...",
-    "playlistType": "Type",
-    "typeCustom": "📁 Custom",
-    "typeLofi": "🎵 LoFi",
-    "typeCyberpunk": "🌃 Cyberpunk",
     "cancel": "Cancel",
     "create": "Create",
     "delete": "Delete",
@@ -59,7 +55,9 @@
     "unknownArtist": "Unknown Artist",
     "videoPreview": "Video Preview",
     "watchVideo": "Watch Video",
-    "preview": "Preview"
+    "preview": "Preview",
+    "videoHelp": "Video Help",
+    "news": "News"
   },
   "common": {
     "all": "All",

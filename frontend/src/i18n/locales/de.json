@@ -35,10 +35,6 @@
     "playlistNamePlaceholder": "Meine Playlist",
     "playlistDesc": "Beschreibung (optional)",
     "playlistDescPlaceholder": "Eine Sammlung von...",
-    "playlistType": "Typ",
-    "typeCustom": "📁 Eigene",
-    "typeLofi": "🎵 LoFi",
-    "typeCyberpunk": "🌃 Cyberpunk",
     "cancel": "Abbrechen",
     "create": "Erstellen",
     "delete": "Löschen",
@@ -59,7 +55,9 @@
     "unknownArtist": "Unbekannter Künstler",
     "videoPreview": "Video Vorschau",
     "watchVideo": "Video ansehen",
-    "preview": "Vorschau"
+    "preview": "Vorschau",
+    "videoHelp": "Video Hilfe",
+    "news": "News"
   },
   "common": {
     "all": "Alle",

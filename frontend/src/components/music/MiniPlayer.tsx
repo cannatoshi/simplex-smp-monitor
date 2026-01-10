@@ -10,7 +10,6 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useTranslation } from 'react-i18next';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useAudioPlayerStore } from '../../stores/useAudioPlayerStore';
 import { useVideoWidget } from '../../contexts/VideoWidgetContext';
@@ -48,7 +47,6 @@ export default function MiniPlayer() {
   const [showCachePanel, setShowCachePanel] = useState(false);
   const [cacheSettings, setCacheSettings] = useState<CacheSettings | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
-  const { t } = useTranslation();
   const { openVideo } = useVideoWidget();
 
   const {
