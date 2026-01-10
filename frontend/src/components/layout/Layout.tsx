@@ -61,7 +61,7 @@ export default function Layout() {
     { to: '/traffic', label: t('nav.traffic') },
     { to: '/forensics', label: t('nav.forensics') },
     { to: '/metrics', label: t('nav.metrics') },
-    { to: '/tor-status', label: t('nav.torStatus') },
+    { to: '/tor-networks', label: t('nav.chutney') },
     { to: '/events', label: t('nav.events') },
   ];
 
