@@ -7,9 +7,9 @@
     "traffic": "Traffic Analyse",
     "forensics": "Daten Forensik",
     "metrics": "Metriken",
-    "torStatus": "Tor Status",
     "events": "Events",
-    "music": "Musik"
+    "music": "Musik",
+    "chutney": "Chutney"
   },
   "music": {
     "title": "Musik Player",
@@ -226,6 +226,50 @@
     "torVersion": "Tor Version",
     "bootstrapProgress": "Bootstrap Fortschritt",
     "flags": "Flags"
+  },
+  "chutney": {
+    "title": "Private Tor-Netzwerke",
+    "subtitle": "Chutney-basierte Testnetzwerke für Traffic-Analyse",
+    "createNetwork": "Netzwerk erstellen",
+    "noNetworks": "Keine privaten Tor-Netzwerke",
+    "createFirstNetwork": "Erstelle dein erstes Chutney-Netzwerk für lokale Tor-Traffic-Analyse.",
+    "networkDetails": "Netzwerk-Details",
+    "nodeConfiguration": "Node-Konfiguration",
+    "portConfiguration": "Port-Konfiguration",
+    "torOptions": "Tor-Optionen",
+    "captureSettings": "Capture-Einstellungen",
+    "templates": {
+      "minimal": "Minimal",
+      "basic": "Basis",
+      "standard": "Standard",
+      "forensic": "Forensik",
+      "custom": "Benutzerdefiniert"
+    },
+    "nodes": {
+      "da": "Directory Authority",
+      "guard": "Guard Relay",
+      "middle": "Middle Relay",
+      "exit": "Exit Relay",
+      "client": "Client",
+      "hs": "Hidden Service"
+    },
+    "status": {
+      "not_created": "Nicht erstellt",
+      "creating": "Wird erstellt...",
+      "bootstrapping": "Bootstrap...",
+      "running": "Läuft",
+      "stopping": "Wird gestoppt...",
+      "stopped": "Gestoppt",
+      "error": "Fehler"
+    },
+    "actions": {
+      "create": "Erstellen",
+      "start": "Starten",
+      "stop": "Stoppen",
+      "restart": "Neustarten",
+      "delete": "Löschen",
+      "viewLogs": "Logs anzeigen"
+    }
   },
   "events": {
     "title": "Events",
