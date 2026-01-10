@@ -66,10 +66,19 @@ class Playlist(models.Model):
     PLAYLIST_TYPES = [
         ('user', 'User Playlist'),
         ('curated', 'Curated'),
-        ('lofi', 'LoFi Mix'),
-        ('cyberpunk', 'Cyberpunk Mix'),
+        ('system', 'System Playlist'),
     ]
     playlist_type = models.CharField(max_length=20, choices=PLAYLIST_TYPES, default='user')
+    
+    # System playlist identifier (for auto-creation)
+    system_key = models.CharField(
+        max_length=50, 
+        blank=True, 
+        unique=True, 
+        null=True,
+        help_text="Unique key for system playlists (e.g., 'video_help', 'news')"
+    )
+    
     is_public = models.BooleanField(default=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -89,6 +98,92 @@ class Playlist(models.Model):
     def total_duration(self):
         total = self.entries.aggregate(total=models.Sum('track__duration'))['total']
         return total or 0
+    
+    @property
+    def first_track_thumbnail(self):
+        """Get thumbnail from first track for playlist card background."""
+        first_entry = self.entries.first()
+        if first_entry and first_entry.track.thumbnail_url:
+            return first_entry.track.thumbnail_url
+        return None
+    
+    @property
+    def is_system_playlist(self):
+        """Check if this is a system playlist (cannot be deleted)."""
+        return self.playlist_type == 'system'
+    
+    # =========================================================================
+    # System Playlist Definitions
+    # =========================================================================
+    
+    SYSTEM_PLAYLISTS = {
+        'video_help': {
+            'name': 'Video Help',
+            'description': 'Tutorial videos and documentation for SimpleX SMP Monitor',
+            'icon': 'video',  # Used by frontend
+        },
+        'news': {
+            'name': 'News',
+            'description': 'Latest news and updates about SimpleX and privacy technology',
+            'icon': 'news',  # Used by frontend
+        },
+    }
+    
+    @classmethod
+    def ensure_system_playlists(cls):
+        """
+        Ensure all system playlists exist in the database.
+        Called on app startup or first API request.
+        
+        Returns:
+            dict: {system_key: playlist_instance}
+        """
+        result = {}
+        
+        for key, config in cls.SYSTEM_PLAYLISTS.items():
+            playlist, created = cls.objects.get_or_create(
+                system_key=key,
+                defaults={
+                    'name': config['name'],
+                    'description': config['description'],
+                    'playlist_type': 'system',
+                }
+            )
+            
+            if created:
+                print(f"[Music] Created system playlist: {config['name']}")
+            
+            result[key] = playlist
+        
+        return result
+    
+    @classmethod
+    def get_system_playlist(cls, key: str):
+        """
+        Get a specific system playlist by key.
+        Creates it if it doesn't exist.
+        
+        Args:
+            key: System key like 'video_help' or 'news'
+            
+        Returns:
+            Playlist instance or None if key is invalid
+        """
+        if key not in cls.SYSTEM_PLAYLISTS:
+            return None
+        
+        config = cls.SYSTEM_PLAYLISTS[key]
+        
+        playlist, _ = cls.objects.get_or_create(
+            system_key=key,
+            defaults={
+                'name': config['name'],
+                'description': config['description'],
+                'playlist_type': 'system',
+            }
+        )
+        
+        return playlist
 
 
 class PlaylistEntry(models.Model):

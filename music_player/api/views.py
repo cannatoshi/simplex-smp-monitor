@@ -235,10 +235,53 @@ class PlaylistViewSet(viewsets.ModelViewSet):
     
     queryset = Playlist.objects.all()
     
+    def get_queryset(self):
+        """Ensure system playlists exist on every request."""
+        # Auto-create system playlists if they don't exist
+        Playlist.ensure_system_playlists()
+        return Playlist.objects.all()
+    
     def get_serializer_class(self):
         if self.action == 'list':
             return PlaylistListSerializer
         return PlaylistSerializer
+    
+    def destroy(self, request, *args, **kwargs):
+        """Prevent deletion of system playlists."""
+        playlist = self.get_object()
+        
+        if playlist.is_system_playlist:
+            return Response(
+                {'error': 'System playlists cannot be deleted'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        return super().destroy(request, *args, **kwargs)
+    
+    @action(detail=False, methods=['get'])
+    def system(self, request):
+        """Get all system playlists."""
+        # Ensure they exist
+        Playlist.ensure_system_playlists()
+        
+        system_playlists = Playlist.objects.filter(playlist_type='system')
+        serializer = PlaylistSerializer(system_playlists, many=True)
+        
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='system/(?P<system_key>[^/.]+)')
+    def system_by_key(self, request, system_key=None):
+        """Get a specific system playlist by key."""
+        playlist = Playlist.get_system_playlist(system_key)
+        
+        if not playlist:
+            return Response(
+                {'error': f'Unknown system playlist key: {system_key}'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = PlaylistSerializer(playlist)
+        return Response(serializer.data)
     
     @action(detail=True, methods=['post'])
     def add_track(self, request, pk=None):

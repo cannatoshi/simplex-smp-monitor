@@ -44,30 +44,37 @@ class PlaylistEntrySerializer(serializers.ModelSerializer):
 class PlaylistSerializer(serializers.ModelSerializer):
     track_count = serializers.ReadOnlyField()
     total_duration = serializers.ReadOnlyField()
+    first_track_thumbnail = serializers.ReadOnlyField()
+    is_system_playlist = serializers.ReadOnlyField()
     entries = PlaylistEntrySerializer(many=True, read_only=True)
     
     class Meta:
         model = Playlist
         fields = [
             'id', 'name', 'description', 'thumbnail_url',
-            'playlist_type', 'is_public',
-            'track_count', 'total_duration', 'entries',
+            'playlist_type', 'system_key', 'is_system_playlist',
+            'is_public',
+            'track_count', 'total_duration', 'first_track_thumbnail',
+            'entries',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'system_key', 'is_system_playlist', 'created_at', 'updated_at']
 
 
 class PlaylistListSerializer(serializers.ModelSerializer):
     """Lighter serializer for list views (without entries)."""
     track_count = serializers.ReadOnlyField()
     total_duration = serializers.ReadOnlyField()
+    first_track_thumbnail = serializers.ReadOnlyField()
+    is_system_playlist = serializers.ReadOnlyField()
     
     class Meta:
         model = Playlist
         fields = [
             'id', 'name', 'description', 'thumbnail_url',
-            'playlist_type', 'is_public',
-            'track_count', 'total_duration',
+            'playlist_type', 'system_key', 'is_system_playlist',
+            'is_public',
+            'track_count', 'total_duration', 'first_track_thumbnail',
             'created_at', 'updated_at'
         ]
 
@@ -103,6 +110,7 @@ class CacheControlSerializer(serializers.Serializer):
         ('toggle', 'Toggle cache on/off'),
         ('clear_all', 'Clear all cached files'),
         ('cancel_active', 'Cancel active downloads'),
+        ('cleanup_logs', 'Cleanup orphaned logs'),
     ]
     action = serializers.ChoiceField(choices=ACTION_CHOICES)
     confirm = serializers.BooleanField(default=False, help_text="Required for destructive actions")
