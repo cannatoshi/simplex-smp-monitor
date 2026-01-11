@@ -188,7 +188,7 @@ class SimplexClient(models.Model):
     
     @property
     def websocket_url(self):
-        return f"ws://localhost:{self.websocket_port}"
+        return f"ws://simplex-client-{self.slug}:{self.websocket_port}"
     
     @property
     def data_volume_name(self):

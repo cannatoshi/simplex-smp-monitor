@@ -144,7 +144,7 @@ class SimplexEventBridge:
         
         slug = client['slug']
         port = client['websocket_port']
-        ws_url = f"ws://localhost:{port}"
+        ws_url = f"ws://simplex-client-{slug}:{port}"
         
         while self.running:
             try:
