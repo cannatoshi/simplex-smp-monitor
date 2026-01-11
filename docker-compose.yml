@@ -1,5 +1,6 @@
 # ============================================
 # SimpleX SMP Monitor - Docker Compose
+# Version: 0.1.12 (11.01.2026)
 # ============================================
 
 services:
@@ -154,56 +155,74 @@ services:
   # 🔧 Build-Only Images (SimpleX Infrastructure)
   # ============================================
   # These images are built but not started by default.
-  # Use: docker compose build simplex-cli simplex-smp simplex-xftp simplex-ntf
+  # They are used by the Django app at runtime via Docker API.
+  #
+  # Build all:
+  #   docker compose build simplex-cli simplex-smp simplex-smp-tor simplex-xftp simplex-ntf chutnex
+  #
+  # Build specific:
+  #   docker compose build simplex-smp
   # ============================================
 
-  # 📱 SimpleX CLI Client
+  # 📱 SimpleX CLI Client (for testing)
   simplex-cli:
     build:
-      context: ./clients
-      dockerfile: docker/Dockerfile.simplex-cli
+      context: ./docker/images/simplex-cli
+      dockerfile: Dockerfile
     image: simplex-cli:latest
     profiles:
       - build-only
-    command: ["echo", "CLI Client image built"]
-    networks:
-      - simplex-network
+    command: ["echo", "Image built: simplex-cli"]
 
-  # 📡 SimpleX SMP Server (Messaging)
+  # 📡 SimpleX SMP Server (Messaging - IP Mode)
   simplex-smp:
     build:
-      context: ./servers
-      dockerfile: docker/Dockerfile.simplex-smp
+      context: ./docker/images/simplex-smp
+      dockerfile: Dockerfile
     image: simplex-smp:latest
     profiles:
       - build-only
-    command: ["echo", "SMP Server image built"]
-    networks:
-      - simplex-network
+    command: ["echo", "Image built: simplex-smp"]
+
+  # 🧅 SimpleX SMP Server (Messaging - Tor Mode)
+  simplex-smp-tor:
+    build:
+      context: ./docker/images/simplex-smp-tor
+      dockerfile: Dockerfile
+    image: simplex-smp-tor:latest
+    profiles:
+      - build-only
+    command: ["echo", "Image built: simplex-smp-tor"]
 
   # 📁 SimpleX XFTP Server (File Transfer)
   simplex-xftp:
     build:
-      context: ./servers
-      dockerfile: docker/Dockerfile.simplex-xftp
+      context: ./docker/images/simplex-xftp
+      dockerfile: Dockerfile
     image: simplex-xftp:latest
     profiles:
       - build-only
-    command: ["echo", "XFTP Server image built"]
-    networks:
-      - simplex-network
+    command: ["echo", "Image built: simplex-xftp"]
 
   # 🔔 SimpleX NTF Server (Push Notifications)
   simplex-ntf:
     build:
-      context: ./servers
-      dockerfile: docker/Dockerfile.simplex-ntf
+      context: ./docker/images/simplex-ntf
+      dockerfile: Dockerfile
     image: simplex-ntf:latest
     profiles:
       - build-only
-    command: ["echo", "NTF Server image built"]
-    networks:
-      - simplex-network
+    command: ["echo", "Image built: simplex-ntf"]
+
+  # 🔐 ChutneX - Isolated Tor Network for Forensics
+  chutnex:
+    build:
+      context: ./docker/images/chutnex
+      dockerfile: Dockerfile
+    image: chutnex:latest
+    profiles:
+      - build-only
+    command: ["echo", "Image built: chutnex"]
 
 volumes:
   app_data:

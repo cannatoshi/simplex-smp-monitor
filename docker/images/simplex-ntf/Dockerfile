@@ -34,7 +34,7 @@ RUN useradd -r -s /bin/false -d /var/opt/simplex-notifications simplex \
     && chown -R simplex:simplex /etc/opt/simplex-notifications /var/opt/simplex-notifications /var/log/simplex-notifications
 
 # Copy entrypoint
-COPY docker/ntf-entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Expose NTF port

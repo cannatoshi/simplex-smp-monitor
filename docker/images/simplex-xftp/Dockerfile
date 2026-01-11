@@ -30,7 +30,7 @@ RUN useradd -r -s /bin/false -d /var/opt/simplex-xftp simplex \
     && chown -R simplex:simplex /etc/opt/simplex-xftp /var/opt/simplex-xftp /var/log/simplex-xftp
 
 # Copy entrypoint
-COPY docker/xftp-entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Expose XFTP port

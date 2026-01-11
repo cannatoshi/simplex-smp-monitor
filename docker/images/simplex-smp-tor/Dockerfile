@@ -43,7 +43,7 @@ RUN echo "DataDirectory /var/lib/tor" > /etc/tor/torrc && \
 RUN chown -R simplex:simplex /etc/opt/simplex /var/opt/simplex /var/log/simplex
 
 # Copy entrypoint
-COPY smp-tor-entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Expose ports (not really needed for Tor, but for documentation)

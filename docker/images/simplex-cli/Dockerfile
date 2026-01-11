@@ -45,7 +45,7 @@ RUN echo "SocksPort 9050" >> /etc/tor/torrc \
     && echo "SocksPolicy accept 127.0.0.1" >> /etc/tor/torrc
 
 # Copy entrypoint script
-COPY docker/entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
