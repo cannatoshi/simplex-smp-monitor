@@ -73,10 +73,11 @@ class Server(models.Model):
         help_text='Run this server locally in a Docker container'
     )
     
-    # Hosting Mode (IP or Tor)
+    # Hosting Mode (IP, Tor, or ChutneX)
     class HostingMode(models.TextChoices):
         IP = 'ip', 'IP Address (LAN)'
-        TOR = 'tor', 'Tor Hidden Service (.onion)'
+        TOR = 'tor', 'Tor Hidden Service (Public)'
+        CHUTNEX = 'chutnex', 'ChutneX Private Network'
     
     hosting_mode = models.CharField(
         max_length=10,
@@ -84,6 +85,17 @@ class Server(models.Model):
         default=HostingMode.IP,
         verbose_name='Hosting Mode',
         help_text='How the server should be accessible'
+    )
+    
+    # ChutneX Network (only for hosting_mode=chutnex)
+    chutnex_network = models.ForeignKey(
+        'chutney.TorNetwork',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='hosted_servers',
+        verbose_name='ChutneX Network',
+        help_text='Private Tor network for this server (required for ChutneX mode)'
     )
     
     # For IP mode - which IP to bind/advertise

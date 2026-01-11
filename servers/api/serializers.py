@@ -48,7 +48,7 @@ class ServerListSerializer(serializers.ModelSerializer):
             'docker_status_display', 'exposed_port', 'effective_address',
             'generated_address',
             # Hosting mode fields (NEW)
-            'hosting_mode', 'hosting_mode_display', 'host_ip', 'onion_address',
+            'hosting_mode', 'hosting_mode_display', 'host_ip', 'chutnex_network', 'onion_address',
         ]
 
 

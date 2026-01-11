@@ -164,7 +164,8 @@ class ServerDockerManager:
             logger.warning(f"Fehler beim Prüfen existierender Container: {e}")
         
         # Get image based on hosting mode
-        if hosting_mode == 'tor':
+        if hosting_mode in ('tor', 'chutnex'):
+            # Both Tor and ChutneX use Tor-enabled images
             image = self.TOR_IMAGES.get(server_type)
         else:
             image = self.IMAGES.get(server_type)
@@ -191,6 +192,14 @@ class ServerDockerManager:
                 host_ip = self._get_host_ip()
             environment['ADDR'] = host_ip
             logger.info(f"IP Mode: Server wird mit ADDR={host_ip} gestartet")
+        elif hosting_mode == 'chutnex':
+            # ChutneX Mode: Use internal Tor from ChutneX network
+            environment['USE_TOR'] = '1'
+            environment['CHUTNEX_MODE'] = '1'
+            # Point to ChutneX's directory authorities
+            if server.chutnex_network:
+                environment['CHUTNEX_NETWORK'] = server.chutnex_network.slug
+            logger.info(f"ChutneX Mode: Server wird im privaten Tor-Netzwerk gestartet")
         else:
             # Tor Mode: Use onion (ADDR will be set after onion is generated)
             environment['USE_TOR'] = '1'
@@ -202,11 +211,19 @@ class ServerDockerManager:
             config_volume: {'bind': volume_paths.get('config', '/config'), 'mode': 'rw'},
         }
         
-        # For Tor mode, add tor volume for persistent onion address
-        if hosting_mode == 'tor':
+        # For Tor/ChutneX mode, add tor volume for persistent onion address
+        if hosting_mode in ('tor', 'chutnex'):
             tor_volume = f"{container_name}-tor"
             self._ensure_volume_exists(tor_volume)
             volumes[tor_volume] = {'bind': self.TOR_PATHS.get(server_type, '/var/lib/tor/hidden_service'), 'mode': 'rw'}
+        
+        # Determine network based on hosting mode
+        if hosting_mode == 'chutnex' and server.chutnex_network:
+            # ChutneX Mode: Use the private Tor network
+            network_name = f"chutnex-{server.chutnex_network.slug}"
+            logger.info(f"ChutneX Mode: Server wird im Netzwerk {network_name} gestartet")
+        else:
+            network_name = self.NETWORK_NAME
         
         # Container configuration
         container_config = {
@@ -215,7 +232,7 @@ class ServerDockerManager:
             'detach': True,
             'environment': environment,
             'volumes': volumes,
-            'network': self.NETWORK_NAME,
+            'network': network_name,
             'labels': {
                 f'{self.LABEL_PREFIX}.managed': 'true',
                 f'{self.LABEL_PREFIX}.server_id': str(server.id),
@@ -226,7 +243,7 @@ class ServerDockerManager:
             'restart_policy': {'Name': 'unless-stopped'},
         }
         
-        # Port mapping only for IP mode (Tor doesn't need exposed ports)
+        # Port mapping only for IP mode (Tor/ChutneX don't need exposed ports)
         if hosting_mode == 'ip':
             container_config['ports'] = {
                 f'{internal_port}/tcp': exposed_port
@@ -287,7 +304,7 @@ class ServerDockerManager:
             
             # Wait for container to start and initialize
             # Tor mode needs more time to generate onion address
-            wait_time = 10 if server.hosting_mode == 'tor' else 3
+            wait_time = 10 if server.hosting_mode in ('tor', 'chutnex') else 3
             time.sleep(wait_time)
             container.reload()
             
@@ -298,7 +315,7 @@ class ServerDockerManager:
                 logger.info(f"Container gestartet: {server.container_name}")
                 
                 # Extract address based on hosting mode
-                if server.hosting_mode == 'tor':
+                if server.hosting_mode in ('tor', 'chutnex'):
                     self._extract_onion_address(server)
                 else:
                     self._extract_server_address(server)
@@ -776,7 +793,7 @@ class ServerDockerManager:
         Returns:
             True wenn Image existiert, sonst False
         """
-        tor_mode = hosting_mode == 'tor'
+        tor_mode = hosting_mode in ('tor', 'chutnex')
         return self.get_image_info(server_type, tor_mode=tor_mode) is not None
 
 
