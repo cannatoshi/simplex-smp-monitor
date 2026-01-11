@@ -56,3 +56,6 @@ screenshots/
 tmp/
 temp/
 *.tmp
+
+# Media files (runtime data)
+media/
