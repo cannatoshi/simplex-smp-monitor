@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'events',
     'clients',
     'music_player',
+    'chutney',
 ]
 
 MIDDLEWARE = [

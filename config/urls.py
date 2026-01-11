@@ -34,6 +34,9 @@ urlpatterns = [
     
     # Legacy clients URLs
     path('clients/', include('clients.urls')),
+
+    # Chutney API
+    path('api/v1/chutney/', include('chutney.api.urls')),
 ]
 
 # Media files - BEFORE SPA catch-all!
