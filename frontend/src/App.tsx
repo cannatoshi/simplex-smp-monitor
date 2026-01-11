@@ -14,6 +14,8 @@ import TestRunHistory from './pages/TestRunHistory';
 import Music from './pages/Music';
 import CacheForensics from './pages/CacheForensics';
 import TorNetworks from './pages/TorNetworks';
+import TorNetworkDetail from './pages/TorNetworkDetail';
+import TorNetworkForm from './pages/TorNetworkForm';
 import { VideoWidgetProvider } from './contexts/VideoWidgetContext';
 
 function App() {
@@ -37,7 +39,11 @@ function App() {
         <Route path="clients/:id/edit" element={<ClientForm />} />
         <Route path="music" element={<Music />} />
         <Route path="cache-forensics" element={<CacheForensics />} />
+        {/* Chutney - Private Tor Networks */}
         <Route path="tor-networks" element={<TorNetworks />} />
+        <Route path="tor-networks/new" element={<TorNetworkForm />} />
+        <Route path="tor-networks/:id" element={<TorNetworkDetail />} />
+        <Route path="tor-networks/:id/edit" element={<TorNetworkForm />} />
       </Route>
     </Routes>
     </VideoWidgetProvider>

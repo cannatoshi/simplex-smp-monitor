@@ -57,11 +57,11 @@ export default function Layout() {
     { to: '/dashboard', label: t('nav.dashboard') },
     { to: '/servers', label: t('nav.servers') },
     { to: '/clients', label: t('nav.clients') },
+    { to: '/tor-networks', label: t('nav.chutney') },
     { to: '/diagnostics', label: t('nav.diagnostics') },
     { to: '/traffic', label: t('nav.traffic') },
     { to: '/forensics', label: t('nav.forensics') },
     { to: '/metrics', label: t('nav.metrics') },
-    { to: '/tor-networks', label: t('nav.chutney') },
     { to: '/events', label: t('nav.events') },
   ];
 
