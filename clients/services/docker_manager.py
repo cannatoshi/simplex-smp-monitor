@@ -86,13 +86,47 @@ class DockerManager:
             s.address for s in simplex_client.smp_servers.all()
         ])
         
-        # Environment Variablen
+        # Environment Variablen basierend auf connection_mode
+        connection_mode = getattr(simplex_client, 'connection_mode', 'public_tor')
+        
         environment = {
             'SIMPLEX_PORT': str(port),  # Externer Port für socat
             'SMP_SERVERS': smp_servers or '',
-            'USE_TOR': 'true' if simplex_client.use_tor else 'false',
             'PROFILE_NAME': simplex_client.profile_name,
         }
+        
+        # Tor-Konfiguration basierend auf connection_mode
+        if connection_mode == 'direct':
+            environment['USE_TOR'] = 'false'
+            network_name = self.NETWORK_NAME
+            logger.info(f"Direct Mode: Kein Tor für {container_name}")
+        elif connection_mode == 'public_tor':
+            environment['USE_TOR'] = 'true'
+            network_name = self.NETWORK_NAME
+            logger.info(f"Public Tor Mode: localhost:9050 für {container_name}")
+        elif connection_mode == 'chutnex_internal':
+            environment['USE_TOR'] = 'true'
+            # Client läuft IM ChutneX Netzwerk
+            if simplex_client.chutnex_network:
+                network_name = f"chutnex-{simplex_client.chutnex_network.slug}"
+                environment['CHUTNEX_MODE'] = '1'
+                logger.info(f"ChutneX Internal Mode: Container in {network_name}")
+            else:
+                network_name = self.NETWORK_NAME
+                logger.warning(f"ChutneX Internal aber kein Netzwerk gewählt - Fallback zu {network_name}")
+        elif connection_mode == 'chutnex_external':
+            environment['USE_TOR'] = 'true'
+            # Client ist außerhalb, verbindet über SOCKS
+            network_name = self.NETWORK_NAME
+            if simplex_client.chutnex_socks_port:
+                # TODO: Tor so konfigurieren, dass es ChutneX SOCKS nutzt statt localhost:9050
+                environment['TOR_SOCKS_PORT'] = str(simplex_client.chutnex_socks_port)
+                logger.info(f"ChutneX External Mode: SOCKS Port {simplex_client.chutnex_socks_port}")
+            else:
+                logger.warning(f"ChutneX External aber kein SOCKS Port - Fallback zu Public Tor")
+        else:
+            environment['USE_TOR'] = 'true'
+            network_name = self.NETWORK_NAME
         
         # Container Konfiguration
         container_config = {
@@ -106,7 +140,7 @@ class DockerManager:
             'ports': {
                 f'{port}/tcp': port  # Mapping: Host-Port -> Container socat Port
             },
-            'network': self.NETWORK_NAME,
+            'network': network_name,
             'labels': {
                 f'{self.LABEL_PREFIX}.managed': 'true',
                 f'{self.LABEL_PREFIX}.client_id': str(simplex_client.id),

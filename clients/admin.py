@@ -11,7 +11,7 @@ from .models import SimplexClient, ClientConnection, TestMessage, DeliveryReceip
 class SimplexClientAdmin(admin.ModelAdmin):
     list_display = ['name', 'slug', 'status_badge', 'websocket_port', 
                     'messages_sent', 'messages_received', 'is_running', 'last_active_at']
-    list_filter = ['status', 'use_tor', 'created_at']
+    list_filter = ['status', 'connection_mode', 'created_at']
     search_fields = ['name', 'slug', 'profile_name']
     readonly_fields = ['id', 'container_id', 'created_at', 'updated_at', 'last_active_at']
     filter_horizontal = ['smp_servers']
@@ -27,7 +27,7 @@ class SimplexClientAdmin(admin.ModelAdmin):
             'fields': ('status', 'last_error')
         }),
         ('Konfiguration', {
-            'fields': ('smp_servers', 'use_tor')
+            'fields': ('smp_servers', 'connection_mode')
         }),
         ('Statistiken', {
             'fields': ('messages_sent', 'messages_received', 'messages_failed'),

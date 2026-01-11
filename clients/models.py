@@ -103,11 +103,46 @@ class SimplexClient(models.Model):
         verbose_name='SMP Servers',
         help_text='SMP servers this client uses'
     )
-    use_tor = models.BooleanField(
-        default=True,
-        verbose_name='Use Tor',
-        help_text='Connect via Tor (SOCKS5 proxy)'
+    # Connection Mode - how the client connects
+    class ConnectionMode(models.TextChoices):
+        DIRECT = 'direct', 'Direct (no Tor)'
+        PUBLIC_TOR = 'public_tor', 'Public Tor (:9050)'
+        CHUTNEX_INTERNAL = 'chutnex_internal', 'ChutneX Internal (same network)'
+        CHUTNEX_EXTERNAL = 'chutnex_external', 'ChutneX External (via SOCKS)'
+    
+    connection_mode = models.CharField(
+        max_length=20,
+        choices=ConnectionMode.choices,
+        default=ConnectionMode.PUBLIC_TOR,
+        verbose_name='Connection Mode',
+        help_text='How the client connects to servers'
     )
+    
+    # ChutneX Network (for chutnex_internal/external modes)
+    chutnex_network = models.ForeignKey(
+        'chutney.TorNetwork',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='simplex_clients',
+        verbose_name='ChutneX Network',
+        help_text='Private Tor network (required for ChutneX modes)'
+    )
+    
+    # ChutneX SOCKS port (for chutnex_external mode)
+    chutnex_socks_port = models.IntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(9000), MaxValueValidator(9099)],
+        verbose_name='ChutneX SOCKS Port',
+        help_text='SOCKS port from ChutneX client node (9000-9099)'
+    )
+    
+    # Legacy compatibility property
+    @property
+    def use_tor(self):
+        """Legacy: True if using any Tor connection"""
+        return self.connection_mode != self.ConnectionMode.DIRECT
     
     # === Statistics ===
     messages_sent = models.IntegerField(default=0, verbose_name='Sent')

@@ -34,7 +34,7 @@ class SimplexClientListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'slug', 'profile_name', 'description',
             'websocket_port', 'status', 'status_display',
-            'use_tor', 'messages_sent', 'messages_received', 'messages_failed',
+            'connection_mode', 'messages_sent', 'messages_received', 'messages_failed',
             'connection_count', 'uptime_display', 'delivery_success_rate',
             'created_at', 'last_active_at', 'started_at'
         ]
@@ -63,7 +63,7 @@ class SimplexClientDetailSerializer(serializers.ModelSerializer):
             'id', 'name', 'slug', 'profile_name', 'description',
             'container_id', 'container_name', 'websocket_port', 'data_volume',
             'status', 'status_display', 'last_error',
-            'use_tor', 'smp_server_ids',
+            'connection_mode', 'chutnex_network', 'chutnex_socks_port', 'smp_server_ids',
             'messages_sent', 'messages_received', 'messages_failed', 'messages_delivered',
             'connection_count', 'uptime_display', 'delivery_success_rate',
             'avg_latency_ms', 'min_latency_ms', 'max_latency_ms',
@@ -86,7 +86,7 @@ class SimplexClientCreateUpdateSerializer(serializers.ModelSerializer):
         model = SimplexClient
         fields = [
             'name', 'slug', 'profile_name', 'description',
-            'websocket_port', 'use_tor', 'smp_server_ids'
+            'websocket_port', 'connection_mode', 'chutnex_network', 'chutnex_socks_port', 'smp_server_ids'
         ]
         extra_kwargs = {
             'name': {'required': False},
