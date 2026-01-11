@@ -1,0 +1,4 @@
+ORPort 9001 IPv4Only
+SocksPort 0
+ExitRelay 1
+ExitPolicy accept *:*
