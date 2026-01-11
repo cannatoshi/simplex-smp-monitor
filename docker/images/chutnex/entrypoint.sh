@@ -19,6 +19,9 @@ TORRC_EXIT=/opt/torrc.exit
 TORRC_CLIENT=/opt/torrc.client
 STATUS_AUTHORITIES=/status/dir-authorities
 
+# Expected number of DAs (passed via environment)
+DA_COUNT=${DA_COUNT:-3}
+
 if [[ -z "${ROLE}" ]]; then
     echo "❌ No ROLE defined!"
     exit 1
@@ -27,6 +30,7 @@ fi
 echo "🧅 ChutneX Node Starting..."
 echo "   Role: ${ROLE}"
 echo "   Nick: ${NICK:-anonymous}"
+echo "   Expected DAs: ${DA_COUNT}"
 
 function bootstrap {
     # Get container IP from eth0 (works in isolated network)
@@ -74,9 +78,12 @@ function bootstrap {
         touch ${TOR_DIR}/{approved-routers,sr-state}
         chown debian-tor:debian-tor ${TOR_DIR}/{approved-routers,sr-state}
 
-        # Write DirAuthority line to shared volume
+        # Write DirAuthority line to shared volume (with file locking)
         mkdir -p /status
-        echo "DirAuthority ${NICK} orport=9001 no-v2 v3ident=${AUTH_CERT_FINGERPRINT} ${IP_ADDR}:80 ${SERVER_FINGERPRINT}" >> ${STATUS_AUTHORITIES}
+        (
+            flock -x 200
+            echo "DirAuthority ${NICK} orport=9001 no-v2 v3ident=${AUTH_CERT_FINGERPRINT} ${IP_ADDR}:80 ${SERVER_FINGERPRINT}" >> ${STATUS_AUTHORITIES}
+        ) 200>/status/.lock
         echo "   ✅ DirAuthority registered"
         ;;
 
@@ -122,27 +129,40 @@ if [ ! -f ${BOOTSTRAP_FLAG} ]; then
     bootstrap
 fi
 
-# Wait for DAs to register (non-DAs wait)
-if [[ "${ROLE}" != "da" ]]; then
-    echo "⏳ Waiting for Directory Authorities..."
-    WAIT_COUNT=0
-    while [ ! -s ${STATUS_AUTHORITIES} ] && [ ${WAIT_COUNT} -lt 60 ]; do
-        sleep 1
-        WAIT_COUNT=$((WAIT_COUNT + 1))
-    done
+# ============================================================================
+# CRITICAL: Wait for ALL DAs to register before starting Tor
+# This applies to DAs AND non-DAs!
+# ============================================================================
+echo "⏳ Waiting for ${DA_COUNT} Directory Authorities..."
+WAIT_COUNT=0
+CURRENT_DA_COUNT=0
+
+while [ ${CURRENT_DA_COUNT} -lt ${DA_COUNT} ] && [ ${WAIT_COUNT} -lt 120 ]; do
+    sleep 1
+    WAIT_COUNT=$((WAIT_COUNT + 1))
     
-    if [ -s ${STATUS_AUTHORITIES} ]; then
-        echo "   ✅ Found $(wc -l < ${STATUS_AUTHORITIES}) DAs"
-    else
-        echo "   ⚠️ No DAs found after 60s, continuing anyway..."
+    if [ -f ${STATUS_AUTHORITIES} ]; then
+        CURRENT_DA_COUNT=$(wc -l < ${STATUS_AUTHORITIES} | tr -d ' ')
     fi
+    
+    # Progress every 10 seconds
+    if [ $((WAIT_COUNT % 10)) -eq 0 ]; then
+        echo "   ... ${CURRENT_DA_COUNT}/${DA_COUNT} DAs registered (waited ${WAIT_COUNT}s)"
+    fi
+done
+
+if [ ${CURRENT_DA_COUNT} -ge ${DA_COUNT} ]; then
+    echo "   ✅ All ${DA_COUNT} DAs registered!"
+else
+    echo "   ⚠️ Only ${CURRENT_DA_COUNT}/${DA_COUNT} DAs found after ${WAIT_COUNT}s"
+    echo "   ⚠️ Network may not function correctly!"
 fi
 
 # Add all DirAuthority statements to torrc
 if [ -f ${STATUS_AUTHORITIES} ] && [ -s ${STATUS_AUTHORITIES} ]; then
+    echo "" >> ${TORRC}
+    echo "# Directory Authorities" >> ${TORRC}
     cat ${STATUS_AUTHORITIES} >> ${TORRC}
-    # Remove duplicates
-    sort -uo ${TORRC} ${TORRC}
 fi
 
 echo "🚀 Starting Tor..."

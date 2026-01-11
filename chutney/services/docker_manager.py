@@ -156,9 +156,13 @@ class ChutneXManager:
         role = role_map.get(node.node_type, 'client')
         
         # Environment variables
+        # Count DAs in network for synchronization
+        da_count = network.nodes.filter(node_type='da').count()
+        
         environment = {
             'ROLE': role,
             'NICK': node.nickname or node.name,
+            'DA_COUNT': str(da_count),
         }
         
         # Hidden Service config
