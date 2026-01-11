@@ -300,20 +300,28 @@ export default function Servers() {
                       
                       {/* Hosting Mode Badge */}
                       {server.is_docker_hosted ? (
-                        server.hosting_mode === 'tor' || server.is_onion ? (
+                        server.hosting_mode === 'chutnex' ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-900/30 text-cyan-400 font-medium">
+                            🔬 CHUTNEX
+                          </span>
+                        ) : server.hosting_mode === 'tor' || server.is_onion ? (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-purple-900/30 text-purple-400 font-medium">
                             🧅 ONION
                           </span>
                         ) : (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-900/30 text-cyan-400 font-medium">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-900/30 text-emerald-400 font-medium">
                             🏠 LAN
                           </span>
                         )
                       ) : server.is_onion ? (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-purple-900/30 text-purple-400 font-medium">
-                          🧅 ONION
+                          🧅 EXT-ONION
                         </span>
-                      ) : null}
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-400 font-medium">
+                          🌍 EXTERN
+                        </span>
+                      )}
                       
                       {/* Docker Badge with Status */}
                       {server.is_docker_hosted && (

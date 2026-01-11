@@ -140,7 +140,18 @@
     "xftpServer": "XFTP Server",
     "filterClear": "Clear filter",
     "showingServers": "Showing servers in",
-    "notTested": "Not tested"
+    "notTested": "Not tested",
+    "hostingModes": {
+      "title": "Hosting Mode",
+      "external": "External",
+      "externalDesc": "Monitor existing server",
+      "ip": "Docker LAN",
+      "ipDesc": "Own container, LAN only",
+      "tor": "Docker Onion",
+      "torDesc": "Own container, .onion via public Tor",
+      "chutnex": "ChutneX",
+      "chutnexDesc": "Private Tor network for forensics"
+    }
   },
   "diagnostics": {
     "title": "Diagnostics",
@@ -332,7 +343,23 @@
     "grafanaInfo": "Metrics are written to InfluxDB. Open",
     "grafanaLink": "Grafana (localhost:3000)",
     "grafanaVisualization": "for detailed visualizations.",
-    "connectError": "Connection error"
+    "connectError": "Connection error",
+    "connectionModes": {
+      "title": "Connection Mode",
+      "direct": "Direct",
+      "directDesc": "Without Tor (for ClearNet + Docker LAN)",
+      "publicTor": "Public Tor",
+      "publicTorDesc": "Via localhost:9050 (for Onion servers)",
+      "chutnexInternal": "ChutneX Internal",
+      "chutnexInternalDesc": "Client runs IN the private network",
+      "chutnexExternal": "ChutneX External",
+      "chutnexExternalDesc": "Client connects via SOCKS port"
+    },
+    "selectNetwork": "-- Select network --",
+    "selectSocksPort": "-- Select SOCKS port --",
+    "noChutneXNetworks": "No ChutneX network running",
+    "createChutneXNetwork": "Create ChutneX network",
+    "socksPortInfo": "SOCKS proxy from ChutneX client node"
   },
   "messages": {
     "title": "Messages",
@@ -428,5 +455,16 @@
   "footer": {
     "copyright": "© by cannatoshi 💫",
     "version": "0.1.12-alpha"
-  }
+  },
+  "hostingModes": {
+  "title": "Hosting Mode",
+  "external": "External",
+  "externalDesc": "ClearNet or Onion",
+  "ip": "Docker LAN",
+  "ipDesc": "Local network only",
+  "tor": "Docker Onion",
+  "torDesc": "Via public Tor",
+  "chutnex": "ChutneX",
+  "chutnexDesc": "Private Tor network"
+}
 }

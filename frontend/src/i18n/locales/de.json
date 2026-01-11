@@ -140,7 +140,18 @@
     "xftpServer": "XFTP Server",
     "filterClear": "Filter aufheben",
     "showingServers": "Zeige Server in",
-    "notTested": "Nicht getestet"
+    "notTested": "Nicht getestet",
+    "hostingModes": {
+      "title": "Hosting Modus",
+      "external": "Extern",
+      "externalDesc": "Fremden Server überwachen",
+      "ip": "Docker LAN",
+      "ipDesc": "Eigener Container, nur LAN erreichbar",
+      "tor": "Docker Onion",
+      "torDesc": "Eigener Container, .onion über öffentliches Tor",
+      "chutnex": "ChutneX",
+      "chutnexDesc": "Privates Tor-Netzwerk für Forensik"
+    }
   },
   "diagnostics": {
     "title": "Diagnose",
@@ -332,7 +343,23 @@
     "grafanaInfo": "Metrics werden nach InfluxDB geschrieben. Öffne",
     "grafanaLink": "Grafana (localhost:3000)",
     "grafanaVisualization": "für detaillierte Visualisierungen.",
-    "connectError": "Fehler beim Verbinden"
+    "connectError": "Fehler beim Verbinden",
+    "connectionModes": {
+      "title": "Verbindungsmodus",
+      "direct": "Direkt",
+      "directDesc": "Ohne Tor (für ClearNet + Docker LAN)",
+      "publicTor": "Public Tor",
+      "publicTorDesc": "Über localhost:9050 (für Onion Server)",
+      "chutnexInternal": "ChutneX Intern",
+      "chutnexInternalDesc": "Client läuft IM privaten Netzwerk",
+      "chutnexExternal": "ChutneX Extern",
+      "chutnexExternalDesc": "Client verbindet über SOCKS Port"
+    },
+    "selectNetwork": "-- Netzwerk wählen --",
+    "selectSocksPort": "-- SOCKS Port wählen --",
+    "noChutneXNetworks": "Kein ChutneX Netzwerk läuft",
+    "createChutneXNetwork": "ChutneX Netzwerk erstellen",
+    "socksPortInfo": "SOCKS Proxy vom ChutneX Client Node"
   },
   "messages": {
     "title": "Nachrichten",
@@ -428,5 +455,16 @@
   "footer": {
     "copyright": "© by cannatoshi 💫",
     "version": "0.1.12-alpha"
-  }
+  },
+  "hostingModes": {
+  "title": "Hosting Modus",
+  "external": "Extern",
+  "externalDesc": "ClearNet oder Onion",
+  "ip": "Docker LAN",
+  "ipDesc": "Nur im lokalen Netzwerk",
+  "tor": "Docker Onion",
+  "torDesc": "Über öffentliches Tor",
+  "chutnex": "ChutneX",
+  "chutnexDesc": "Privates Tor-Netzwerk"
+}
 }

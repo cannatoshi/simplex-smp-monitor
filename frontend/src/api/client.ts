@@ -132,7 +132,7 @@ export interface Category {
 export type ServerType = 'smp' | 'xftp' | 'ntf';
 
 // Hosting mode options (NEW)
-export type HostingMode = 'ip' | 'tor';
+export type HostingMode = 'ip' | 'tor' | 'chutnex';
 
 // Docker status options (NEW)
 export type DockerStatus = 
@@ -195,6 +195,7 @@ export interface Server {
   onion_address?: string;
   is_tor_hosted?: boolean;
   effective_host?: string;
+  chutnex_network?: string | null;
 }
 
 export interface ServerFilters {
@@ -331,6 +332,12 @@ export interface SimplexClient {
   websocket_port: number;
   status: 'created' | 'starting' | 'running' | 'stopping' | 'stopped' | 'error';
   status_display: string;
+  // Connection Mode
+  connection_mode: 'direct' | 'public_tor' | 'chutnex_internal' | 'chutnex_external';
+  chutnex_network?: string | null;
+  chutnex_socks_port?: number | null;
+  
+  // Legacy compatibility (computed property)
   use_tor: boolean;
   messages_sent: number;
   messages_received: number;
