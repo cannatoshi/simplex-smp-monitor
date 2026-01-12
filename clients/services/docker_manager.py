@@ -129,6 +129,8 @@ class DockerManager:
             network_name = self.NETWORK_NAME
         
         # Container Konfiguration
+        # Für ChutneX Internal: Container in beiden Netzwerken (Bridge für Port-Mapping, ChutneX für Tor)
+        # Erst ohne network erstellen (landet in bridge), dann nach Start zusätzlich in ChutneX verbinden
         container_config = {
             'name': container_name,
             'image': self.IMAGE_NAME,
@@ -140,7 +142,7 @@ class DockerManager:
             'ports': {
                 f'{port}/tcp': port  # Mapping: Host-Port -> Container socat Port
             },
-            'network': network_name,
+            'network': self.NETWORK_NAME,  # Immer erst ins Standard-Netzwerk für Port-Mapping
             'labels': {
                 f'{self.LABEL_PREFIX}.managed': 'true',
                 f'{self.LABEL_PREFIX}.client_id': str(simplex_client.id),
@@ -164,6 +166,16 @@ class DockerManager:
             simplex_client.container_id = container.id
             simplex_client.status = SimplexClient.Status.CREATED
             simplex_client.save(update_fields=['container_id', 'status'])
+            
+            # Für ChutneX Internal: Container zusätzlich ins ChutneX Netzwerk verbinden
+            if connection_mode == 'chutnex_internal' and simplex_client.chutnex_network:
+                chutnex_network_name = f"chutnex-{simplex_client.chutnex_network.slug}"
+                try:
+                    chutnex_net = self.client.networks.get(chutnex_network_name)
+                    chutnex_net.connect(container)
+                    logger.info(f"Container {container_name} zusätzlich in {chutnex_network_name} verbunden")
+                except Exception as e:
+                    logger.warning(f"Konnte Container nicht in ChutneX verbinden: {e}")
             
             return container.id
             

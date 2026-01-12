@@ -223,7 +223,8 @@ class SimplexClient(models.Model):
     
     @property
     def websocket_url(self):
-        return f"ws://simplex-client-{self.slug}:{self.websocket_port}"
+        """WebSocket URL - immer localhost da Django auf dem Host läuft"""
+        return f"ws://localhost:{self.websocket_port}"
     
     @property
     def data_volume_name(self):
