@@ -118,7 +118,7 @@ class ServerCreateUpdateSerializer(serializers.ModelSerializer):
             
             # Docker hosting (NEW)
             'is_docker_hosted', 'exposed_port',
-            'hosting_mode', 'host_ip',  # NEW: Hosting mode fields
+            'hosting_mode', 'host_ip', 'chutnex_network',  # NEW: Hosting mode fields
             
             # SSH
             'ssh_host', 'ssh_port', 'ssh_user', 'ssh_key_path',

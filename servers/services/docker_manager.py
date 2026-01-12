@@ -217,6 +217,12 @@ class ServerDockerManager:
             self._ensure_volume_exists(tor_volume)
             volumes[tor_volume] = {'bind': self.TOR_PATHS.get(server_type, '/var/lib/tor/hidden_service'), 'mode': 'rw'}
         
+        # For ChutneX mode, mount the status volume for DirAuthority info
+        if hosting_mode == 'chutnex' and server.chutnex_network:
+            status_volume = f"chutnex-status-{server.chutnex_network.slug}"
+            volumes[status_volume] = {'bind': '/status', 'mode': 'ro'}
+            logger.info(f"ChutneX Mode: Status Volume {status_volume} gemountet")
+        
         # Determine network based on hosting mode
         if hosting_mode == 'chutnex' and server.chutnex_network:
             # ChutneX Mode: Use the private Tor network

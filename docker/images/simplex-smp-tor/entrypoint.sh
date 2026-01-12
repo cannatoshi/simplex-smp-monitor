@@ -3,9 +3,10 @@
 # SimpleX SMP Server - Tor Hidden Service Entrypoint
 # ============================================
 set -e
-
 echo "============================================"
 echo "  SimpleX SMP Server - Tor Hidden Service"
+echo "============================================"
+echo "  ChutneX Mode: ${CHUTNEX_MODE:-0}"
 echo "============================================"
 
 # Ensure correct permissions for Tor
@@ -15,9 +16,61 @@ chmod 700 /var/lib/tor/simplex-smp 2>/dev/null || true
 # Ensure simplex user owns its directories
 chown -R simplex:simplex /etc/opt/simplex /var/opt/simplex /var/log/simplex 2>/dev/null || true
 
+# Configure Tor based on mode
+TORRC="/etc/tor/torrc"
+
+if [ "${CHUTNEX_MODE}" = "1" ]; then
+    echo "🔬 ChutneX Mode: Configuring for private Tor network..."
+    
+    # Wait for DirAuthorities from ChutneX
+    STATUS_AUTHORITIES="/status/dir-authorities"
+    echo "⏳ Waiting for ChutneX Directory Authorities..."
+    
+    WAIT_COUNT=0
+    while [ ! -s "${STATUS_AUTHORITIES}" ] && [ ${WAIT_COUNT} -lt 60 ]; do
+        sleep 1
+        WAIT_COUNT=$((WAIT_COUNT + 1))
+    done
+    
+    if [ -s "${STATUS_AUTHORITIES}" ]; then
+        DA_COUNT=$(wc -l < "${STATUS_AUTHORITIES}")
+        echo "   ✅ Found ${DA_COUNT} DAs"
+    else
+        echo "   ⚠️ No DAs found after 60s!"
+    fi
+    
+    # Create ChutneX torrc
+    cat > ${TORRC} << TORRC_EOF
+# ChutneX Private Tor Network Configuration
+TestingTorNetwork 1
+AssumeReachable 1
+AddressDisableIPv6 1
+
+DataDirectory /var/lib/tor
+HiddenServiceDir /var/lib/tor/simplex-smp/
+HiddenServicePort 5223 127.0.0.1:5223
+HiddenServicePort 443 127.0.0.1:443
+
+Log notice file /var/log/tor/notices.log
+
+TORRC_EOF
+    
+    # Append DirAuthorities
+    if [ -s "${STATUS_AUTHORITIES}" ]; then
+        echo "" >> ${TORRC}
+        echo "# Directory Authorities from ChutneX" >> ${TORRC}
+        cat "${STATUS_AUTHORITIES}" >> ${TORRC}
+    fi
+    
+    echo "📋 Tor config for ChutneX:"
+    cat ${TORRC}
+else
+    echo "🌍 Public Tor Mode"
+fi
+
 # Start Tor as debian-tor user in background
 echo "🧅 Starting Tor daemon..."
-su -s /bin/bash debian-tor -c "tor -f /etc/tor/torrc" &
+su -s /bin/bash debian-tor -c "tor -f ${TORRC}" &
 TOR_PID=$!
 
 # Wait for Tor to generate the .onion address
@@ -31,6 +84,8 @@ while [ ! -f "$ONION_FILE" ] && [ $WAITED -lt $MAX_WAIT ]; do
     WAITED=$((WAITED + 1))
     if [ $((WAITED % 10)) -eq 0 ]; then
         echo "   Still waiting for .onion address... (${WAITED}s)"
+        # Show Tor bootstrap status
+        grep -i "bootstrapped" /var/log/tor/notices.log 2>/dev/null | tail -1 || true
     fi
 done
 
@@ -45,11 +100,10 @@ ONION_ADDRESS=$(cat "$ONION_FILE")
 echo "✅ Onion address generated: $ONION_ADDRESS"
 
 # Initialize SMP server if not already done
-# Use localhost since Tor handles the routing
 if [ ! -f "/etc/opt/simplex/smp-server.ini" ]; then
     echo "🔧 Initializing SMP server for Tor..."
     
-    # Initialize with localhost - Tor will handle external connections
+    # Initialize with localhost - Tor handles external connections
     su -s /bin/bash simplex -c "smp-server init --ip 127.0.0.1 -l --yes"
     
     echo "✅ Server initialized!"
@@ -74,6 +128,9 @@ fi
 # Show server info
 echo "============================================"
 echo "🧅 Tor Hidden Service Active"
+if [ "${CHUTNEX_MODE}" = "1" ]; then
+    echo "🔬 Mode: ChutneX Private Network"
+fi
 echo "============================================"
 echo "📍 Onion Address: $ONION_ADDRESS"
 if [ -n "$FINGERPRINT" ]; then
@@ -88,6 +145,5 @@ echo "$ONION_ADDRESS" > /var/opt/simplex/onion_address
 chown simplex:simplex /var/opt/simplex/onion_address
 
 echo "🚀 Starting SMP Server..."
-
 # Run SMP server as simplex user
 exec su -s /bin/bash simplex -c "exec $*"
