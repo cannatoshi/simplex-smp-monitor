@@ -16,7 +16,7 @@
     "react-dom": "^19.2.3",
     "react-h5-audio-player": "^3.10.1",
     "react-i18next": "^16.5.0",
-    "react-router-dom": "^7.11.0",
+    "react-router-dom": "^7.16.0",
     "recharts": "^3.6.0",
     "zustand": "^5.0.9"
   },
